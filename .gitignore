@@ -1,0 +1,15 @@
+# Ignore all .files and .folders
+.*
+!.gitignore
+fig
+*.png
+*pycache*
+nvvm
+.idea
+.idea/*
+*.asv
+*.xml
+./results
+*.csv
+*.pickle
+.mat
