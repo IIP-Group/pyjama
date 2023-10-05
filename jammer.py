@@ -25,14 +25,18 @@ class OFDMJammer(tf.keras.layers.Layer):
         return y_combined
     
     def sample(self, shape):
-        """Sample from complex plane with E[|x|^2] = 1]. In this case, we sample from uniform circle"""
-        # TODO see above. Not done yet
-        # sample from a uniform distribution with max amplitude
+        # sample from a unit disk in the complex plane with E[|x|^2] = 1
         dtype = tf.dtypes.as_dtype(self.dtype)
         if dtype.is_complex:
-            return tf.complex(self._sample_real(shape, dtype.real_dtype), self._sample_real(shape, dtype.real_dtype))
+            # return tf.complex(self._sample_real(shape, dtype.real_dtype), self._sample_real(shape, dtype.real_dtype))
+            return self._sample_complex(shape, dtype)
         else:
-            return self.sample_real(shape, self.dtype)
+            raise TypeError("dtype must be complex")
     
-    def _sample_real(self, shape, dtype):
-        return tf.random.uniform(shape, minval=-self._max_amplitude, maxval=self._max_amplitude, dtype=dtype)
+    def _sample_complex(self, shape, dtype):
+        """Sample from complex plane with E[|x|^2] = 1]. In this case, we sample from uniform circle.
+        Sample theta and R uniform, r = sqrt(2R)"""
+        r = tf.complex(tf.random.uniform(shape, minval=0, maxval=1, dtype=dtype.real_dtype), 0.0)
+        theta = tf.complex(tf.random.uniform(shape, minval=0, maxval=2*np.pi, dtype=dtype.real_dtype), 0.0)
+        return tf.sqrt(2*r)*tf.exp(1j*theta)
+        # return tf.complex(self._sample_real(shape, dtype), self._sample_real(shape, dtype))

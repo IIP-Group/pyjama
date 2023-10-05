@@ -103,12 +103,12 @@ class Model(tf.keras.Model):
                                       antenna_pattern="38.901",
                                       carrier_frequency=self._carrier_frequency)
 
-        self._jammer_array = AntennaArray(num_rows=1,
-                                          num_cols=jammer_parameters["num_tx_ant"],
-                                          polarization="single",
-                                          polarization_type="V",
-                                          antenna_pattern="omni",
-                                          carrier_frequency=self._carrier_frequency)
+        # self._jammer_array = AntennaArray(num_rows=1,
+        #                                   num_cols=jammer_parameters["num_tx_ant"],
+        #                                   polarization="single",
+        #                                   polarization_type="V",
+        #                                   antenna_pattern="omni",
+        #                                   carrier_frequency=self._carrier_frequency)
 
         # Configure the channel model
         if self._scenario == "umi":
@@ -152,8 +152,8 @@ class Model(tf.keras.Model):
 
         # best setup a new topology etc. For now just experiment with Rayleigh fading
         if self._jammer_present:
-            # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
-            self._jammer_channel_model = self._channel_model.deep_copy()
+            # self._jammer_channel_model = self._channel_model.deep_copy()
+            self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             jammer_ofdm_channel = OFDMChannel(self._jammer_channel_model, self._rg)
             self._jammer = OFDMJammer(jammer_ofdm_channel, **jammer_parameters)
         
@@ -168,6 +168,7 @@ class Model(tf.keras.Model):
 
     def new_jammer_topology(self, batch_size):
         """Set new jammer topology"""
+        return 0
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     @tf.function(jit_compile=False)
