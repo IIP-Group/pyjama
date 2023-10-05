@@ -154,8 +154,7 @@ class Model(tf.keras.Model):
         if self._jammer_present:
             # self._jammer_channel_model = self._channel_model.deep_copy()
             self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
-            jammer_ofdm_channel = OFDMChannel(self._jammer_channel_model, self._rg)
-            self._jammer = OFDMJammer(jammer_ofdm_channel, **jammer_parameters)
+            self._jammer = OFDMJammer(self._jammer, self._rg, **jammer_parameters)
         
     def new_ut_topology(self, batch_size):
         """Set new user topology"""
@@ -208,7 +207,9 @@ ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 jammer_parameters = {
     "num_tx": 1,
     "num_tx_ant": 5,
-    "max_amplitude": 1.0,
+    "jammer_power": 1.0,
+    "normalize_channel": False,
+    "return_channel": False,
 }
 
 ber_plots = PlotBER(f"QPSK BER")
