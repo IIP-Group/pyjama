@@ -149,7 +149,10 @@ class Model(tf.keras.Model):
         # maybe something with a callable that modifies parameters, then creates a new channel model?
         # we could also say either give me a channel model (then I use it as-is), a channel-factory and paramters (then I create a new channel model), etc.
         # another option: We internally know of all channel types, and have different behavior for each type
-        # I'd say we still stay with the layer approach, as here we only have to change channel creation, otherwise u-t calculations etc. on all levels have to be changed
+        # IStill stay with the layer approach?, as here we only have to change channel creation, otherwise u-t calculations etc. on all levels have to be changed
+        # i.e. stream management, possibly classes using ResourceGrid, Topology, etc.
+        # maybe using same channel, just generating symbols to send? But then we e.g. cannot be unnormalized when everyone is normalized etc., + all limitations the channel has (only one type of antenna-array etc) 
+
         # here I just create a new channel model as a caller
         if self._jammer_present:
             jammer_channel_parameters = channel_parameters.copy()
