@@ -154,7 +154,7 @@ class Model(tf.keras.Model):
         if self._jammer_present:
             # self._jammer_channel_model = self._channel_model.deep_copy()
             self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
-            self._jammer = OFDMJammer(self._jammer, self._rg, **jammer_parameters)
+            self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, **jammer_parameters)
         
     def new_ut_topology(self, batch_size):
         """Set new user topology"""
@@ -212,21 +212,59 @@ jammer_parameters = {
     "return_channel": False,
 }
 
-ber_plots = PlotBER(f"QPSK BER")
+# simulate unjammed model
+ber_plots = PlotBER(f"QPSK BER, estimated CSI")
 model = Model("umi", jammer_present=False, perfect_csi=False)
-model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
 ber_plots.simulate(model,
                   ebno_dbs=ebno_dbs,
                   batch_size=BATCH_SIZE,
-                  legend="LMMSE without Jammer, estimated CSI",
+                  legend="LMMSE without Jammer",
                   soft_estimates=True,
                   max_mc_iter=20,
                   show_fig=False);
+
+model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
 ber_plots.simulate(model_with_jammer,
                   ebno_dbs=ebno_dbs,
                   batch_size=BATCH_SIZE,
-                  legend="LMMSE without Jammer, estimated CSI",
+                  legend="LMMSE without Jammer",
                   soft_estimates=True,
                   max_mc_iter=20,
                   show_fig=True);
+
+
+# simulate jammed models with different parameters
+# for num_tx_ant in range(5, 1, -1):
+#   jammer_parameters["num_tx_ant"] = num_tx_ant
+#   model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
+#   ber_plots.simulate(model_with_jammer,
+#                   ebno_dbs=ebno_dbs,
+#                   batch_size=BATCH_SIZE,
+#                   legend=f"LMMSE with Jammer, {num_tx_ant} antennas",
+#                   soft_estimates=True,
+#                   max_mc_iter=20,
+#                   show_fig=False);
+
+# jammer_parameters["num_tx_ant"] = 1
+# for jammer_power in np.arange(1.0, 0.0, -0.2):
+#     jammer_parameters["jammer_power"] = jammer_power
+#     model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
+#     ber_plots.simulate(model_with_jammer,
+#                   ebno_dbs=ebno_dbs,
+#                   batch_size=BATCH_SIZE,
+#                   legend=f"LMMSE with Jammer, 1 antenna, {jammer_power:.1f} power",
+#                   soft_estimates=True,
+#                   max_mc_iter=20,
+#                   show_fig=False);
+# # adjust colors
+# next_color = plt.rcParams['axes.prop_cycle'].by_key()['color'][5]
+# # cycler taking last color, but changing alpha
+# from cycler import cycler, concat
+# already_used_cycler = cycler(color=plt.rcParams['axes.prop_cycle'].by_key()['color'][0:6]) * cycler(alpha=[1.0])
+# new_cycler = (cycler(color=[next_color]) * cycler(alpha=[1.0, 0.8, 0.6, 0.4, 0.2]))
+# new_cycler = concat(already_used_cycler, new_cycler)
+# plt.rcParams['axes.prop_cycle'] = new_cycler
+
+# ber_plots()
+
 # %%
