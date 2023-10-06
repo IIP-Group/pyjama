@@ -52,6 +52,7 @@ class Model(tf.keras.Model):
     def __init__(self, scenario, jammer_present=False, jammer_parameters={}, perfect_csi=False):
         super().__init__()
         self._scenario = scenario
+        self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
         self._jammer_present = jammer_present
 
@@ -103,37 +104,24 @@ class Model(tf.keras.Model):
                                       antenna_pattern="38.901",
                                       carrier_frequency=self._carrier_frequency)
 
-        # self._jammer_array = AntennaArray(num_rows=1,
-        #                                   num_cols=jammer_parameters["num_tx_ant"],
-        #                                   polarization="single",
-        #                                   polarization_type="V",
-        #                                   antenna_pattern="omni",
-        #                                   carrier_frequency=self._carrier_frequency)
-
-        # Configure the channel model
-        if self._scenario == "umi":
-            self._channel_model = UMi(carrier_frequency=self._carrier_frequency,
-                                      o2i_model="low",
-                                      ut_array=self._ut_array,
-                                      bs_array=self._bs_array,
-                                      direction="uplink",
-                                      enable_pathloss=False,
-                                      enable_shadow_fading=False)
-        elif self._scenario == "uma":
-            self._channel_model = UMa(carrier_frequency=self._carrier_frequency,
-                                      o2i_model="low",
-                                      ut_array=self._ut_array,
-                                      bs_array=self._bs_array,
-                                      direction="uplink",
-                                      enable_pathloss=False,
-                                      enable_shadow_fading=False)
-        elif self._scenario == "rma":
-            self._channel_model = RMa(carrier_frequency=self._carrier_frequency,
-                                      ut_array=self._ut_array,
-                                      bs_array=self._bs_array,
-                                      direction="uplink",
-                                      enable_pathloss=False,
-                                      enable_shadow_fading=False)
+        channel_parameters = {
+            "carrier_frequency": self._carrier_frequency,
+            "ut_array": self._ut_array,
+            "bs_array": self._bs_array,
+            "direction": "uplink",
+            "enable_pathloss": False,
+            "enable_shadow_fading": False,
+        }
+        if self._scenario in ["umi", "uma"]:
+            channel_parameters["o2i_model"] = "low"
+        
+        self._channel_model = self._channel_class(**channel_parameters)
+        # if self._scenario == "umi":
+        #     self._channel_model = UMi(**channel_parameters)
+        # elif self._scenario == "uma":
+        #     self._channel_model = UMa(**channel_parameters)
+        # elif self._scenario == "rma":
+        #     self._channel_model = RMa(**channel_parameters)
 
         # Instantiate other building blocks
         self._binary_source = BinarySource()
@@ -151,10 +139,32 @@ class Model(tf.keras.Model):
         self._demapper = Demapper("app", "qam", self._num_bits_per_symbol)
 
         # best setup a new topology etc. For now just experiment with Rayleigh fading
+        # TODO discuss: each jammer needs its own channel model, which is similar, but not the same as the ut-bs-channel
+        # depending on the model, the jammer could change an existing channel, or sometimes has to create a new channel
+        # also depending on the model, different parameters have to be changed
+        # should the caller be responsible for creating the channel model, or should the jammer be responsible for creating it?
+        # the caller could make mistakes, resulting in the model constructing a wrong channel model
+        # if the jammer is responsible, how does it know which parameters to change?
+        # maybe a jammer exists for each type of channel model? Then knowable, but not very flexible.
+        # maybe something with a callable that modifies parameters, then creates a new channel model?
+        # we could also say either give me a channel model (then I use it as-is), a channel-factory and paramters (then I create a new channel model), etc.
+        # another option: We internally know of all channel types, and have different behavior for each type
+        # I'd say we still stay with the layer approach, as here we only have to change channel creation, otherwise u-t calculations etc. on all levels have to be changed
+        # here I just create a new channel model as a caller
         if self._jammer_present:
-            # self._jammer_channel_model = self._channel_model.deep_copy()
-            self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
+            jammer_channel_parameters = channel_parameters.copy()
+            self._jammer_array = AntennaArray(num_rows=1,
+                                        num_cols=jammer_parameters["num_tx_ant"],
+                                        polarization="single",
+                                        polarization_type="V",
+                                        antenna_pattern="omni",
+                                        carrier_frequency=self._carrier_frequency)
+            jammer_channel_parameters["ut_array"] = self._jammer_array
+            self._jammer_channel_model = self._channel_class(**jammer_channel_parameters)
+            self._num_jammers = jammer_parameters["num_tx"]
+            # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, **jammer_parameters)
+        
         
     def new_ut_topology(self, batch_size):
         """Set new user topology"""
@@ -167,7 +177,12 @@ class Model(tf.keras.Model):
 
     def new_jammer_topology(self, batch_size):
         """Set new jammer topology"""
-        return 0
+        topology = gen_single_sector_topology(batch_size,
+                                              self._num_jammers,
+                                              self._scenario,
+                                              min_ut_velocity=0.0,
+                                              max_ut_velocity=0.0)
+        self._jammer_channel_model.set_topology(*topology)
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     @tf.function(jit_compile=False)
@@ -214,14 +229,14 @@ jammer_parameters = {
 
 # simulate unjammed model
 ber_plots = PlotBER(f"QPSK BER, estimated CSI")
-model = Model("umi", jammer_present=False, perfect_csi=False)
-ber_plots.simulate(model,
-                  ebno_dbs=ebno_dbs,
-                  batch_size=BATCH_SIZE,
-                  legend="LMMSE without Jammer",
-                  soft_estimates=True,
-                  max_mc_iter=20,
-                  show_fig=False);
+# model = Model("umi", jammer_present=False, perfect_csi=False)
+# ber_plots.simulate(model,
+#                   ebno_dbs=ebno_dbs,
+#                   batch_size=BATCH_SIZE,
+#                   legend="LMMSE without Jammer",
+#                   soft_estimates=True,
+#                   max_mc_iter=20,
+#                   show_fig=False);
 
 model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
 ber_plots.simulate(model_with_jammer,
