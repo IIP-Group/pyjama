@@ -26,7 +26,7 @@ class OFDMJammer(tf.keras.layers.Layer):
                 self._sample_function = self._sample_complex_gaussian
             else:
                 raise ValueError(f"Unknown sampler {sampler}")
-        elif isinstance(sampler, sionna.constellation.Constellation):
+        elif isinstance(sampler, sionna.mapping.Constellation):
             self._sample_function = self.constellation_to_sampler(sampler)
         else:
             self._sample_function = sampler
@@ -78,13 +78,15 @@ class OFDMJammer(tf.keras.layers.Layer):
         return tf.complex(tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype), tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype))
 
     def _constellation_to_sampler(constellation):
-        """Convert a constellation to a sampler. We do NOT check if constellation power is normalized (this is the responsibility of the caller)."""
+        """Convert a constellation to a sampler. We normalize the constellation so that it is similar to other distributions."""
         binary_source = sionna.utils.BinarySource()
+        _constellation = constellation.copy()
+        _constellation.normalize = True
         def sampler(shape, dtype):
             """Sample from a constellation"""
             # TODO num_bits_per_symbol
-            mapper = sionna.mapping.Mapper(constellation=constellation, dtype=dtype)
-            binary_source_shape = shape[:-1] + [shape[-1] * constellation.num_bits_per_symbol]
+            mapper = sionna.mapping.Mapper(constellation=_constellation, dtype=dtype)
+            binary_source_shape = shape[:-1] + [shape[-1] * _constellation.num_bits_per_symbol]
             bits = binary_source(binary_source_shape)
             return mapper(bits)
             
