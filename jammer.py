@@ -2,6 +2,7 @@ import numpy as np
 import sionna
 from sionna.channel.ofdm_channel import OFDMChannel
 import tensorflow as tf
+import copy
 
 
 class OFDMJammer(tf.keras.layers.Layer):
@@ -21,13 +22,13 @@ class OFDMJammer(tf.keras.layers.Layer):
         # if sampler is string, we use the corresponding function. Otherwise assign the function directly
         if isinstance(sampler, str):
             if sampler == "uniform":
-                self._sample_function = self._sample_complex_uniform_disk
+                self._sample_function = _sample_complex_uniform_disk
             elif sampler == "gaussian":
-                self._sample_function = self._sample_complex_gaussian
+                self._sample_function = _sample_complex_gaussian
             else:
                 raise ValueError(f"Unknown sampler {sampler}")
         elif isinstance(sampler, sionna.mapping.Constellation):
-            self._sample_function = self.constellation_to_sampler(sampler)
+            self._sample_function = _constellation_to_sampler(sampler)
         else:
             self._sample_function = sampler
 
@@ -42,7 +43,8 @@ class OFDMJammer(tf.keras.layers.Layer):
     def call(self, inputs):
         """First argument: unjammed signal. [batch_size, num_rx_ant, num_samples]]"""
         y_unjammed = inputs[0]
-        input_shape = tf.shape(y_unjammed)
+        # input_shape = tf.shape(y_unjammed).as_list()
+        input_shape = y_unjammed.shape.as_list()
 
         jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
         x_jammer = self._jammer_power * self.sample(jammer_input_shape)
@@ -65,29 +67,29 @@ class OFDMJammer(tf.keras.layers.Layer):
         else:
             raise TypeError("dtype must be complex")
     
-    def _sample_complex_uniform_disk(shape, dtype):
-        """Sample from complex plane with E[|x|^2] = 1]. In this case, we sample from uniform circle.
-        Sample theta and R uniform, r = sqrt(2R)"""
-        r = tf.complex(tf.random.uniform(shape, minval=0, maxval=1, dtype=dtype.real_dtype), tf.cast(0.0, dtype.real_dtype))
-        theta = tf.complex(tf.random.uniform(shape, minval=0, maxval=2*np.pi, dtype=dtype.real_dtype), tf.cast(0.0, dtype.real_dtype))
-        return tf.sqrt(2*r)*tf.exp(1j*theta)
+# TODO: move to sampler.utils
+def _sample_complex_uniform_disk(shape, dtype):
+    """Sample from complex plane with E[|x|^2] = 1]. In this case, we sample from uniform circle.
+    Sample theta and R uniform, r = sqrt(2R)"""
+    r = tf.complex(tf.random.uniform(shape, minval=0, maxval=1, dtype=dtype.real_dtype), tf.cast(0.0, dtype.real_dtype))
+    theta = tf.complex(tf.random.uniform(shape, minval=0, maxval=2*np.pi, dtype=dtype.real_dtype), tf.cast(0.0, dtype.real_dtype))
+    return tf.sqrt(2*r)*tf.exp(1j*theta)
 
-    def _sample_complex_gaussian(shape, dtype):
-        """Sample from complex plane with E[|x|^2] = 1]. In this case, we sample from a complex gaussian."""
-        stddev = np.sqrt(0.5)
-        return tf.complex(tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype), tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype))
+def _sample_complex_gaussian(shape, dtype):
+    """Sample from complex plane with E[|x|^2] = 1]. In this case, we sample from a complex gaussian."""
+    stddev = np.sqrt(0.5)
+    return tf.complex(tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype), tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype))
 
-    def _constellation_to_sampler(constellation):
-        """Convert a constellation to a sampler. We normalize the constellation so that it is similar to other distributions."""
-        binary_source = sionna.utils.BinarySource()
-        _constellation = constellation.copy()
-        _constellation.normalize = True
-        def sampler(shape, dtype):
-            """Sample from a constellation"""
-            # TODO num_bits_per_symbol
-            mapper = sionna.mapping.Mapper(constellation=_constellation, dtype=dtype)
-            binary_source_shape = shape[:-1] + [shape[-1] * _constellation.num_bits_per_symbol]
-            bits = binary_source(binary_source_shape)
-            return mapper(bits)
-            
-        return sampler
+def _constellation_to_sampler(constellation):
+    """Convert a constellation to a sampler. We normalize the constellation so that it is similar to other distributions."""
+    binary_source = sionna.utils.BinarySource()
+    _constellation = copy.copy(constellation)
+    _constellation.normalize = True
+    def sampler(shape, dtype):
+        """Sample from a constellation"""
+        mapper = sionna.mapping.Mapper(constellation=_constellation, dtype=dtype)
+        binary_source_shape = shape[:-1] + [shape[-1] * _constellation.num_bits_per_symbol]
+        bits = binary_source(binary_source_shape)
+        return mapper(bits)
+        
+    return sampler

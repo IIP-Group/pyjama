@@ -225,7 +225,7 @@ ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 jammer_parameters = {
     "num_tx": 1,
     "num_tx_ant": 5,
-    "jammer_power": 1.0,
+    "jammer_power": 0.5,
     "normalize_channel": False,
     "return_channel": False,
 }
@@ -241,14 +241,27 @@ ber_plots = PlotBER(f"QPSK BER, estimated CSI")
 #                   max_mc_iter=20,
 #                   show_fig=False);
 
-model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
-ber_plots.simulate(model_with_jammer,
-                  ebno_dbs=ebno_dbs,
-                  batch_size=BATCH_SIZE,
-                  legend="LMMSE without Jammer",
-                  soft_estimates=True,
-                  max_mc_iter=20,
-                  show_fig=True);
+# model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
+# ber_plots.simulate(model_with_jammer,
+#                   ebno_dbs=ebno_dbs,
+#                   batch_size=BATCH_SIZE,
+#                   legend="LMMSE without Jammer",
+#                   soft_estimates=True,
+#                   max_mc_iter=20,
+#                   show_fig=True);
+
+for sampler in [sionna.mapping.Constellation("qam", 2), "gaussian", "uniform", lambda shape, dtype: tf.ones(shape, dtype=dtype)]:
+    jammer_parameters["sampler"] = sampler
+    model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
+    ber_plots.simulate(model_with_jammer,
+                    ebno_dbs=ebno_dbs,
+                    batch_size=BATCH_SIZE,
+                    legend=f"LMMSE with Jammer, {sampler}",
+                    soft_estimates=True,
+                    max_mc_iter=20,
+                    show_fig=False);
+
+ber_plots()
 
 
 # simulate jammed models with different parameters
