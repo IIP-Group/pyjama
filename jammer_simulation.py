@@ -12,6 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
+# tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -180,14 +181,16 @@ class Model(tf.keras.Model):
 
     def new_jammer_topology(self, batch_size):
         """Set new jammer topology"""
-        topology = gen_single_sector_topology(batch_size,
-                                              self._num_jammers,
-                                              self._scenario,
-                                              min_ut_velocity=0.0,
-                                              max_ut_velocity=0.0)
-        self._jammer_channel_model.set_topology(*topology)
+        if self._jammer_present:
+            topology = gen_single_sector_topology(batch_size,
+                                                  self._num_jammers,
+                                                  self._scenario,
+                                                  min_ut_velocity=0.0,
+                                                  max_ut_velocity=0.0)
+            self._jammer_channel_model.set_topology(*topology)
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
+    
     @tf.function(jit_compile=False)
     def call(self, batch_size, ebno_db):
         # for good statistics, we simulate a new topology for each batch.
@@ -232,36 +235,40 @@ jammer_parameters = {
 
 # simulate unjammed model
 ber_plots = PlotBER(f"QPSK BER, estimated CSI")
-# model = Model("umi", jammer_present=False, perfect_csi=False)
-# ber_plots.simulate(model,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend="LMMSE without Jammer",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=False);
+model = Model("umi", jammer_present=False, perfect_csi=False)
+ber_plots.simulate(model,
+                  ebno_dbs=ebno_dbs,
+                  batch_size=BATCH_SIZE,
+                  legend="LMMSE without Jammer",
+                  soft_estimates=True,
+                  max_mc_iter=20,
+                  show_fig=False);
 
-# model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
-# ber_plots.simulate(model_with_jammer,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend="LMMSE without Jammer",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=True);
+model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
+ber_plots.simulate(model_with_jammer,
+                  ebno_dbs=ebno_dbs,
+                  batch_size=BATCH_SIZE,
+                  legend="LMMSE without Jammer",
+                  soft_estimates=True,
+                  max_mc_iter=20,
+                  show_fig=True);
 
-for sampler in [sionna.mapping.Constellation("qam", 2), "gaussian", "uniform", lambda shape, dtype: tf.ones(shape, dtype=dtype)]:
-    jammer_parameters["sampler"] = sampler
-    model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
-    ber_plots.simulate(model_with_jammer,
-                    ebno_dbs=ebno_dbs,
-                    batch_size=BATCH_SIZE,
-                    legend=f"LMMSE with Jammer, {sampler}",
-                    soft_estimates=True,
-                    max_mc_iter=20,
-                    show_fig=False);
 
-ber_plots()
+
+# for sampler in [sionna.mapping.Constellation("qam", 2), "gaussian", "uniform", lambda shape, dtype: tf.ones(shape, dtype=dtype)]:
+#     jammer_parameters["sampler"] = sampler
+#     model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
+#     ber_plots.simulate(model_with_jammer,
+#                     ebno_dbs=ebno_dbs,
+#                     batch_size=BATCH_SIZE,
+#                     legend=f"LMMSE with Jammer, {sampler}",
+#                     soft_estimates=True,
+#                     max_mc_iter=20,
+#                     show_fig=False);
+
+# ber_plots()
+
+
 
 
 # simulate jammed models with different parameters

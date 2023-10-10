@@ -19,6 +19,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._jammer_power = jammer_power
         self._normalize_channel = normalize_channel
         self._return_channel = return_channel
+        self._dtype_as_dtype = tf.as_dtype(self.dtype)
         # if sampler is string, we use the corresponding function. Otherwise assign the function directly
         if isinstance(sampler, str):
             if sampler == "uniform":
@@ -28,7 +29,7 @@ class OFDMJammer(tf.keras.layers.Layer):
             else:
                 raise ValueError(f"Unknown sampler {sampler}")
         elif isinstance(sampler, sionna.mapping.Constellation):
-            self._sample_function = _constellation_to_sampler(sampler)
+            self._sample_function = _constellation_to_sampler(sampler, dtype=self._dtype_as_dtype)
         else:
             self._sample_function = sampler
 
@@ -38,13 +39,13 @@ class OFDMJammer(tf.keras.layers.Layer):
                                          add_awgn=False, # noise is already added in the ut-bs-channel
                                          normalize_channel=self._normalize_channel,
                                          return_channel=self._return_channel,
-                                         dtype=tf.as_dtype(self.dtype))
+                                         dtype=self._dtype_as_dtype)
         
     def call(self, inputs):
         """First argument: unjammed signal. [batch_size, num_rx_ant, num_samples]]"""
         y_unjammed = inputs[0]
-        # input_shape = tf.shape(y_unjammed).as_list()
-        input_shape = y_unjammed.shape.as_list()
+        # input_shape = y_unjammed.shape.as_list()
+        input_shape = tf.shape(y_unjammed)
 
         jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
         x_jammer = self._jammer_power * self.sample(jammer_input_shape)
@@ -60,14 +61,13 @@ class OFDMJammer(tf.keras.layers.Layer):
             return y_combined
     
     def sample(self, shape):
-        # sample from a unit disk in the complex plane with E[|x|^2] = 1
-        dtype = tf.dtypes.as_dtype(self.dtype)
-        if dtype.is_complex:
-            return self._sample_function(shape, dtype)
+        
+        if self._dtype_as_dtype.is_complex:
+            return self._sample_function(shape, self._dtype_as_dtype)
         else:
             raise TypeError("dtype must be complex")
     
-# TODO: move to sampler.utils
+# TODO: move to jammer.utils
 def _sample_complex_uniform_disk(shape, dtype):
     """Sample from complex plane with E[|x|^2] = 1]. In this case, we sample from uniform circle.
     Sample theta and R uniform, r = sqrt(2R)"""
@@ -80,14 +80,15 @@ def _sample_complex_gaussian(shape, dtype):
     stddev = np.sqrt(0.5)
     return tf.complex(tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype), tf.random.normal(shape, stddev=stddev, dtype=dtype.real_dtype))
 
-def _constellation_to_sampler(constellation):
+def _constellation_to_sampler(constellation, dtype):
     """Convert a constellation to a sampler. We normalize the constellation so that it is similar to other distributions."""
     binary_source = sionna.utils.BinarySource()
     _constellation = copy.copy(constellation)
     _constellation.normalize = True
+    mapper = sionna.mapping.Mapper(constellation=_constellation, dtype=dtype)
     def sampler(shape, dtype):
         """Sample from a constellation"""
-        mapper = sionna.mapping.Mapper(constellation=_constellation, dtype=dtype)
+        assert dtype == mapper.dtype
         binary_source_shape = shape[:-1] + [shape[-1] * _constellation.num_bits_per_symbol]
         bits = binary_source(binary_source_shape)
         return mapper(bits)
