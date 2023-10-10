@@ -37,7 +37,8 @@ from sionna.mapping import Mapper, Demapper
 from sionna.utils import BinarySource, ebnodb2no, sim_ber, plot_ber, QAMSource, PlotBER
 from sionna.utils.metrics import compute_ber
 
-from jammer import OFDMJammer
+# from jammer import OFDMJammer
+from jammer.jammer import OFDMJammer
 
 # sionna.channel.GenerateOFDMChannel
 # sionna.channel.FlatFadingChannel
