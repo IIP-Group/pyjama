@@ -56,6 +56,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         # in frequency domain we can just add the jammer signal
         y_combined = y_unjammed + y_jammer
         if self._return_channel:
+            # TODO should we scale h_freq_jammer by jammer_power?
             return y_combined, h_freq_jammer
         else:
             return y_combined
