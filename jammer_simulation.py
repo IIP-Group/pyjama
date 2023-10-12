@@ -172,6 +172,9 @@ class Model(tf.keras.Model):
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._perfect_csi and self._jammer_mitigation, **jammer_parameters)
         
+        if self._jammer_mitigation == "pos":
+            self._pos = POS.OrthogonalSubspaceProjector()
+        
         
     def new_ut_topology(self, batch_size):
         """Set new user topology"""
@@ -194,7 +197,7 @@ class Model(tf.keras.Model):
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     
-    # @tf.function(jit_compile=False)
+    @tf.function(jit_compile=False)
     def call(self, batch_size, ebno_db):
         # for good statistics, we simulate a new topology for each batch.
         self.new_ut_topology(batch_size)
@@ -206,17 +209,26 @@ class Model(tf.keras.Model):
         x = tf.reshape(x, [-1, self._num_tx, self._num_streams_per_tx, self._rg.num_data_symbols])
         x_rg = self._rg_mapper(x)
         y, h = self._ofdm_channel([x_rg, no])
-        j = None
         if self._jammer_present:
             if self._jammer_mitigation and self._perfect_csi:
                 y, j = self._jammer([y])
             else:
                 y = self._jammer([y])
+                # TODO restructure (if/else more logical, j estimation)
+                # TODO estimate jammer channel
+            if self._jammer_mitigation == "pos":
+                self._pos.set_jammer(j)
+                # we transform y before channel estimation to get correct no_eff automically
+                # but hence we have to transform h with perfect_csi=True, but not false
+                # we could alternatively transform y and h after channel estimation, but then we have to transform no_eff
+                y = self._pos(y)
         if self._perfect_csi:
             h_hat = self._remove_nulled_subcarriers(h)
+            if self._jammer_mitigation == "pos":
+                h_hat = self._pos(h_hat)
             err_var = 0.0
         else:
-            h_hat, err_var = self._ls_est ([y, no])
+            h_hat, err_var = self._ls_est([y, no])
         x_hat, no_eff = self._lmmse_equ([y, h_hat, err_var, no])
         llr = self._demapper([x_hat, no_eff])
         llr = tf.reshape(llr, [batch_size, -1])
@@ -234,36 +246,36 @@ ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 
 jammer_parameters = {
     "num_tx": 1,
-    "num_tx_ant": 5,
-    "jammer_power": 0.5,
+    "num_tx_ant": 2,
+    "jammer_power": 1,
     "normalize_channel": False,
 }
 
 # simulate unjammed model
 ber_plots = PlotBER(f"QPSK BER, perfect CSI")
-# model = Model("umi", jammer_present=False, perfect_csi=True)
-# ber_plots.simulate(model,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend="LMMSE without Jammer",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=False);
+model = Model("umi", jammer_present=False, perfect_csi=True)
+ber_plots.simulate(model,
+                  ebno_dbs=ebno_dbs,
+                  batch_size=BATCH_SIZE,
+                  legend="LMMSE without Jammer",
+                  soft_estimates=True,
+                  max_mc_iter=20,
+                  show_fig=False);
 
-# model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=True)
-# ber_plots.simulate(model_with_jammer,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend="LMMSE without Jammer",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=True);
+model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=True)
+ber_plots.simulate(model_with_jammer,
+                  ebno_dbs=ebno_dbs,
+                  batch_size=BATCH_SIZE,
+                  legend="LMMSE with Jammer (1 Ant, 1.0 Power)",
+                  soft_estimates=True,
+                  max_mc_iter=20,
+                  show_fig=False);
 
 model_with_jammer_mitigation = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, jammer_mitigation="pos", perfect_csi=True)
 ber_plots.simulate(model_with_jammer_mitigation,
                   ebno_dbs=ebno_dbs,
                   batch_size=BATCH_SIZE,
-                  legend="LMMSE without Jammer",
+                  legend="LMMSE with Jammer, POS",
                   soft_estimates=True,
                   max_mc_iter=20,
                   show_fig=True);
@@ -317,6 +329,6 @@ ber_plots.simulate(model_with_jammer_mitigation,
 # new_cycler = concat(already_used_cycler, new_cycler)
 # plt.rcParams['axes.prop_cycle'] = new_cycler
 
-# ber_plots()
+ber_plots()
 
 # %%
