@@ -39,13 +39,7 @@ from sionna.utils.metrics import compute_ber
 
 # from jammer import OFDMJammer
 from jammer.jammer import OFDMJammer
-from jammer.mitigation import POS
-
-# sionna.channel.GenerateOFDMChannel
-# sionna.channel.FlatFadingChannel
-# sionna.channel.RayleighBlockFading
-# sionna.channel.ApplyOFDMChannel
-# sionna.mimo.lmmse_equalizer
+from jammer.mitigation import POS, IAN
 
 
 # sionna.config.xla_compat=True
@@ -139,10 +133,12 @@ class Model(tf.keras.Model):
 
         self._remove_nulled_subcarriers = RemoveNulledSubcarriers(self._rg)
         self._ls_est = LSChannelEstimator(self._rg, interpolation_type="nn")
-        self._lmmse_equ = LMMSEEqualizer(self._rg, self._sm)
+        if self._jammer_mitigation == "ian":
+            self._lmmse_equ = IAN.IanLMMSEEqualizer(self._rg, self._sm)
+        else:
+            self._lmmse_equ = LMMSEEqualizer(self._rg, self._sm)
         self._demapper = Demapper("app", "qam", self._num_bits_per_symbol)
 
-        # best setup a new topology etc. For now just experiment with Rayleigh fading
         # TODO discuss: each jammer needs its own channel model, which is similar, but not the same as the ut-bs-channel
         # depending on the model, the jammer could change an existing channel, or sometimes has to create a new channel
         # also depending on the model, different parameters have to be changed
@@ -253,25 +249,25 @@ jammer_parameters = {
 
 # simulate unjammed model
 ber_plots = PlotBER(f"QPSK BER, perfect CSI")
-model = Model("umi", jammer_present=False, perfect_csi=True)
-ber_plots.simulate(model,
-                  ebno_dbs=ebno_dbs,
-                  batch_size=BATCH_SIZE,
-                  legend="LMMSE without Jammer",
-                  soft_estimates=True,
-                  max_mc_iter=20,
-                  show_fig=False);
+# model = Model("umi", jammer_present=False, perfect_csi=True)
+# ber_plots.simulate(model,
+#                   ebno_dbs=ebno_dbs,
+#                   batch_size=BATCH_SIZE,
+#                   legend="LMMSE without Jammer",
+#                   soft_estimates=True,
+#                   max_mc_iter=20,
+#                   show_fig=False);
 
-model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=True)
-ber_plots.simulate(model_with_jammer,
-                  ebno_dbs=ebno_dbs,
-                  batch_size=BATCH_SIZE,
-                  legend="LMMSE with Jammer (1 Ant, 1.0 Power)",
-                  soft_estimates=True,
-                  max_mc_iter=20,
-                  show_fig=False);
+# model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=True)
+# ber_plots.simulate(model_with_jammer,
+#                   ebno_dbs=ebno_dbs,
+#                   batch_size=BATCH_SIZE,
+#                   legend="LMMSE with Jammer (1 Ant, 1.0 Power)",
+#                   soft_estimates=True,
+#                   max_mc_iter=20,
+#                   show_fig=False);
 
-model_with_jammer_mitigation = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, jammer_mitigation="pos", perfect_csi=True)
+model_with_jammer_mitigation = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, jammer_mitigation="ian", perfect_csi=True)
 ber_plots.simulate(model_with_jammer_mitigation,
                   ebno_dbs=ebno_dbs,
                   batch_size=BATCH_SIZE,

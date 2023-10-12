@@ -42,7 +42,7 @@ class OFDMJammer(tf.keras.layers.Layer):
                                          dtype=self._dtype_as_dtype)
         
     def call(self, inputs):
-        """First argument: unjammed signal. [batch_size, num_rx_ant, num_samples]]"""
+        """First argument: unjammed signal. [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]"""
         y_unjammed = inputs[0]
         # input_shape = y_unjammed.shape.as_list()
         input_shape = tf.shape(y_unjammed)
