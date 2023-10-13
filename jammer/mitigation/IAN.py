@@ -27,6 +27,7 @@ class IanLMMSEEqualizer(OFDMEqualizer):
                          stream_management=stream_management,
                          dtype=dtype, **kwargs)
 
-    def set_jammer_channel_response(self, jammer_channel_response):
-        """Set the jammer channel frequency response. This is used to compute the jammer covariance matrix"""
-        self.jammer_covariance = tf.matmul(jammer_channel_response, jammer_channel_response, adjoint_b=True)
+    def set_covariance_matrix_from_jammer_frequency_response(self, h_freq, jammer_variance):
+        """Set the jammer covariance matrix from the frequency response of the jammer channel.
+        h_freq: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size], tf.complex
+        """

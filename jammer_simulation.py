@@ -249,8 +249,19 @@ EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
+ber_plots = PlotBER("")
 
-jammer_init_parameters = {
+def simulate(legend): 
+    model = Model(**model_parameters)
+    ber_plots.simulate(model,
+                    ebno_dbs=ebno_dbs,
+                    batch_size=BATCH_SIZE,
+                    legend=legend,
+                    soft_estimates=True,
+                    max_mc_iter=20,
+                    show_fig=False)
+
+jammer_parameters = {
     "num_tx": 1,
     "num_tx_ant": 2,
     "normalize_channel": True,
@@ -262,80 +273,40 @@ model_parameters = {
     "jammer_present": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
-    "jammer_parameters": jammer_init_parameters,
+    "jammer_parameters": jammer_parameters,
 }
 
-# simulate unjammed model
-ber_plots = PlotBER(f"QPSK BER, perfect CSI")
-model = Model(**model_parameters)
-ber_plots.simulate(model,
-                  ebno_dbs=ebno_dbs,
-                  batch_size=BATCH_SIZE,
-                  legend="LMMSE without Jammer",
-                  soft_estimates=True,
-                  max_mc_iter=20,
-                  show_fig=False);
+simulate("LMMSE without Jammer")
 
 model_parameters["jammer_present"] = True
-model_with_jammer = Model(**model_parameters)
-ber_plots.simulate(model_with_jammer,
-                  ebno_dbs=ebno_dbs,
-                  batch_size=BATCH_SIZE,
-                  legend="LMMSE with Jammer (1 Ant, 1.0 Power)",
-                  soft_estimates=True,
-                  max_mc_iter=20,
-                  show_fig=False);
+simulate("LMMSE with Jammer")
 
+model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
-model_with_jammer_mitigation = Model(**model_parameters)
-ber_plots.simulate(model_with_jammer_mitigation,
-                  ebno_dbs=ebno_dbs,
-                  batch_size=BATCH_SIZE,
-                  legend="LMMSE with Jammer, POS",
-                  soft_estimates=True,
-                  max_mc_iter=20,
-                  show_fig=True);
+simulate("LMMSE with Jammer, POS")
+
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "ian"
+simulate("LMMSE with Jammer, IAN")
 
 
-
-# simulate jammers with different samplers
+# # simulate jammers with different samplers
 # for sampler in [sionna.mapping.Constellation("qam", 2), "gaussian", "uniform", lambda shape, dtype: tf.ones(shape, dtype=dtype)]:
 #     jammer_parameters["sampler"] = sampler
-#     model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
-#     ber_plots.simulate(model_with_jammer,
-#                     ebno_dbs=ebno_dbs,
-#                     batch_size=BATCH_SIZE,
-#                     legend=f"LMMSE with Jammer, {sampler}",
-#                     soft_estimates=True,
-#                     max_mc_iter=20,
-#                     show_fig=False);
-
-# ber_plots()
+#     simulate(f"LMMSE with Jammer, {sampler}")
 
 
-# simulate jammed models with different parameters (strength and number of antennas)
+# # simulate jammed models with different parameters (strength and number of antennas)
+# model_parameters["jammer_present"] = True
 # for num_tx_ant in range(5, 1, -1):
 #   jammer_parameters["num_tx_ant"] = num_tx_ant
-#   model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
-#   ber_plots.simulate(model_with_jammer,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend=f"LMMSE with Jammer, {num_tx_ant} antennas",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=False);
+#   simulate(f"LMMSE with Jammer, {num_tx_ant} antennas")
 
 # jammer_parameters["num_tx_ant"] = 1
 # for jammer_power in np.arange(1.0, 0.0, -0.2):
-#     jammer_parameters["jammer_power"] = jammer_power
-#     model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=False)
-#     ber_plots.simulate(model_with_jammer,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend=f"LMMSE with Jammer, 1 antenna, {jammer_power:.1f} power",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=False);
+#     model_parameters["jammer_power"] = jammer_power
+#     simulate(f"LMMSE with Jammer, {jammer_power} power")
+
 # # adjust colors
 # next_color = plt.rcParams['axes.prop_cycle'].by_key()['color'][5]
 # # cycler taking last color, but changing alpha
@@ -345,6 +316,9 @@ ber_plots.simulate(model_with_jammer_mitigation,
 # new_cycler = concat(already_used_cycler, new_cycler)
 # plt.rcParams['axes.prop_cycle'] = new_cycler
 
-# ber_plots()
+
+
+
+ber_plots()
 
 # %%
