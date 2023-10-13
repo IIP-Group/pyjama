@@ -46,13 +46,14 @@ from jammer.mitigation import POS, IAN
 class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
-    def __init__(self, scenario, jammer_present=False, jammer_parameters={}, jammer_mitigation=None, perfect_csi=False):
+    def __init__(self, scenario, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None, perfect_csi=False):
         super().__init__()
         self._scenario = scenario
         self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
+        self._jammer_power = jammer_power
 
         # Internally set parameters
         self._carrier_frequency = 3.5e9
@@ -164,7 +165,8 @@ class Model(tf.keras.Model):
                                         carrier_frequency=self._carrier_frequency)
             jammer_channel_parameters["ut_array"] = self._jammer_array
             self._jammer_channel_model = self._channel_class(**jammer_channel_parameters)
-            self._num_jammers = jammer_parameters["num_tx"]
+            self._num_jammer = jammer_parameters["num_tx"]
+            self._num_jammer_ant = jammer_parameters["num_tx_ant"]
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._perfect_csi and self._jammer_mitigation, **jammer_parameters)
         
@@ -185,11 +187,18 @@ class Model(tf.keras.Model):
         """Set new jammer topology"""
         if self._jammer_present:
             topology = gen_single_sector_topology(batch_size,
-                                                  self._num_jammers,
+                                                  self._num_jammer,
                                                   self._scenario,
                                                   min_ut_velocity=0.0,
                                                   max_ut_velocity=0.0)
             self._jammer_channel_model.set_topology(*topology)
+
+    def jammer_variance(self, batch_size, dtype=tf.complex64):
+        """Overwrite to change variance of jammer signal before channel.
+        Output: rho: [batch_size, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size]
+        """
+        shape = [batch_size, self._num_jammer, self._num_jammer_ant, self._num_ofdm_symbols, self._fft_size]
+        return self._jammer_power * tf.ones(shape, dtype=tf.as_dtype(dtype))
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     
@@ -206,10 +215,11 @@ class Model(tf.keras.Model):
         x_rg = self._rg_mapper(x)
         y, h = self._ofdm_channel([x_rg, no])
         if self._jammer_present:
+            jammer_variance = self.jammer_variance(batch_size, dtype=y.dtype)
             if self._jammer_mitigation and self._perfect_csi:
-                y, j = self._jammer([y])
+                y, j = self._jammer([y, jammer_variance])
             else:
-                y = self._jammer([y])
+                y = self._jammer([y, jammer_variance])
                 # TODO restructure (if/else more logical, j estimation)
                 # TODO estimate jammer channel
             if self._jammer_mitigation == "pos":
@@ -240,34 +250,44 @@ EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 
-jammer_parameters = {
+jammer_init_parameters = {
     "num_tx": 1,
     "num_tx_ant": 2,
-    "jammer_power": 1,
-    "normalize_channel": False,
+    "normalize_channel": True,
+}
+
+model_parameters = {
+    "scenario": "umi",
+    "perfect_csi": True,
+    "jammer_present": False,
+    "jammer_mitigation": None,
+    "jammer_power": 1.0,
+    "jammer_parameters": jammer_init_parameters,
 }
 
 # simulate unjammed model
 ber_plots = PlotBER(f"QPSK BER, perfect CSI")
-# model = Model("umi", jammer_present=False, perfect_csi=True)
-# ber_plots.simulate(model,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend="LMMSE without Jammer",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=False);
+model = Model(**model_parameters)
+ber_plots.simulate(model,
+                  ebno_dbs=ebno_dbs,
+                  batch_size=BATCH_SIZE,
+                  legend="LMMSE without Jammer",
+                  soft_estimates=True,
+                  max_mc_iter=20,
+                  show_fig=False);
 
-# model_with_jammer = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, perfect_csi=True)
-# ber_plots.simulate(model_with_jammer,
-#                   ebno_dbs=ebno_dbs,
-#                   batch_size=BATCH_SIZE,
-#                   legend="LMMSE with Jammer (1 Ant, 1.0 Power)",
-#                   soft_estimates=True,
-#                   max_mc_iter=20,
-#                   show_fig=False);
+model_parameters["jammer_present"] = True
+model_with_jammer = Model(**model_parameters)
+ber_plots.simulate(model_with_jammer,
+                  ebno_dbs=ebno_dbs,
+                  batch_size=BATCH_SIZE,
+                  legend="LMMSE with Jammer (1 Ant, 1.0 Power)",
+                  soft_estimates=True,
+                  max_mc_iter=20,
+                  show_fig=False);
 
-model_with_jammer_mitigation = Model("umi", jammer_present=True, jammer_parameters=jammer_parameters, jammer_mitigation="ian", perfect_csi=True)
+model_parameters["jammer_mitigation"] = "pos"
+model_with_jammer_mitigation = Model(**model_parameters)
 ber_plots.simulate(model_with_jammer_mitigation,
                   ebno_dbs=ebno_dbs,
                   batch_size=BATCH_SIZE,
@@ -325,6 +345,6 @@ ber_plots.simulate(model_with_jammer_mitigation,
 # new_cycler = concat(already_used_cycler, new_cycler)
 # plt.rcParams['axes.prop_cycle'] = new_cycler
 
-ber_plots()
+# ber_plots()
 
 # %%
