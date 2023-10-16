@@ -228,6 +228,8 @@ class Model(tf.keras.Model):
                 # but hence we have to transform h with perfect_csi=True, but not false
                 # we could alternatively transform y and h after channel estimation, but then we have to transform no_eff
                 y = self._pos(y)
+            elif self._jammer_mitigation == "ian":
+                self._lmmse_equ.set_covariance_matrix_from_jammer_frequency_response(j, jammer_variance)
         if self._perfect_csi:
             h_hat = self._remove_nulled_subcarriers(h)
             if self._jammer_mitigation == "pos":
@@ -272,7 +274,7 @@ model_parameters = {
     "perfect_csi": True,
     "jammer_present": False,
     "jammer_mitigation": None,
-    "jammer_power": 1.0,
+    "jammer_power": 8.0,
     "jammer_parameters": jammer_parameters,
 }
 
