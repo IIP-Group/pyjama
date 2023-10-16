@@ -274,7 +274,7 @@ model_parameters = {
     "perfect_csi": True,
     "jammer_present": False,
     "jammer_mitigation": None,
-    "jammer_power": 8.0,
+    "jammer_power": 1.0,
     "jammer_parameters": jammer_parameters,
 }
 
