@@ -229,7 +229,7 @@ class Model(tf.keras.Model):
                 # we could alternatively transform y and h after channel estimation, but then we have to transform no_eff
                 y = self._pos(y)
             elif self._jammer_mitigation == "ian":
-                self._lmmse_equ.set_covariance_matrix_from_jammer_frequency_response(j, jammer_variance)
+                self._lmmse_equ.set_jammer(j, jammer_variance)
         if self._perfect_csi:
             h_hat = self._remove_nulled_subcarriers(h)
             if self._jammer_mitigation == "pos":
