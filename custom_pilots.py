@@ -60,10 +60,13 @@ class OneHotWithSilencePilotPattern(PilotPattern):
         mask[:, :, :num_silence_symbols + num_streams, :] = True
         pilots = tf.zeros(shape[:2] + [num_streams], dtype=dtype)
 
-        # TODO: PilotPattern does not accept empty pilots. Find solution compatible with Estimators.
+        # TODO: PilotPattern does not accept empty pilots. Find solution compatible with Channel Estimators.
+        # TODO: decision: use zero symbols when quiet. Is compatible with Mappers and ODFM channel. Check if compatible with Channel Estimators.
+        # TODO: check 5G NR standard for pilot pattern with silence. There, they also use zero symbols.
         super().__init__(mask, pilots, trainable=False, normalize=False,
                          dtype=dtype)
 
 pp = OneHotWithSilencePilotPattern(3, 1, 14, 12, 2)
 pp.show(show_pilot_ind=True)
-
+sionna.nr.pusch_pilot_pattern
+sionna.nr.pusch_receiver
