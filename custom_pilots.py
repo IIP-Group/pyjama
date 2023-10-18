@@ -26,7 +26,7 @@ class OneHotWithSilencePilotPattern(PilotPattern):
         due to nulled subcarriers.
 
     num_silence_symbols : int
-        Number of silence symbols after the pilots.
+        Number of silence symbols before the pilots.
 
     dtype : tf.Dtype
         Defines the datatype for internal calculations and the output
@@ -48,25 +48,31 @@ class OneHotWithSilencePilotPattern(PilotPattern):
             "`num_ofdm_symbols` must be positive`."
         assert num_effective_subcarriers > 0, \
             "`num_effective_subcarriers` must be positive`."
-        assert num_ofdm_symbols >= num_silence_symbols + num_tx*num_streams_per_tx, \
-            "`num_ofdm_symbols` must be greater or equal to `num_tx`*`num_streams_per_tx`."
         assert num_silence_symbols >= 0, \
             "`num_silence_symbols` must be positive or zero`."
 
         shape = [num_tx, num_streams_per_tx, num_ofdm_symbols,
                       num_effective_subcarriers]
         num_streams = num_streams_per_tx * num_tx
+        num_pilots = num_streams + num_silence_symbols
         mask = np.zeros(shape, dtype=bool)
-        mask[:, :, :num_silence_symbols + num_streams, :] = True
-        pilots = tf.zeros(shape[:2] + [num_streams], dtype=dtype)
+        mask[:, :, :num_pilots, :] = True
+        # we just use symbols 1+0j as pilots, but could also e.g. sample from constellation
+        pilots = tf.concat(
+            [tf.zeros(shape[:2] + [num_silence_symbols * num_effective_subcarriers], dtype=dtype),
+             tf.ones(shape[:2] + [num_streams * num_effective_subcarriers], dtype=dtype)], axis=-1)
+        print(pilots.shape)
+        #tf.zeros(shape[:2] + [num_], dtype=dtype)
 
-        # TODO: PilotPattern does not accept empty pilots. Find solution compatible with Channel Estimators.
-        # TODO: decision: use zero symbols when quiet. Is compatible with Mappers and ODFM channel. Check if compatible with Channel Estimators.
+        # empty pilots are modeled as zero symbols (masks are still 1 at these positions)
+        # this is compatiple with OFDM channel and ResourceGrid(De)Mapper.
+        # TODO check if compatible with channel estimators. It is at least with the LS estimator.
+        # TODO Interpolators are a possible problem. Check all interpolators.
         # TODO: check 5G NR standard for pilot pattern with silence. There, they also use zero symbols.
         super().__init__(mask, pilots, trainable=False, normalize=False,
                          dtype=dtype)
 
-pp = OneHotWithSilencePilotPattern(3, 1, 14, 12, 2)
-pp.show(show_pilot_ind=True)
-sionna.nr.pusch_pilot_pattern
-sionna.nr.pusch_receiver
+# pp = OneHotWithSilencePilotPattern(3, 1, 14, 12, 2)
+# pp.show(show_pilot_ind=True)
+
+# %%
