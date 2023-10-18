@@ -22,6 +22,9 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
 
         self._proj = tf.eye(jammer_shape[1] * jammer_shape[2], dtype=self.dtype) - tf.matmul(j, sionna.utils.matrix_pinv(j))
 
+    def set_jammer_covariance(self, jammer_covariance):
+        raise NotImplementedError("Not implemented yet")
+
 
     def call(self, inputs):
         """

@@ -47,14 +47,18 @@ from custom_pilots import OneHotWithSilencePilotPattern
 class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
-    def __init__(self, scenario, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None, perfect_csi=False):
+    def __init__(self, scenario, perfect_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None):
         super().__init__()
         self._scenario = scenario
         self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
+        self._num_silent_pilot_symbols = num_silent_pilot_symbols
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
         self._jammer_power = jammer_power
+        self._return_jammer_csi = perfect_csi and jammer_mitigation
+        self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_csi
+        
 
         # Internally set parameters
         self._carrier_frequency = 3.5e9
@@ -62,7 +66,7 @@ class Model(tf.keras.Model):
         self._subcarrier_spacing = 30e3
         self._num_ofdm_symbols = 14
         self._cyclic_prefix_length = 20
-        self._pilot_ofdm_symbol_indices = [2, 11]
+        # self._pilot_ofdm_symbol_indices = [2, 11]
         self._num_bs_ant = 8
         self._num_ut = 4
         self._num_ut_ant = 1
@@ -76,7 +80,7 @@ class Model(tf.keras.Model):
 
 
         # Setup an OFDM Resource Grid
-        pilot_pattern = OneHotWithSilencePilotPattern(self._num_tx, self._num_streams_per_tx, self._num_ofdm_symbols, self._fft_size, 2)
+        pilot_pattern = OneHotWithSilencePilotPattern(self._num_tx, self._num_streams_per_tx, self._num_ofdm_symbols, self._fft_size, self._num_silent_pilot_symbols)
         self._rg = ResourceGrid(num_ofdm_symbols=self._num_ofdm_symbols,
                                 fft_size=self._fft_size,
                                 subcarrier_spacing=self._subcarrier_spacing,
@@ -118,12 +122,6 @@ class Model(tf.keras.Model):
             channel_parameters["o2i_model"] = "low"
         
         self._channel_model = self._channel_class(**channel_parameters)
-        # if self._scenario == "umi":
-        #     self._channel_model = UMi(**channel_parameters)
-        # elif self._scenario == "uma":
-        #     self._channel_model = UMa(**channel_parameters)
-        # elif self._scenario == "rma":
-        #     self._channel_model = RMa(**channel_parameters)
 
         # Instantiate other building blocks
         self._binary_source = BinarySource()
@@ -171,7 +169,7 @@ class Model(tf.keras.Model):
             self._num_jammer = jammer_parameters["num_tx"]
             self._num_jammer_ant = jammer_parameters["num_tx_ant"]
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
-            self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._perfect_csi and self._jammer_mitigation, **jammer_parameters)
+            self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
         
         if self._jammer_mitigation == "pos":
             self._pos = POS.OrthogonalSubspaceProjector()
@@ -219,20 +217,27 @@ class Model(tf.keras.Model):
         y, h = self._ofdm_channel([x_rg, no])
         if self._jammer_present:
             jammer_variance = self.jammer_variance(batch_size, dtype=y.dtype)
-            if self._jammer_mitigation and self._perfect_csi:
+            if self._return_jammer_csi:
                 y, j = self._jammer([y, jammer_variance])
             else:
                 y = self._jammer([y, jammer_variance])
-                # TODO restructure (if/else more logical, j estimation)
-                # TODO estimate jammer channel
+            if self._estimate_jammer_covariance:
+                jammer_covariance = 0.0
+                raise NotImplementedError("TODO: estimate jammer covariance")
             if self._jammer_mitigation == "pos":
-                self._pos.set_jammer(j)
+                if self._return_jammer_csi:
+                    self._pos.set_jammer(j)
+                else:
+                    self._pos.set_jammer_covariance(jammer_covariance)
                 # we transform y before channel estimation to get correct no_eff automically
                 # but hence we have to transform h with perfect_csi=True, but not false
                 # we could alternatively transform y and h after channel estimation, but then we have to transform no_eff
                 y = self._pos(y)
             elif self._jammer_mitigation == "ian":
-                self._lmmse_equ.set_jammer(j, jammer_variance)
+                if self._return_jammer_csi:
+                    self._lmmse_equ.set_jammer(j, jammer_variance)
+                else:
+                    self._lmmse_equ.set_jammer_covariance(jammer_covariance)
         if self._perfect_csi:
             h_hat = self._remove_nulled_subcarriers(h)
             if self._jammer_mitigation == "pos":
@@ -274,7 +279,8 @@ jammer_parameters = {
 
 model_parameters = {
     "scenario": "umi",
-    "perfect_csi": False,
+    "perfect_csi": True,
+    "num_silent_pilot_symbols": 0,
     "jammer_present": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
@@ -283,16 +289,16 @@ model_parameters = {
 
 simulate("LMMSE without Jammer")
 
-# model_parameters["jammer_present"] = True
-# simulate("LMMSE with Jammer")
+model_parameters["jammer_present"] = True
+simulate("LMMSE with Jammer")
 
-# model_parameters["jammer_present"] = True
-# model_parameters["jammer_mitigation"] = "pos"
-# simulate("LMMSE with Jammer, POS")
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "pos"
+simulate("LMMSE with Jammer, POS")
 
-# model_parameters["jammer_present"] = True
-# model_parameters["jammer_mitigation"] = "ian"
-# simulate("LMMSE with Jammer, IAN")
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "ian"
+simulate("LMMSE with Jammer, IAN")
 
 
 # # simulate jammers with different samplers
