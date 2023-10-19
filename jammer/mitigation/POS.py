@@ -8,8 +8,6 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
     def __init__(self, dtype=tf.complex64, **kwargs):
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         
-        
-    # TODO this assumes information is shared between receivers. Normally not the case: Fix this
     def set_jammer(self, j):
         """
         j: ([batch_size, num_rx, num_rx_ant, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], tf.complex)
@@ -24,7 +22,12 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
         self._proj = tf.eye(jammer_shape[2], dtype=self.dtype) - tf.matmul(j, sionna.utils.matrix_pinv(j))
 
     def set_jammer_covariance(self, jammer_covariance):
-        raise NotImplementedError("Not implemented yet")
+        """
+        jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]
+        """
+        # TODO scale covariance matrix
+        num_rx_ant = tf.shape(jammer_covariance)[-1]
+        self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - jammer_covariance
 
 
     def call(self, inputs):

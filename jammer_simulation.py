@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
+tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,10 +37,10 @@ from sionna.mapping import Mapper, Demapper
 from sionna.utils import BinarySource, ebnodb2no, sim_ber, plot_ber, QAMSource, PlotBER
 from sionna.utils.metrics import compute_ber
 
-# from jammer import OFDMJammer
 from jammer.jammer import OFDMJammer
 from jammer.mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
+from jammer.utils import covariance_estimation_from_signals
 
 
 # sionna.config.xla_compat=True
@@ -53,7 +53,7 @@ class Model(tf.keras.Model):
         self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
         self._num_silent_pilot_symbols = num_silent_pilot_symbols
-        self._silent_pilot_symbol_indices = np.arange(num_silent_pilot_symbols)
+        self._silent_pilot_symbol_indices = tf.range(self._num_silent_pilot_symbols)
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
         self._jammer_power = jammer_power
@@ -228,8 +228,10 @@ class Model(tf.keras.Model):
                 y = self._jammer([y, jammer_variance])
             if self._estimate_jammer_covariance:
                 # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
-                jammer_covariance = 0.0
-                raise NotImplementedError("TODO: estimate jammer covariance")
+                # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
+                # TODO not working. Maybe use sampler always giving 1, estimated covariance should then be very close to real covariance
+                jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
+                jammer_covariance = covariance_estimation_from_signals(jammer_signals)
             if self._jammer_mitigation == "pos":
                 if self._return_jammer_csi:
                     self._pos.set_jammer(j)
@@ -279,13 +281,13 @@ def simulate(legend):
 
 jammer_parameters = {
     "num_tx": 1,
-    "num_tx_ant": 2,
+    "num_tx_ant": 1,
     "normalize_channel": True,
 }
 
 model_parameters = {
     "scenario": "umi",
-    "perfect_csi": True,
+    "perfect_csi": False,
     "num_silent_pilot_symbols": 3,
     "jammer_present": False,
     "jammer_mitigation": None,
@@ -293,10 +295,10 @@ model_parameters = {
     "jammer_parameters": jammer_parameters,
 }
 
-simulate("LMMSE without Jammer")
+# simulate("LMMSE without Jammer")
 
-model_parameters["jammer_present"] = True
-simulate("LMMSE with Jammer")
+# model_parameters["jammer_present"] = True
+# simulate("LMMSE with Jammer")
 
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
