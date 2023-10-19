@@ -42,9 +42,11 @@ class IanLMMSEEqualizer(OFDMEqualizer):
         j_dt = flatten_last_dims(j_dt, 2)
         j_dt = tf.cast(j_dt, dtype=self._dtype)
         
-        # [batch_size, rx, num_sym, fft_size, rx_ant, rx_ant]
+        # [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]
         self.jammer_covariance = tf.matmul(j_dt, j_dt, adjoint_b=True)
 
     def set_jammer_covariance(self, jammer_covariance):
-        """Set the jammer covariance matrix directly"""
+        """Set the jammer covariance matrix directly.
+        jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex"""
+        
         self.jammer_covariance = jammer_covariance

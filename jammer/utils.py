@@ -30,3 +30,11 @@ def _constellation_to_sampler(constellation, dtype):
         
     return sampler
 
+
+def covariance_estimation_from_signals(y):
+    """Estimate the covariance matrix of a signal y.
+    y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex
+    output: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]
+    """
+    y = tf.transpose(y, perm=[0, 1, 3, 4, 2]) # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant]
+    return tf.matmul(y, y, adjoint_a=True)/tf.cast(tf.shape(y)[-1], y.dtype)

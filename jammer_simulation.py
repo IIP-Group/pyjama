@@ -93,7 +93,6 @@ class Model(tf.keras.Model):
                                 # pilot_pattern="kronecker",
                                 # pilot_ofdm_symbol_indices=self._pilot_ofdm_symbol_indices)
                                 pilot_pattern=pilot_pattern)
-        self._rg.show()
 
         # Setup StreamManagement
         self._sm = StreamManagement(self._rx_tx_association, self._num_streams_per_tx)
@@ -215,9 +214,11 @@ class Model(tf.keras.Model):
         no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=self._rg)
         b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])
         x = self._mapper(b)
-        # [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
+        # x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
         x = tf.reshape(x, [-1, self._num_tx, self._num_streams_per_tx, self._rg.num_data_symbols])
         x_rg = self._rg_mapper(x)
+        # y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
+        # h: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]
         y, h = self._ofdm_channel([x_rg, no])
         if self._jammer_present:
             jammer_variance = self.jammer_variance(batch_size, dtype=y.dtype)
@@ -226,6 +227,7 @@ class Model(tf.keras.Model):
             else:
                 y = self._jammer([y, jammer_variance])
             if self._estimate_jammer_covariance:
+                # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
                 jammer_covariance = 0.0
                 raise NotImplementedError("TODO: estimate jammer covariance")
             if self._jammer_mitigation == "pos":
@@ -293,16 +295,16 @@ model_parameters = {
 
 simulate("LMMSE without Jammer")
 
-# model_parameters["jammer_present"] = True
-# simulate("LMMSE with Jammer")
+model_parameters["jammer_present"] = True
+simulate("LMMSE with Jammer")
 
-# model_parameters["jammer_present"] = True
-# model_parameters["jammer_mitigation"] = "pos"
-# simulate("LMMSE with Jammer, POS")
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "pos"
+simulate("LMMSE with Jammer, POS")
 
-# model_parameters["jammer_present"] = True
-# model_parameters["jammer_mitigation"] = "ian"
-# simulate("LMMSE with Jammer, IAN")
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "ian"
+simulate("LMMSE with Jammer, IAN")
 
 
 # # simulate jammers with different samplers
