@@ -40,7 +40,7 @@ from sionna.utils.metrics import compute_ber
 # from jammer import OFDMJammer
 from jammer.jammer import OFDMJammer
 from jammer.mitigation import POS, IAN
-from custom_pilots import OneHotWithSilencePilotPattern
+from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 
 
 # sionna.config.xla_compat=True
@@ -53,6 +53,7 @@ class Model(tf.keras.Model):
         self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
         self._num_silent_pilot_symbols = num_silent_pilot_symbols
+        self._silent_pilot_symbol_indices = np.arange(num_silent_pilot_symbols)
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
         self._jammer_power = jammer_power
@@ -80,7 +81,9 @@ class Model(tf.keras.Model):
 
 
         # Setup an OFDM Resource Grid
-        pilot_pattern = OneHotWithSilencePilotPattern(self._num_tx, self._num_streams_per_tx, self._num_ofdm_symbols, self._fft_size, self._num_silent_pilot_symbols)
+        # pilot_pattern = OneHotWithSilencePilotPattern(self._num_tx, self._num_streams_per_tx, self._num_ofdm_symbols, self._fft_size, self._num_silent_pilot_symbols)
+        pilot_pattern = OneHotPilotPattern(self._num_silent_pilot_symbols, self._num_tx, self._num_streams_per_tx, self._num_ofdm_symbols, self._fft_size)
+        pilot_pattern = PilotPatternWithSilence(pilot_pattern, self._silent_pilot_symbol_indices)
         self._rg = ResourceGrid(num_ofdm_symbols=self._num_ofdm_symbols,
                                 fft_size=self._fft_size,
                                 subcarrier_spacing=self._subcarrier_spacing,
@@ -90,6 +93,7 @@ class Model(tf.keras.Model):
                                 # pilot_pattern="kronecker",
                                 # pilot_ofdm_symbol_indices=self._pilot_ofdm_symbol_indices)
                                 pilot_pattern=pilot_pattern)
+        self._rg.show()
 
         # Setup StreamManagement
         self._sm = StreamManagement(self._rx_tx_association, self._num_streams_per_tx)
@@ -280,7 +284,7 @@ jammer_parameters = {
 model_parameters = {
     "scenario": "umi",
     "perfect_csi": True,
-    "num_silent_pilot_symbols": 0,
+    "num_silent_pilot_symbols": 3,
     "jammer_present": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
@@ -289,16 +293,16 @@ model_parameters = {
 
 simulate("LMMSE without Jammer")
 
-model_parameters["jammer_present"] = True
-simulate("LMMSE with Jammer")
+# model_parameters["jammer_present"] = True
+# simulate("LMMSE with Jammer")
 
-model_parameters["jammer_present"] = True
-model_parameters["jammer_mitigation"] = "pos"
-simulate("LMMSE with Jammer, POS")
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_mitigation"] = "pos"
+# simulate("LMMSE with Jammer, POS")
 
-model_parameters["jammer_present"] = True
-model_parameters["jammer_mitigation"] = "ian"
-simulate("LMMSE with Jammer, IAN")
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_mitigation"] = "ian"
+# simulate("LMMSE with Jammer, IAN")
 
 
 # # simulate jammers with different samplers
