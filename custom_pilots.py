@@ -82,7 +82,7 @@ class OneHotPilotPattern(PilotPattern):
         Defines the datatype for internal calculations and the output
         dtype. Defaults to `tf.complex64`.
     """
-    def __init__(self, starting_symbol, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers, dtype=tf.complex64):
+    def __init__(self, starting_symbol, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers, normalize=True, dtype=tf.complex64):
         assert starting_symbol >= 0, \
             "`starting_symbol` must be positive or zero`."
         assert num_tx > 0, \
@@ -109,7 +109,7 @@ class OneHotPilotPattern(PilotPattern):
                 pilots[i, j, i * num_streams_per_tx + j, :] = 1+0j
         pilots = np.reshape(pilots, [num_tx, num_streams_per_tx, -1])
         
-        super().__init__(mask, pilots, trainable=False, normalize=False,
+        super().__init__(mask, pilots, trainable=False, normalize=normalize,
                          dtype=dtype)
     
     
@@ -147,6 +147,7 @@ class OneHotWithSilencePilotPattern(PilotPattern):
                  num_ofdm_symbols,
                  num_effective_subcarriers,
                  num_silence_symbols=0,
+                 normalize=True,
                  dtype=tf.complex64):
 
         assert num_tx > 0, \
@@ -176,7 +177,7 @@ class OneHotWithSilencePilotPattern(PilotPattern):
                 pilots[i, j, num_silence_symbols + i * num_streams_per_tx + j, :] = 1+0j
         pilots = np.reshape(pilots, [num_tx, num_streams_per_tx, -1])
 
-        super().__init__(mask, pilots, trainable=False, normalize=False,
+        super().__init__(mask, pilots, trainable=False, normalize=normalize,
                          dtype=dtype)
 
 # pp = OneHotWithSilencePilotPattern(3, 2, 14, 7, 2)
