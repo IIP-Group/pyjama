@@ -27,6 +27,7 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
         """
         # TODO scale covariance matrix
         num_rx_ant = tf.shape(jammer_covariance)[-1]
+        jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
         self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - jammer_covariance
 
 
