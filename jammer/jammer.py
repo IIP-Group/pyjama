@@ -1,6 +1,9 @@
 import numpy as np
 import sionna
 from sionna.channel.ofdm_channel import OFDMChannel
+from sionna.ofdm import OFDMModulator, OFDMDemodulator
+from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_time_channel, time_lag_discrete_time_channel
+from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
 from .utils import _sample_complex_uniform_disk, _sample_complex_gaussian, _constellation_to_sampler
@@ -41,8 +44,8 @@ class OFDMJammer(tf.keras.layers.Layer):
                                          dtype=self._dtype_as_dtype)
         
     def call(self, inputs):
-        """First argument: unjammed signal. [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
-        Second argument: rho. [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
+        """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
+        Second argument: rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
         y_unjammed, rho = inputs
         # input_shape = y_unjammed.shape.as_list()
         input_shape = tf.shape(y_unjammed)
@@ -67,3 +70,35 @@ class OFDMJammer(tf.keras.layers.Layer):
         else:
             raise TypeError("dtype must be complex")
     
+
+class TimeDomainOFDMJammer(tf.keras.layers.Layer):
+    def __init__(self, channel_model, rg, num_tx, num_tx_ant, normalize_channel=False, return_channel=False, dtype=tf.complex64, **kwargs):
+        
+        super().__init__(trainable=False, dtype=dtype, **kwargs)
+        self._channel_model = channel_model
+        self._rg = rg
+        self._num_tx = num_tx
+        self._num_tx_ant = num_tx_ant
+        self._normalize_channel = normalize_channel
+        self._return_channel = return_channel
+        self._dtype_as_dtype = tf.as_dtype(self.dtype)
+
+        self._frequencies = subcarrier_frequencies(rg.fft_size, rg.subcarrier_spacing)
+        self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
+        self._l_tot = self._l_max - self._l_min + 1
+        self._channel_time = ApplyTimeChannel(self._rg.num_time_samples,
+                                              l_tot=self._l_tot,
+                                              add_awgn=True)
+        self._modulator = OFDMModulator(rg.cyclic_prefix_length)
+        self._demodulator = OFDMDemodulator(self._fft_size, self._l_min, rg.cyclic_prefix_length)
+        
+    def __call__(self, inputs):
+        """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
+        Second argument: rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
+        y_freq, rho = inputs
+        batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size = y_freq.shape
+        cir = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)
+        
+
+
+        

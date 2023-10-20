@@ -289,14 +289,14 @@ jammer_parameters = {
 model_parameters = {
     "scenario": "umi",
     "perfect_csi": True,
-    "num_silent_pilot_symbols": 7,
+    "num_silent_pilot_symbols": 0,
     "jammer_present": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
     "jammer_parameters": jammer_parameters,
 }
 
-# simulate("LMMSE without Jammer")
+simulate("LMMSE without Jammer")
 
 # model_parameters["jammer_present"] = True
 # simulate("LMMSE with Jammer")
@@ -309,13 +309,13 @@ model_parameters = {
 # model_parameters["jammer_mitigation"] = "ian"
 # simulate("LMMSE with Jammer, IAN")
 
-# TODO I figured out the worse performance when num_silent_pilot_symbols is increased:
-# The energy per symbol is (see ebnodb2no) assumed higher if less data symbols (i.e. more silent pilots) are sent.
-# Hence the noise is scaled up to account for this, and hence our performance is worse.
-# is we use ebnodb2no(.., resource_grid=None), we get the same performance for different num_silent_pilot_symbols
-for num_silent_pilot_symbols in range(0, 10, 3):
-    model_parameters["num_silent_pilot_symbols"] = num_silent_pilot_symbols
-    simulate(f"LMMSE without Jammer, {num_silent_pilot_symbols} silent pilots")
+# # TODO I figured out the worse performance when num_silent_pilot_symbols is increased:
+# # The energy per symbol is (see ebnodb2no) assumed higher if less data symbols (i.e. more silent pilots) are sent.
+# # Hence the noise is scaled up to account for this, and hence our performance is worse.
+# # is we use ebnodb2no(.., resource_grid=None), we get the same performance for different num_silent_pilot_symbols
+# for num_silent_pilot_symbols in range(0, 10, 3):
+#     model_parameters["num_silent_pilot_symbols"] = num_silent_pilot_symbols
+#     simulate(f"LMMSE without Jammer, {num_silent_pilot_symbols} silent pilots")
 
 
 # # simulate jammers with different samplers
