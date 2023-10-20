@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-tf.config.run_functions_eagerly(True)
+# tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -231,7 +231,7 @@ class Model(tf.keras.Model):
                 # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
                 # TODO not working. Maybe use sampler always giving 1, estimated covariance should then be very close to real covariance
                 jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
-                jammer_covariance = covariance_estimation_from_signals(jammer_signals)
+                jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
             if self._jammer_mitigation == "pos":
                 if self._return_jammer_csi:
                     self._pos.set_jammer(j)
@@ -300,9 +300,9 @@ model_parameters = {
 # model_parameters["jammer_present"] = True
 # simulate("LMMSE with Jammer")
 
-model_parameters["jammer_present"] = True
-model_parameters["jammer_mitigation"] = "pos"
-simulate("LMMSE with Jammer, POS")
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_mitigation"] = "pos"
+# simulate("LMMSE with Jammer, POS")
 
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "ian"

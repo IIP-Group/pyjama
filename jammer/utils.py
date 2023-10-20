@@ -31,13 +31,17 @@ def _constellation_to_sampler(constellation, dtype):
     return sampler
 
 
-def covariance_estimation_from_signals(y):
+def covariance_estimation_from_signals(y, num_odfm_symbols):
     """Estimate the covariance matrix of a signal y.
     y: [batch_size, num_rx, num_rx_ant, num_jammer_symbols, fft_size], tf.complex
-    output: [batch_size, num_rx, num_jammer_symbols, fft_size, num_rx_ant, num_rx_ant]
-    where num_jammer_symbols is the number of symbols where only the jammer is sending
+        where num_jammer_symbols is the number of symbols where only the jammer is sending
+    num_ofdm_symbols: int
+    output: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]
     """
     # we calculate the covariance matrix, broadcast it over all ofdm symbols
     # TODO broadcast over all ofdm symbols!!!!!!
     y = tf.transpose(y, perm=[0, 1, 4, 2, 3]) # [batch_size, num_rx, fft_size, num_rx_ant, num_jammer_symbols]
-    return tf.matmul(y, y, adjoint_b=True)/tf.cast(tf.shape(y)[-1], y.dtype)
+    # 1/N * y*y^H
+    cov = tf.matmul(y, y, adjoint_b=True)/tf.cast(tf.shape(y)[-1], y.dtype)
+    # add num_ofdm_symbols dimension by repeating
+    return tf.tile(cov[:, :, tf.newaxis, :, :, :], [1, 1, num_odfm_symbols, 1, 1, 1])
