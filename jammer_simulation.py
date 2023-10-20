@@ -212,6 +212,7 @@ class Model(tf.keras.Model):
         self.new_ut_topology(batch_size)
         self.new_jammer_topology(batch_size)
         no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=self._rg)
+        # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
         b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])
         x = self._mapper(b)
         # x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
@@ -267,7 +268,7 @@ EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
-ber_plots = PlotBER("")
+ber_plots = PlotBER("CSI Estimation")
 
 def simulate(legend): 
     model = Model(**model_parameters)
@@ -281,14 +282,14 @@ def simulate(legend):
 
 jammer_parameters = {
     "num_tx": 1,
-    "num_tx_ant": 1,
+    "num_tx_ant": 2,
     "normalize_channel": True,
 }
 
 model_parameters = {
     "scenario": "umi",
-    "perfect_csi": False,
-    "num_silent_pilot_symbols": 3,
+    "perfect_csi": True,
+    "num_silent_pilot_symbols": 7,
     "jammer_present": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
@@ -304,9 +305,17 @@ model_parameters = {
 # model_parameters["jammer_mitigation"] = "pos"
 # simulate("LMMSE with Jammer, POS")
 
-model_parameters["jammer_present"] = True
-model_parameters["jammer_mitigation"] = "ian"
-simulate("LMMSE with Jammer, IAN")
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_mitigation"] = "ian"
+# simulate("LMMSE with Jammer, IAN")
+
+# TODO I figured out the worse performance when num_silent_pilot_symbols is increased:
+# The energy per symbol is (see ebnodb2no) assumed higher if less data symbols (i.e. more silent pilots) are sent.
+# Hence the noise is scaled up to account for this, and hence our performance is worse.
+# is we use ebnodb2no(.., resource_grid=None), we get the same performance for different num_silent_pilot_symbols
+for num_silent_pilot_symbols in range(0, 10, 3):
+    model_parameters["num_silent_pilot_symbols"] = num_silent_pilot_symbols
+    simulate(f"LMMSE without Jammer, {num_silent_pilot_symbols} silent pilots")
 
 
 # # simulate jammers with different samplers
