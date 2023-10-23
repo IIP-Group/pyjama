@@ -12,6 +12,9 @@ class PilotPatternWithSilence(PilotPattern):
     The passed pilot pattern may not have a pilot at any of the silence positions.
     Does not support training at the moment (silent symbols must be frozen for this).
 
+    ATTENTION: As this adds pilots with 0 energy, but ebnobd2no expects normalized pilots,
+    this class only supports unnormalized ebnodb2db (i.e. with resource_grid=None).
+
     Parameters
     ----------
     pilot_pattern : PilotPattern

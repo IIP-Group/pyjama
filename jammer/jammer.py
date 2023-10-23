@@ -72,13 +72,14 @@ class OFDMJammer(tf.keras.layers.Layer):
     
 
 class TimeDomainOFDMJammer(tf.keras.layers.Layer):
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, normalize_channel=False, return_channel=False, dtype=tf.complex64, **kwargs):
+    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jammer_cyclic_prefix_length=0, normalize_channel=False, return_channel=False, dtype=tf.complex64, **kwargs):
         
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         self._channel_model = channel_model
         self._rg = rg
         self._num_tx = num_tx
         self._num_tx_ant = num_tx_ant
+        self._jammer_cyclic_prefix_length = jammer_cyclic_prefix_length
         self._normalize_channel = normalize_channel
         self._return_channel = return_channel
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
@@ -89,16 +90,15 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         self._channel_time = ApplyTimeChannel(self._rg.num_time_samples,
                                               l_tot=self._l_tot,
                                               add_awgn=True)
-        self._modulator = OFDMModulator(rg.cyclic_prefix_length)
+        self._modulator = OFDMModulator(self._jammer_cyclic_prefix_length)
         self._demodulator = OFDMDemodulator(self._fft_size, self._l_min, rg.cyclic_prefix_length)
         
     def __call__(self, inputs):
-        """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
+        """
+        First argument: unjammed signal in time domain. y: [batch_size, num_rx, num_rx_ant, num_time_samples + l_max - l_min]
         Second argument: rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
-        y_freq, rho = inputs
-        batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size = y_freq.shape
+        y_time, rho = inputs
+        # batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size = y_time.shape
+        batch_size, num_rx, num_rx_ant, num_samples_after_filter = tf.shape(y_time)
         cir = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)
-        
-
-
         

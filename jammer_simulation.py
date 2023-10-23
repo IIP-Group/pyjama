@@ -47,25 +47,26 @@ from jammer.utils import covariance_estimation_from_signals
 class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
-    def __init__(self, scenario, perfect_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None):
+    def __init__(self, scenario, perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None):
         super().__init__()
         self._scenario = scenario
         self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
+        self._perfect_jammer_csi = perfect_jammer_csi
         self._num_silent_pilot_symbols = num_silent_pilot_symbols
         self._silent_pilot_symbol_indices = tf.range(self._num_silent_pilot_symbols)
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
         self._jammer_power = jammer_power
-        self._return_jammer_csi = perfect_csi and jammer_mitigation
-        self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_csi
+        self._return_jammer_csi = perfect_jammer_csi and jammer_mitigation
+        self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_jammer_csi
         
 
         # Internally set parameters
         self._carrier_frequency = 3.5e9
         self._fft_size = 128
         self._subcarrier_spacing = 30e3
-        self._num_ofdm_symbols = 14
+        self._num_ofdm_symbols = 18
         self._cyclic_prefix_length = 20
         # self._pilot_ofdm_symbol_indices = [2, 11]
         self._num_bs_ant = 8
@@ -177,6 +178,7 @@ class Model(tf.keras.Model):
         if self._jammer_mitigation == "pos":
             self._pos = POS.OrthogonalSubspaceProjector()
         
+        self._check_settings()
         
     def new_ut_topology(self, batch_size):
         """Set new user topology"""
@@ -204,15 +206,21 @@ class Model(tf.keras.Model):
         shape = [batch_size, self._num_jammer, self._num_jammer_ant, self._num_ofdm_symbols, self._fft_size]
         return self._jammer_power * tf.ones(shape, dtype=tf.as_dtype(dtype))
 
+    def _check_settings(self):
+        if not self._perfect_jammer_csi:
+            assert self._num_silent_pilot_symbols > 0,\
+            "If jammer csi is not perfect, we need silent pilots to estimate the jammer csi."
+        assert self._num_silent_pilot_symbols < self._num_ofdm_symbols,\
+        "The number of silent pilots must be smaller than the number of OFDM symbols."
+
     # batch size = number of resource grids (=symbols * subcarriers) per stream
-    
     @tf.function(jit_compile=False)
     def call(self, batch_size, ebno_db):
         # for good statistics, we simulate a new topology for each batch.
         self.new_ut_topology(batch_size)
         self.new_jammer_topology(batch_size)
-        no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=self._rg)
-        # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
+        # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=self._rg)
+        no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
         b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])
         x = self._mapper(b)
         # x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
@@ -230,7 +238,6 @@ class Model(tf.keras.Model):
             if self._estimate_jammer_covariance:
                 # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
                 # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
-                # TODO not working. Maybe use sampler always giving 1, estimated covariance should then be very close to real covariance
                 jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
                 jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
             if self._jammer_mitigation == "pos":
@@ -268,7 +275,7 @@ EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
-ber_plots = PlotBER("CSI Estimation")
+ber_plots = PlotBER("POS with CSI Estimation")
 
 def simulate(legend): 
     model = Model(**model_parameters)
@@ -282,21 +289,22 @@ def simulate(legend):
 
 jammer_parameters = {
     "num_tx": 1,
-    "num_tx_ant": 2,
+    "num_tx_ant": 1,
     "normalize_channel": True,
 }
 
 model_parameters = {
     "scenario": "umi",
-    "perfect_csi": True,
+    "perfect_csi": False,
     "num_silent_pilot_symbols": 0,
     "jammer_present": False,
+    "perfect_jammer_csi": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
     "jammer_parameters": jammer_parameters,
 }
 
-simulate("LMMSE without Jammer")
+# simulate("LMMSE without Jammer")
 
 # model_parameters["jammer_present"] = True
 # simulate("LMMSE with Jammer")
@@ -309,13 +317,20 @@ simulate("LMMSE without Jammer")
 # model_parameters["jammer_mitigation"] = "ian"
 # simulate("LMMSE with Jammer, IAN")
 
-# # TODO I figured out the worse performance when num_silent_pilot_symbols is increased:
-# # The energy per symbol is (see ebnodb2no) assumed higher if less data symbols (i.e. more silent pilots) are sent.
-# # Hence the noise is scaled up to account for this, and hence our performance is worse.
-# # is we use ebnodb2no(.., resource_grid=None), we get the same performance for different num_silent_pilot_symbols
-# for num_silent_pilot_symbols in range(0, 10, 3):
-#     model_parameters["num_silent_pilot_symbols"] = num_silent_pilot_symbols
-#     simulate(f"LMMSE without Jammer, {num_silent_pilot_symbols} silent pilots")
+for jammer_mitigation in ["pos", "ian"]:
+    ber_plots.reset()
+    model_parameters["perfect_csi"] = False
+    model_parameters["jammer_present"] = True
+    model_parameters["perfect_jammer_csi"] = True
+    model_parameters["jammer_mitigation"] = jammer_mitigation
+    simulate("Perfect Jammer CSI")
+
+    model_parameters["perfect_jammer_csi"] = False
+    for num_silent_pilot_symbols in range(1, 14, 3):
+        model_parameters["num_silent_pilot_symbols"] = num_silent_pilot_symbols
+        simulate(f"estimated CSI, {num_silent_pilot_symbols} silent pilots")
+    ber_plots.title = f"Jammer Mitigation, {jammer_mitigation.upper()}"
+    ber_plots()
 
 
 # # simulate jammers with different samplers
@@ -347,6 +362,6 @@ simulate("LMMSE without Jammer")
 
 
 
-ber_plots()
+# ber_plots()
 
 # %%
