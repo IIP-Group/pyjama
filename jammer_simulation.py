@@ -26,7 +26,7 @@ from sionna.ofdm import OFDMModulator, OFDMDemodulator, ZFPrecoder, RemoveNulled
 
 from sionna.channel.tr38901 import Antenna, AntennaArray, CDL, UMi, UMa, RMa
 from sionna.channel import gen_single_sector_topology
-from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_time_channel
+from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_time_channel, time_lag_discrete_time_channel
 from sionna.channel import ApplyOFDMChannel, ApplyTimeChannel, OFDMChannel, RayleighBlockFading
 
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
@@ -137,6 +137,16 @@ class Model(tf.keras.Model):
 
         self._ofdm_channel = OFDMChannel(self._channel_model, self._rg, add_awgn=True,
                                          normalize_channel=True, return_channel=True)
+        if self._domain == "time":
+            self._frequencies = subcarrier_frequencies(self._rg.fft_size, self._rg.subcarrier_spacing)
+            self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
+            self._l_tot = self._l_max - self._l_min + 1
+            self._time_channel = ApplyTimeChannel(self._rg.num_time_samples,
+                                                  l_tot=self._l_tot,
+                                                  add_awgn=False,
+                                                  dtype=self._dtype_as_dtype)
+            self._modulator = OFDMModulator(self._rg.cyclic_prefix_length)
+            self._demodulator = OFDMDemodulator(self._fft_size, self._l_min, self._rg.cyclic_prefix_length)
 
         self._remove_nulled_subcarriers = RemoveNulledSubcarriers(self._rg)
         self._ls_est = LSChannelEstimator(self._rg, interpolation_type="nn")
@@ -232,11 +242,26 @@ class Model(tf.keras.Model):
         # x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
         x = tf.reshape(x, [-1, self._num_tx, self._num_streams_per_tx, self._rg.num_data_symbols])
         x_rg = self._rg_mapper(x)
-        # y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
-        # h: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]
-        y, h = self._ofdm_channel([x_rg, no])
+        if self._domain == "freq":
+            # y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
+            # h: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]
+            y, h = self._ofdm_channel([x_rg, no])
+        else:
+            a, tau = self._channel_model(batch_size, self._rg.num_time_samples+self._l_tot-1, self._rg.bandwidth)
+            h_time = cir_to_time_channel(self._rg.bandwidth, a, tau, self._l_min, self._l_max, normalize=self._normalize_channel)
+            x_time = self._modulator(x_rg)
+            y_time = self._time_channel([x_time, h_time, no])
+            y = y_time
+            if self._perfect_csi:
+                # TODO: we use this code in jammer as well. Refactor
+                a_freq = a[...,self._rg.cyclic_prefix_length:-1:(self._rg.fft_size+self._rg.cyclic_prefix_length)]
+                a_freq = a_freq[...,:self._rg.num_ofdm_symbols]
+                h = cir_to_ofdm_channel(self._frequencies, a, tau, normalize=self._normalize_channel)
+            
         if self._jammer_present:
             jammer_variance = self.jammer_variance(batch_size, dtype=y.dtype)
+            # at this point, y and h might be in time or frequency domain.
+            # after the following if/else block, y (and j) are in frequency domain (as jammer.return_in_time_domain=False)
             if self._return_jammer_csi:
                 y, j = self._jammer([y, jammer_variance])
             else:
