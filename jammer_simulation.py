@@ -37,7 +37,7 @@ from sionna.mapping import Mapper, Demapper
 from sionna.utils import BinarySource, ebnodb2no, sim_ber, plot_ber, QAMSource, PlotBER
 from sionna.utils.metrics import compute_ber
 
-from jammer.jammer import OFDMJammer
+from jammer.jammer import OFDMJammer, TimeDomainOFDMJammer
 from jammer.mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from jammer.utils import covariance_estimation_from_signals
@@ -47,9 +47,10 @@ from jammer.utils import covariance_estimation_from_signals
 class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
-    def __init__(self, scenario, perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None):
+    def __init__(self, scenario, domain="freq", perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None):
         super().__init__()
         self._scenario = scenario
+        self._domain = domain
         self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
         self._perfect_jammer_csi = perfect_jammer_csi
@@ -173,7 +174,10 @@ class Model(tf.keras.Model):
             self._num_jammer = jammer_parameters["num_tx"]
             self._num_jammer_ant = jammer_parameters["num_tx_ant"]
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
-            self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
+            if(self._domain == "freq"):
+                self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
+            else:
+                self._jammer = TimeDomainOFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
         
         if self._jammer_mitigation == "pos":
             self._pos = POS.OrthogonalSubspaceProjector()
@@ -212,6 +216,8 @@ class Model(tf.keras.Model):
             "If jammer csi is not perfect, we need silent pilots to estimate the jammer csi."
         assert self._num_silent_pilot_symbols < self._num_ofdm_symbols,\
         "The number of silent pilots must be smaller than the number of OFDM symbols."
+        assert self._domain in ["freq", "time"],\
+        "domain must be either 'freq' or 'time'"
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     @tf.function(jit_compile=False)
@@ -296,6 +302,7 @@ jammer_parameters = {
 model_parameters = {
     "scenario": "umi",
     "perfect_csi": False,
+    "domain": "freq",
     "num_silent_pilot_symbols": 0,
     "jammer_present": False,
     "perfect_jammer_csi": False,
@@ -304,7 +311,7 @@ model_parameters = {
     "jammer_parameters": jammer_parameters,
 }
 
-# simulate("LMMSE without Jammer")
+simulate("LMMSE without Jammer")
 
 # model_parameters["jammer_present"] = True
 # simulate("LMMSE with Jammer")
@@ -317,20 +324,20 @@ model_parameters = {
 # model_parameters["jammer_mitigation"] = "ian"
 # simulate("LMMSE with Jammer, IAN")
 
-for jammer_mitigation in ["pos", "ian"]:
-    ber_plots.reset()
-    model_parameters["perfect_csi"] = False
-    model_parameters["jammer_present"] = True
-    model_parameters["perfect_jammer_csi"] = True
-    model_parameters["jammer_mitigation"] = jammer_mitigation
-    simulate("Perfect Jammer CSI")
+# for jammer_mitigation in ["pos", "ian"]:
+#     ber_plots.reset()
+#     model_parameters["perfect_csi"] = False
+#     model_parameters["jammer_present"] = True
+#     model_parameters["perfect_jammer_csi"] = True
+#     model_parameters["jammer_mitigation"] = jammer_mitigation
+#     simulate("Perfect Jammer CSI")
 
-    model_parameters["perfect_jammer_csi"] = False
-    for num_silent_pilot_symbols in range(1, 14, 3):
-        model_parameters["num_silent_pilot_symbols"] = num_silent_pilot_symbols
-        simulate(f"estimated CSI, {num_silent_pilot_symbols} silent pilots")
-    ber_plots.title = f"Jammer Mitigation, {jammer_mitigation.upper()}"
-    ber_plots()
+#     model_parameters["perfect_jammer_csi"] = False
+#     for num_silent_pilot_symbols in range(1, 14, 3):
+#         model_parameters["num_silent_pilot_symbols"] = num_silent_pilot_symbols
+#         simulate(f"estimated CSI, {num_silent_pilot_symbols} silent pilots")
+#     ber_plots.title = f"Jammer Mitigation, {jammer_mitigation.upper()}"
+#     ber_plots()
 
 
 # # simulate jammers with different samplers

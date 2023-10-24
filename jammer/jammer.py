@@ -94,10 +94,9 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         y_time, rho = inputs
         # batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size = y_time.shape
         batch_size, num_rx, num_rx_ant, num_samples_after_filter = tf.shape(y_time)
-        cir = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)
-        h_time = cir_to_time_channel(batch_size, *cir, self._l_min, self._l_max, self._normalize_channel)
+        a, tau = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)
+        h_time = cir_to_time_channel(batch_size, a, tau, self._l_min, self._l_max, self._normalize_channel)
 
-        # TODO: return channel in time domain
         # TODO: scale jammer signal according to rho
 
         if self._send_cyclic_prefix:
@@ -109,8 +108,18 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         y_time = y_time + self._channel_time([x_jammer_time, h_time])
 
         if self._return_in_time_domain:
-            return y_time
+            if self._return_channel:
+                return y_time, h_time
+            else:
+                return y_time
         else:
             y_freq = self._demodulator(y_time)
-            return y_freq
+            if self._return_channel:
+                # We need to downsample the path gains `a` to the OFDM symbol rate prior to converting the CIR to the channel frequency response.
+                a_freq = a[...,self._rg.cyclic_prefix_length:-1:(self._rg.fft_size+self._rg.cyclic_prefix_length)]
+                a_freq = a_freq[...,:self._rg.num_ofdm_symbols]
+                h_freq = cir_to_ofdm_channel(self._frequencies, a, tau, normalize=True)
+                return y_freq, h_freq
+            else:
+                return y_freq
         
