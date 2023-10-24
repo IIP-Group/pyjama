@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
+tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -135,6 +135,7 @@ class Model(tf.keras.Model):
         self._mapper = Mapper("qam", self._num_bits_per_symbol)
         self._rg_mapper = ResourceGridMapper(self._rg)
 
+        # TODO normalize_channel should be simulation parameter (not only here, multiple places)
         self._ofdm_channel = OFDMChannel(self._channel_model, self._rg, add_awgn=True,
                                          normalize_channel=True, return_channel=True)
         if self._domain == "time":
@@ -143,8 +144,7 @@ class Model(tf.keras.Model):
             self._l_tot = self._l_max - self._l_min + 1
             self._time_channel = ApplyTimeChannel(self._rg.num_time_samples,
                                                   l_tot=self._l_tot,
-                                                  add_awgn=False,
-                                                  dtype=self._dtype_as_dtype)
+                                                  add_awgn=True)
             self._modulator = OFDMModulator(self._rg.cyclic_prefix_length)
             self._demodulator = OFDMDemodulator(self._fft_size, self._l_min, self._rg.cyclic_prefix_length)
 
@@ -248,7 +248,7 @@ class Model(tf.keras.Model):
             y, h = self._ofdm_channel([x_rg, no])
         else:
             a, tau = self._channel_model(batch_size, self._rg.num_time_samples+self._l_tot-1, self._rg.bandwidth)
-            h_time = cir_to_time_channel(self._rg.bandwidth, a, tau, self._l_min, self._l_max, normalize=self._normalize_channel)
+            h_time = cir_to_time_channel(self._rg.bandwidth, a, tau, self._l_min, self._l_max, normalize=True)
             x_time = self._modulator(x_rg)
             y_time = self._time_channel([x_time, h_time, no])
             y = y_time
@@ -256,8 +256,9 @@ class Model(tf.keras.Model):
                 # TODO: we use this code in jammer as well. Refactor
                 a_freq = a[...,self._rg.cyclic_prefix_length:-1:(self._rg.fft_size+self._rg.cyclic_prefix_length)]
                 a_freq = a_freq[...,:self._rg.num_ofdm_symbols]
-                h = cir_to_ofdm_channel(self._frequencies, a, tau, normalize=self._normalize_channel)
+                h = cir_to_ofdm_channel(self._frequencies, a, tau, normalize=True)
             
+        # TODO: if we don't have a jammer, y is not converted time->freq domain. Change!!!!
         if self._jammer_present:
             jammer_variance = self.jammer_variance(batch_size, dtype=y.dtype)
             # at this point, y and h might be in time or frequency domain.
@@ -301,7 +302,7 @@ class Model(tf.keras.Model):
 
 
 
-BATCH_SIZE = 32
+BATCH_SIZE = 4
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
@@ -326,24 +327,24 @@ jammer_parameters = {
 
 model_parameters = {
     "scenario": "umi",
-    "perfect_csi": False,
-    "domain": "freq",
+    "perfect_csi": True,
+    "domain": "time",
     "num_silent_pilot_symbols": 0,
     "jammer_present": False,
-    "perfect_jammer_csi": False,
+    "perfect_jammer_csi": True,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
     "jammer_parameters": jammer_parameters,
 }
 
-simulate("LMMSE without Jammer")
+# simulate("LMMSE without Jammer")
 
-# model_parameters["jammer_present"] = True
-# simulate("LMMSE with Jammer")
+model_parameters["jammer_present"] = True
+simulate("LMMSE with Jammer")
 
-# model_parameters["jammer_present"] = True
-# model_parameters["jammer_mitigation"] = "pos"
-# simulate("LMMSE with Jammer, POS")
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "pos"
+simulate("LMMSE with Jammer, POS")
 
 # model_parameters["jammer_present"] = True
 # model_parameters["jammer_mitigation"] = "ian"
@@ -394,6 +395,6 @@ simulate("LMMSE without Jammer")
 
 
 
-# ber_plots()
+ber_plots()
 
 # %%
