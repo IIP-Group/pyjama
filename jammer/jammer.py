@@ -6,7 +6,7 @@ from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_t
 from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
-from .utils import _sample_complex_uniform_disk, _sample_complex_gaussian, _constellation_to_sampler
+from .utils import sample_function
 
 class OFDMJammer(tf.keras.layers.Layer):
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
@@ -23,17 +23,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._return_channel = return_channel
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
         # if sampler is string, we use the corresponding function. Otherwise assign the function directly
-        if isinstance(sampler, str):
-            if sampler == "uniform":
-                self._sample_function = _sample_complex_uniform_disk
-            elif sampler == "gaussian":
-                self._sample_function = _sample_complex_gaussian
-            else:
-                raise ValueError(f"Unknown sampler {sampler}")
-        elif isinstance(sampler, sionna.mapping.Constellation):
-            self._sample_function = _constellation_to_sampler(sampler, dtype=self._dtype_as_dtype)
-        else:
-            self._sample_function = sampler
+        self._sample_function = sample_function(sampler, self._dtype_as_dtype)
 
     def build(self, input_shape):
         self._ofdm_channel = OFDMChannel(channel_model=self._channel_model,
@@ -64,7 +54,6 @@ class OFDMJammer(tf.keras.layers.Layer):
             return y_combined
     
     def sample(self, shape):
-        
         if self._dtype_as_dtype.is_complex:
             return self._sample_function(shape, self._dtype_as_dtype)
         else:
@@ -72,33 +61,56 @@ class OFDMJammer(tf.keras.layers.Layer):
     
 
 class TimeDomainOFDMJammer(tf.keras.layers.Layer):
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jammer_cyclic_prefix_length=0, normalize_channel=False, return_channel=False, dtype=tf.complex64, **kwargs):
+    def __init__(self, channel_model, rg, num_tx, num_tx_ant, send_cyclic_prefix=False, normalize_channel=False, return_channel=False, sampler="uniform", return_in_time_domain=False, dtype=tf.complex64, **kwargs):
         
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         self._channel_model = channel_model
         self._rg = rg
         self._num_tx = num_tx
         self._num_tx_ant = num_tx_ant
-        self._jammer_cyclic_prefix_length = jammer_cyclic_prefix_length
+        self._send_cyclic_prefix = send_cyclic_prefix
         self._normalize_channel = normalize_channel
         self._return_channel = return_channel
+        self._return_in_time_domain = return_in_time_domain
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
+        self._sampler = sample_function(sampler, self._dtype_as_dtype)
 
         self._frequencies = subcarrier_frequencies(rg.fft_size, rg.subcarrier_spacing)
         self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
         self._l_tot = self._l_max - self._l_min + 1
         self._channel_time = ApplyTimeChannel(self._rg.num_time_samples,
                                               l_tot=self._l_tot,
-                                              add_awgn=True)
-        self._modulator = OFDMModulator(self._jammer_cyclic_prefix_length)
+                                              add_awgn=False,
+                                              dtype=self._dtype_as_dtype)
+        self._modulator = OFDMModulator(rg.cyclic_prefix_length)
         self._demodulator = OFDMDemodulator(self._fft_size, self._l_min, rg.cyclic_prefix_length)
         
     def __call__(self, inputs):
         """
+        Input: Signal in time domain.
+        Output: Jammed signal in time domain or frequency domain according to return_in_time_domain.
         First argument: unjammed signal in time domain. y: [batch_size, num_rx, num_rx_ant, num_time_samples + l_max - l_min]
         Second argument: rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
         y_time, rho = inputs
         # batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size = y_time.shape
         batch_size, num_rx, num_rx_ant, num_samples_after_filter = tf.shape(y_time)
         cir = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)
+        h_time = cir_to_time_channel(batch_size, *cir, self._l_min, self._l_max, self._normalize_channel)
+
+        # TODO: return channel in time domain
+        # TODO: scale jammer signal according to rho
+
+        if self._send_cyclic_prefix:
+            x_jammer_freq = self._sampler([batch_size, self._num_tx, self._num_tx_ant, self._rg.num_ofdm_symbols, self._rg.fft_size])
+            x_jammer_time = self._modulator(x_jammer_freq)
+        else:
+            x_jammer_time = self._sampler([batch_size, self._num_tx, self._num_tx_ant, self._rg.num_ofdm_symbols * (self._rg.fft_size + self._rg.cyclic_prefix_length)])
+        
+        y_time = y_time + self._channel_time([x_jammer_time, h_time])
+
+        if self._return_in_time_domain:
+            return y_time
+        else:
+            y_freq = self._demodulator(y_time)
+            return y_freq
         
