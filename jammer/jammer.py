@@ -118,7 +118,7 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
                 # We need to downsample the path gains `a` to the OFDM symbol rate prior to converting the CIR to the channel frequency response.
                 a_freq = a[...,self._rg.cyclic_prefix_length:-1:(self._rg.fft_size+self._rg.cyclic_prefix_length)]
                 a_freq = a_freq[...,:self._rg.num_ofdm_symbols]
-                h_freq = cir_to_ofdm_channel(self._frequencies, a, tau, normalize=self._normalize_channel)
+                h_freq = cir_to_ofdm_channel(self._frequencies, a_freq, tau, normalize=self._normalize_channel)
                 return y_freq, h_freq
             else:
                 return y_freq

@@ -256,7 +256,7 @@ class Model(tf.keras.Model):
                 # TODO: we use this code in jammer as well. Refactor
                 a_freq = a[...,self._rg.cyclic_prefix_length:-1:(self._rg.fft_size+self._rg.cyclic_prefix_length)]
                 a_freq = a_freq[...,:self._rg.num_ofdm_symbols]
-                h = cir_to_ofdm_channel(self._frequencies, a, tau, normalize=True)
+                h = cir_to_ofdm_channel(self._frequencies, a_freq, tau, normalize=True)
             
         # TODO: if we don't have a jammer, y is not converted time->freq domain. Change!!!!
         if self._jammer_present:
@@ -339,8 +339,8 @@ model_parameters = {
 
 # simulate("LMMSE without Jammer")
 
-model_parameters["jammer_present"] = True
-simulate("LMMSE with Jammer")
+# model_parameters["jammer_present"] = True
+# simulate("LMMSE with Jammer")
 
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
