@@ -6,7 +6,7 @@ from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_t
 from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
-from .utils import sample_function
+from .utils import sample_function, ofdm_frequency_response_from_cir
 
 class OFDMJammer(tf.keras.layers.Layer):
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
@@ -62,7 +62,7 @@ class OFDMJammer(tf.keras.layers.Layer):
 
 class TimeDomainOFDMJammer(tf.keras.layers.Layer):
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, send_cyclic_prefix=False, normalize_channel=False, return_channel=False, sampler="uniform", return_in_time_domain=False, dtype=tf.complex64, **kwargs):
-        
+        """return_in_time_domain: If true, returns the jammed signal in time domain. Otherwise, returns in frequency domain. If return_channel is true, this might also be a pair of (signal, channel). Broadcast if not a pair in this case."""
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         self._channel_model = channel_model
         self._rg = rg
@@ -71,11 +71,13 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         self._send_cyclic_prefix = send_cyclic_prefix
         self._normalize_channel = normalize_channel
         self._return_channel = return_channel
-        self._return_in_time_domain = return_in_time_domain
+        if self._return_channel and len(return_in_time_domain) != 2:
+            self._return_in_time_domain = (return_in_time_domain, return_in_time_domain)
+        else:
+            self._return_in_time_domain = return_in_time_domain
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
         self._sampler = sample_function(sampler, self._dtype_as_dtype)
 
-        self._frequencies = subcarrier_frequencies(rg.fft_size, rg.subcarrier_spacing)
         self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
         self._l_tot = self._l_max - self._l_min + 1
         self._channel_time = ApplyTimeChannel(self._rg.num_time_samples,
@@ -106,19 +108,23 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         
         y_time = y_time + self._channel_time([x_jammer_time, h_time])
 
-        if self._return_in_time_domain:
-            if self._return_channel:
-                return y_time, h_time
-            else:
-                return y_time
+        if self._return_channel:
+            y_ret = y_time if self._return_in_time_domain[0] else self._demodulator(y_time)
+            h_ret = h_time if self._return_in_time_domain[1] else ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=self._normalize_channel)
+            return y_ret, h_ret
         else:
-            y_freq = self._demodulator(y_time)
-            if self._return_channel:
-                # We need to downsample the path gains `a` to the OFDM symbol rate prior to converting the CIR to the channel frequency response.
-                a_freq = a[...,self._rg.cyclic_prefix_length:-1:(self._rg.fft_size+self._rg.cyclic_prefix_length)]
-                a_freq = a_freq[...,:self._rg.num_ofdm_symbols]
-                h_freq = cir_to_ofdm_channel(self._frequencies, a_freq, tau, normalize=self._normalize_channel)
-                return y_freq, h_freq
-            else:
-                return y_freq
+            return y_time if self._return_in_time_domain else self._demodulator(y_time)
+        # if self._return_in_time_domain:
+        #     if self._return_channel:
+        #         return y_time, h_time
+        #     else:
+        #         return y_time
+        # else:
+        #     y_freq = self._demodulator(y_time)
+        #     if self._return_channel:
+        #         # We need to downsample the path gains `a` to the OFDM symbol rate prior to converting the CIR to the channel frequency response.
+        #         h_freq = ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=self._normalize_channel)
+        #         return y_freq, h_freq
+        #     else:
+        #         return y_freq
         
