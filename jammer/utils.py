@@ -65,3 +65,13 @@ def covariance_estimation_from_signals(y, num_odfm_symbols):
     cov = tf.matmul(y, y, adjoint_b=True)/tf.cast(tf.shape(y)[-1], y.dtype)
     # add num_ofdm_symbols dimension by repeating
     return tf.tile(cov[:, :, tf.newaxis, :, :, :], [1, 1, num_odfm_symbols, 1, 1, 1])
+
+    
+def ofdm_frequency_response_from_cir(a, tau, rg, normalize):
+    """Calulate the frequency response of a channel from its CIR. Does this by downsampling channel gains (a) and computing DFT.
+    normalize: bool. If true, normalizes over one resource grid."""
+    frequencies = sionna.channel.subcarrier_frequencies(rg.fft_size, rg.subcarrier_spacing)
+    a_freq = a[...,rg.cyclic_prefix_length:-1:(rg.fft_size+rg.cyclic_prefix_length)]
+    a_freq = a_freq[...,:rg.num_ofdm_symbols]
+    h_freq = sionna.channel.cir_to_ofdm_channel(frequencies, a_freq, tau, normalize=normalize)
+    return h_freq

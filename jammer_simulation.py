@@ -26,7 +26,7 @@ from sionna.ofdm import OFDMModulator, OFDMDemodulator, ZFPrecoder, RemoveNulled
 
 from sionna.channel.tr38901 import Antenna, AntennaArray, CDL, UMi, UMa, RMa
 from sionna.channel import gen_single_sector_topology
-from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_time_channel, time_lag_discrete_time_channel
+from sionna.channel import cir_to_ofdm_channel, cir_to_time_channel, time_lag_discrete_time_channel
 from sionna.channel import ApplyOFDMChannel, ApplyTimeChannel, OFDMChannel, RayleighBlockFading
 
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
@@ -40,7 +40,7 @@ from sionna.utils.metrics import compute_ber
 from jammer.jammer import OFDMJammer, TimeDomainOFDMJammer
 from jammer.mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
-from jammer.utils import covariance_estimation_from_signals
+from jammer.utils import covariance_estimation_from_signals, ofdm_frequency_response_from_cir
 
 
 # sionna.config.xla_compat=True
@@ -139,7 +139,6 @@ class Model(tf.keras.Model):
         self._ofdm_channel = OFDMChannel(self._channel_model, self._rg, add_awgn=True,
                                          normalize_channel=True, return_channel=True)
         if self._domain == "time":
-            self._frequencies = subcarrier_frequencies(self._rg.fft_size, self._rg.subcarrier_spacing)
             self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
             self._l_tot = self._l_max - self._l_min + 1
             self._time_channel = ApplyTimeChannel(self._rg.num_time_samples,
@@ -221,9 +220,12 @@ class Model(tf.keras.Model):
         return self._jammer_power * tf.ones(shape, dtype=tf.as_dtype(dtype))
 
     def _check_settings(self):
+        if self._perfect_jammer_csi:
+            assert self._jammer_present,\
+            "If jammer CSI is perfect (i.e. returned by the jammer), we need a jammer which returns it."
         if not self._perfect_jammer_csi:
             assert self._num_silent_pilot_symbols > 0,\
-            "If jammer csi is not perfect, we need silent pilots to estimate the jammer csi."
+            "If jammer csi is not perfect, we need silent pilots to estimate the jammer CSI."
         assert self._num_silent_pilot_symbols < self._num_ofdm_symbols,\
         "The number of silent pilots must be smaller than the number of OFDM symbols."
         assert self._domain in ["freq", "time"],\
@@ -253,10 +255,7 @@ class Model(tf.keras.Model):
             y_time = self._time_channel([x_time, h_time, no])
             y = y_time
             if self._perfect_csi:
-                # TODO: we use this code in jammer as well. Refactor
-                a_freq = a[...,self._rg.cyclic_prefix_length:-1:(self._rg.fft_size+self._rg.cyclic_prefix_length)]
-                a_freq = a_freq[...,:self._rg.num_ofdm_symbols]
-                h = cir_to_ofdm_channel(self._frequencies, a_freq, tau, normalize=True)
+                h = ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=True)
             
         # TODO: if we don't have a jammer, y is not converted time->freq domain. Change!!!!
         if self._jammer_present:
@@ -267,25 +266,25 @@ class Model(tf.keras.Model):
                 y, j = self._jammer([y, jammer_variance])
             else:
                 y = self._jammer([y, jammer_variance])
-            if self._estimate_jammer_covariance:
-                # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
-                # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
-                jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
-                jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
-            if self._jammer_mitigation == "pos":
-                if self._return_jammer_csi:
-                    self._pos.set_jammer(j)
-                else:
-                    self._pos.set_jammer_covariance(jammer_covariance)
-                # we transform y before channel estimation to get correct no_eff automically
-                # but hence we have to transform h with perfect_csi=True, but not false
-                # we could alternatively transform y and h after channel estimation, but then we have to transform no_eff
-                y = self._pos(y)
-            elif self._jammer_mitigation == "ian":
-                if self._return_jammer_csi:
-                    self._lmmse_equ.set_jammer(j, jammer_variance)
-                else:
-                    self._lmmse_equ.set_jammer_covariance(jammer_covariance)
+        if self._estimate_jammer_covariance:
+            # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
+            # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
+            jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
+            jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
+        if self._jammer_mitigation == "pos":
+            if self._return_jammer_csi:
+                self._pos.set_jammer(j)
+            else:
+                self._pos.set_jammer_covariance(jammer_covariance)
+            # we transform y before channel estimation to get correct no_eff automically
+            # but hence we have to transform h with perfect_csi=True, but not false
+            # we could alternatively transform y and h after channel estimation, but then we have to transform no_eff
+            y = self._pos(y)
+        elif self._jammer_mitigation == "ian":
+            if self._return_jammer_csi:
+                self._lmmse_equ.set_jammer(j, jammer_variance)
+            else:
+                self._lmmse_equ.set_jammer_covariance(jammer_covariance)
         if self._perfect_csi:
             h_hat = self._remove_nulled_subcarriers(h)
             if self._jammer_mitigation == "pos":
@@ -330,21 +329,21 @@ model_parameters = {
     "perfect_csi": True,
     "domain": "time",
     "num_silent_pilot_symbols": 3,
-    "jammer_present": True,
+    "jammer_present": False,
     "perfect_jammer_csi": True,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
     "jammer_parameters": jammer_parameters,
 }
 
-# simulate("LMMSE without Jammer")
+simulate("LMMSE without Jammer")
 
 # model_parameters["jammer_present"] = True
 # simulate("LMMSE with Jammer")
 
-model_parameters["jammer_present"] = True
-model_parameters["jammer_mitigation"] = "pos"
-simulate("LMMSE with Jammer, POS")
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_mitigation"] = "pos"
+# simulate("LMMSE with Jammer, POS")
 
 # model_parameters["jammer_present"] = True
 # model_parameters["jammer_mitigation"] = "ian"
