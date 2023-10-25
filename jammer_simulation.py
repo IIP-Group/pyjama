@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
+tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -186,7 +186,15 @@ class Model(tf.keras.Model):
             if(self._domain == "freq"):
                 self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
             else:
-                self._jammer = TimeDomainOFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
+                if self._return_jammer_csi:
+                    # return signal in time domain, jammer freq. response in freq. domain
+                    return_in_time_domain = (True, False)
+                else:
+                    return_in_time_domain = True
+                self._jammer = TimeDomainOFDMJammer(self._jammer_channel_model,
+                                                    self._rg, return_channel=self._return_jammer_csi,
+                                                    return_in_time_domain=return_in_time_domain,
+                                                    **jammer_parameters)
         
         if self._jammer_mitigation == "pos":
             self._pos = POS.OrthogonalSubspaceProjector()
@@ -255,17 +263,19 @@ class Model(tf.keras.Model):
             y_time = self._time_channel([x_time, h_time, no])
             y = y_time
             if self._perfect_csi:
+                # calculate h in frequency domain
                 h = ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=True)
             
-        # TODO: if we don't have a jammer, y is not converted time->freq domain. Change!!!!
         if self._jammer_present:
             jammer_variance = self.jammer_variance(batch_size, dtype=y.dtype)
-            # at this point, y and h might be in time or frequency domain.
-            # after the following if/else block, y (and j) are in frequency domain (as jammer.return_in_time_domain=False)
+            # at this point, y might be in time or frequency domain.
             if self._return_jammer_csi:
                 y, j = self._jammer([y, jammer_variance])
             else:
                 y = self._jammer([y, jammer_variance])
+        # after (potential) jammer, convert signal to freqency domain. Jammer is configured to always return j in freq. domain.
+        if self._domain == "time":
+            y = self._demodulator(y)
         if self._estimate_jammer_covariance:
             # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
             # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
@@ -326,20 +336,20 @@ jammer_parameters = {
 
 model_parameters = {
     "scenario": "umi",
-    "perfect_csi": True,
-    "domain": "time",
+    "perfect_csi": False,
+    "domain": "freq",
     "num_silent_pilot_symbols": 3,
     "jammer_present": False,
-    "perfect_jammer_csi": True,
+    "perfect_jammer_csi": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
     "jammer_parameters": jammer_parameters,
 }
 
-simulate("LMMSE without Jammer")
-
-# model_parameters["jammer_present"] = True
-# simulate("LMMSE with Jammer")
+# simulate("LMMSE without Jammer")
+model_parameters["domain"] = "time"
+model_parameters["jammer_mitigation"] = "pos"
+simulate("LMMSE with Jammer")
 
 # model_parameters["jammer_present"] = True
 # model_parameters["jammer_mitigation"] = "pos"
