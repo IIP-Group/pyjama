@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-tf.config.run_functions_eagerly(True)
+# tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -302,7 +302,7 @@ class Model(tf.keras.Model):
 
 
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
@@ -329,8 +329,8 @@ model_parameters = {
     "scenario": "umi",
     "perfect_csi": True,
     "domain": "time",
-    "num_silent_pilot_symbols": 0,
-    "jammer_present": False,
+    "num_silent_pilot_symbols": 3,
+    "jammer_present": True,
     "perfect_jammer_csi": True,
     "jammer_mitigation": None,
     "jammer_power": 1.0,

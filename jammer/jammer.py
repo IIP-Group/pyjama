@@ -92,8 +92,7 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         First argument: unjammed signal in time domain. y: [batch_size, num_rx, num_rx_ant, num_time_samples + l_max - l_min]
         Second argument: rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
         y_time, rho = inputs
-        # batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size = y_time.shape
-        batch_size, num_rx, num_rx_ant, num_samples_after_filter = tf.shape(y_time)
+        batch_size = tf.shape(y_time)[0]
         a, tau = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)
         h_time = cir_to_time_channel(self._rg.bandwidth, a, tau, self._l_min, self._l_max, self._normalize_channel)
 
