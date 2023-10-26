@@ -31,7 +31,7 @@ class IanLMMSEEqualizer(OFDMEqualizer):
     def set_jammer(self, j, rho):
         """Set the jammer covariance matrix from the frequency response of the jammer channel.
         j: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size], tf.complex, frequency response of jammer channel
-        rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Jammer power
+        rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size] or scalar. Jammer power
         tx = jammer
         """
         # scale j by rho

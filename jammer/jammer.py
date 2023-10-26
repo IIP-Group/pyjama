@@ -2,7 +2,7 @@ import numpy as np
 import sionna
 from sionna.channel.ofdm_channel import OFDMChannel
 from sionna.ofdm import OFDMModulator, OFDMDemodulator
-from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_time_channel, time_lag_discrete_time_channel
+from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_time_channel, time_lag_discrete_time_channel, time_to_ofdm_channel
 from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
@@ -106,11 +106,13 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         else:
             x_jammer_time = self._sampler([batch_size, self._num_tx, self._num_tx_ant, self._rg.num_ofdm_symbols * (self._rg.fft_size + self._rg.cyclic_prefix_length)], self._dtype_as_dtype)
         
+        x_jammer_time = tf.sqrt(rho) * x_jammer_time
         y_time = y_time + self._channel_time([x_jammer_time, h_time])
 
         if self._return_channel:
             y_ret = y_time if self._return_in_time_domain[0] else self._demodulator(y_time)
-            h_ret = h_time if self._return_in_time_domain[1] else ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=self._normalize_channel)
+            # h_ret = h_time if self._return_in_time_domain[1] else ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=self._normalize_channel)
+            h_ret = h_time if self._return_in_time_domain[1] else time_to_ofdm_channel(h_time, self._rg, self._l_min)
             return y_ret, h_ret
         else:
             return y_time if self._return_in_time_domain else self._demodulator(y_time)
