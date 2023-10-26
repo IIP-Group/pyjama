@@ -11,7 +11,6 @@ from .utils import sample_function, ofdm_frequency_response_from_cir
 class OFDMJammer(tf.keras.layers.Layer):
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
         r"""
-        jammer_power: NOT in dB, but "linear" power (i.e. 1.0 is 0 dB, 2.0 is 3 dB, etc.)
         sampler: String in ["uniform", "gaussian"], a constellation, or function with signature (shape, dtype) -> tf.Tensor, where elementwise E[|x|^2] = 1
         """
         super().__init__(trainable=False, dtype=dtype, **kwargs)
@@ -35,7 +34,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         
     def call(self, inputs):
         """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
-        Second argument: rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
+        Second argument: rho: broadcastable to [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
         y_unjammed, rho = inputs
         # input_shape = y_unjammed.shape.as_list()
         input_shape = tf.shape(y_unjammed)
@@ -92,7 +91,7 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         Input: Signal in time domain.
         Output: Jammed signal in time domain or frequency domain according to return_in_time_domain.
         First argument: unjammed signal in time domain. y: [batch_size, num_rx, num_rx_ant, num_time_samples + l_max - l_min]
-        Second argument: rho: [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
+        Second argument: rho: broadcastable to [batch_size, num_tx, num_tx_ant, num_time_samples]. Variances of jammer input signal (before channel)."""
         y_time, rho = inputs
         batch_size = tf.shape(y_time)[0]
         a, tau = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)

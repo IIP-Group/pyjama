@@ -58,7 +58,7 @@ class Model(tf.keras.Model):
         self._silent_pilot_symbol_indices = tf.range(self._num_silent_pilot_symbols)
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
-        self._jammer_power = jammer_power
+        self._jammer_power = tf.cast(jammer_power, tf.complex64)
         self._return_jammer_csi = perfect_jammer_csi and jammer_mitigation
         self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_jammer_csi
         
@@ -68,7 +68,7 @@ class Model(tf.keras.Model):
         self._fft_size = 128
         self._subcarrier_spacing = 30e3
         self._num_ofdm_symbols = 18
-        self._cyclic_prefix_length = 20
+        self._cyclic_prefix_length = 40
         # self._pilot_ofdm_symbol_indices = [2, 11]
         self._num_bs_ant = 8
         self._num_ut = 4
@@ -220,13 +220,13 @@ class Model(tf.keras.Model):
                                                   max_ut_velocity=0.0)
             self._jammer_channel_model.set_topology(*topology)
 
-    def jammer_variance(self, batch_size, dtype=tf.complex64):
-        """Overwrite to change variance of jammer signal before channel.
-        Output: rho: [batch_size, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size]
-        """
-        # shape = [batch_size, self._num_jammer, self._num_jammer_ant, self._num_ofdm_symbols, self._fft_size]
-        # return self._jammer_power * tf.ones(shape, dtype=tf.as_dtype(dtype))
-        return tf.constant(self._jammer_power, dtype=dtype)
+    # def jammer_variance(self, batch_size, dtype=tf.complex64):
+    #     """Overwrite to change variance of jammer signal before channel.
+    #     Output: rho: [batch_size, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size]
+    #     """
+    #     # shape = [batch_size, self._num_jammer, self._num_jammer_ant, self._num_ofdm_symbols, self._fft_size]
+    #     # return self._jammer_power * tf.ones(shape, dtype=tf.as_dtype(dtype))
+    #     return tf.constant(self._jammer_power, dtype=dtype)
 
     def _check_settings(self):
         if self._perfect_jammer_csi:
@@ -270,12 +270,11 @@ class Model(tf.keras.Model):
                 h = sionna.channel.time_to_ofdm_channel(h_time, self._rg, self._l_min)
             
         if self._jammer_present:
-            jammer_variance = self.jammer_variance(batch_size, dtype=y.dtype)
             # at this point, y might be in time or frequency domain.
             if self._return_jammer_csi:
-                y, j = self._jammer([y, jammer_variance])
+                y, j = self._jammer([y, self._jammer_power])
             else:
-                y = self._jammer([y, jammer_variance])
+                y = self._jammer([y, self._jammer_power])
         # after (potential) jammer, convert signal to freqency domain. Jammer is configured to always return j in freq. domain.
         if self._domain == "time":
             y = self._demodulator(y)
@@ -296,7 +295,7 @@ class Model(tf.keras.Model):
         elif self._jammer_mitigation == "ian":
             if self._return_jammer_csi:
                 # attention: this jammer variance might have to have a different shape than the one used for the jammer
-                self._lmmse_equ.set_jammer(j, jammer_variance)
+                self._lmmse_equ.set_jammer(j, self._jammer_power)
             else:
                 self._lmmse_equ.set_jammer_covariance(jammer_covariance)
         if self._perfect_csi:
@@ -315,7 +314,7 @@ class Model(tf.keras.Model):
 
 
 
-BATCH_SIZE = 2
+BATCH_SIZE = 1
 MAX_MC_ITER = 100
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
@@ -361,14 +360,20 @@ model_parameters = {
 # ber_plots.title = "Time vs Freq. Domain, Perfect CSI"
 # model_parameters["perfect_jammer_csi"] = False
 # model_parameters["perfect_csi"] = True
+
 # model_parameters["domain"] = "time"
 # simulate("Time Domain, no jammer")
+# model_parameters["jammer_present"] = True
+# model_parameters["perfect_jammer_csi"] = True
+# simulate("Time Domain, Jammer with CP")
 # model_parameters["domain"] = "freq"
+# simulate("Freq. Domain, Jammer with CP")
+# model_parameters["perfect_jammer_csi"] = False
+# model_parameters["jammer_present"] = False
 # simulate("Freq. Domain, no jammer")
 
 ber_plots.title = "Time Domain. Perfect CSI. POS."
-BATCH_SIZE = 1
-model_parameters["jammer_mitigation"] = "pos"
+model_parameters["jammer_mitigation"] = "ian"
 model_parameters["perfect_jammer_csi"] = True
 model_parameters["jammer_present"] = True
 model_parameters["jammer_power"] = 30
