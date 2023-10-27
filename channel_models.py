@@ -10,7 +10,7 @@ class MultiTapRayleighBlockFading(ChannelModel):
     fading channel model.
 
     The channel impulse responses generated are formed of M paths with
-    :math:`m * sampling_frequency, 0 \leq m \leq M-1` delays
+    :math:`m \div sampling_frequency, 0 \leq m \leq M-1` delays
     and a normally distributed fading coefficient.
     All time steps of a batch example share the same channel coefficient
     (block fading).
@@ -71,6 +71,7 @@ class MultiTapRayleighBlockFading(ChannelModel):
                     num_rx_ant,
                     num_tx,
                     num_tx_ant,
+                    num_paths,
                     dtype=tf.complex64):
 
         assert dtype.is_complex, "'dtype' must be complex type"
@@ -82,16 +83,13 @@ class MultiTapRayleighBlockFading(ChannelModel):
         self.num_tx_ant = num_tx_ant
         self.num_rx = num_rx
         self.num_rx_ant = num_rx_ant
+        self.num_paths = num_paths
 
-    def __call__(self,  batch_size, num_time_steps, sampling_frequency=None):
+    def __call__(self,  batch_size, num_time_steps, sampling_frequency):
 
         # Delays
-        # Single path with zero delay
-        delays = tf.zeros([ batch_size,
-                            self.num_rx,
-                            self.num_tx,
-                            1], # Single path
-                            dtype=self._dtype.real_dtype)
+        delays = tf.range(0, self.num_paths, dtype=self._dtype.real_dtype) / sampling_frequency
+        delays = tf.tile(delays[tf.newaxis, tf.newaxis, tf.newaxis, :], [batch_size, self.num_rx, self.num_tx, 1])
 
         # Fading coefficients
         std = tf.cast(tf.sqrt(0.5), dtype=self._dtype.real_dtype)
@@ -100,7 +98,7 @@ class MultiTapRayleighBlockFading(ChannelModel):
                                             self.num_rx_ant,
                                             self.num_tx,
                                             self.num_tx_ant,
-                                            1, # One path
+                                            self.num_paths,
                                             1], # Same response over the block
                                             stddev=std,
                                             dtype = self._dtype.real_dtype)
@@ -109,7 +107,7 @@ class MultiTapRayleighBlockFading(ChannelModel):
                                             self.num_rx_ant,
                                             self.num_tx,
                                             self.num_tx_ant,
-                                            1, # One cluster
+                                            self.num_paths,
                                             1], # Same response over the block
                                             stddev=std,
                                             dtype = self._dtype.real_dtype)
