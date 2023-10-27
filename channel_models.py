@@ -1,6 +1,9 @@
+#%%
 import tensorflow as tf
 import sionna
 from sionna.channel import ChannelModel
+import matplotlib.pyplot as plt
+import numpy as np
 
 class MultiTapRayleighBlockFading(ChannelModel):
     # pylint: disable=line-too-long
@@ -116,4 +119,24 @@ class MultiTapRayleighBlockFading(ChannelModel):
         h = tf.tile(h, [1, 1, 1, 1, 1, 1, num_time_steps])
         return h, delays
 
-    
+
+def visualize_channel_model(channel, timestep_duration, num_time_steps):
+    a, tau = channel(batch_size=1, num_time_steps=num_time_steps, sampling_frequency=1/timestep_duration)
+    plt.figure()
+    plt.title("Channel impulse response realization")
+    plt.stem(tau[0,0,0,:]/1e-9, np.abs(a)[0,0,0,0,0,:,0])
+    plt.xlabel(r"$\tau$ [ns]")
+    plt.ylabel(r"$|a|$")
+
+    plt.figure()
+    plt.title("Time evolution of path gain")
+    plt.plot(np.arange(num_time_steps)*timestep_duration/1e-6, np.real(a)[0,0,0,0,0,0,:])
+    plt.plot(np.arange(num_time_steps)*timestep_duration/1e-6, np.imag(a)[0,0,0,0,0,0,:])
+    plt.xlabel(r"$t$ [us]")
+    plt.ylabel(r"$a$")
+    plt.legend(["Real part", "Imaginary part"])
+
+# channel = MultiTapRayleighBlockFading(num_rx=1, num_rx_ant=1, num_tx=1, num_tx_ant=1, num_paths=4)
+# num_time_steps = 100
+# timestep_duration = 1e-6
+# visualize_channel_model(channel, timestep_duration, num_time_steps)
