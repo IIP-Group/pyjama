@@ -67,8 +67,8 @@ class Model(tf.keras.Model):
         self._carrier_frequency = 3.5e9
         self._fft_size = 128
         self._subcarrier_spacing = 30e3
-        self._num_ofdm_symbols = 18
-        self._cyclic_prefix_length = 40
+        self._num_ofdm_symbols = 14
+        self._cyclic_prefix_length = 20
         # self._pilot_ofdm_symbol_indices = [2, 11]
         self._num_bs_ant = 8
         self._num_ut = 4
@@ -314,7 +314,7 @@ class Model(tf.keras.Model):
 
 
 
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 MAX_MC_ITER = 100
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
