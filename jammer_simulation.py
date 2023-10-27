@@ -40,6 +40,7 @@ from sionna.utils.metrics import compute_ber
 from jammer.jammer import OFDMJammer, TimeDomainOFDMJammer
 from jammer.mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
+from channel_models import MultiTapRayleighBlockFading
 from jammer.utils import covariance_estimation_from_signals, ofdm_frequency_response_from_cir
 
 
@@ -99,34 +100,8 @@ class Model(tf.keras.Model):
         # Setup StreamManagement
         self._sm = StreamManagement(self._rx_tx_association, self._num_streams_per_tx)
 
-        # Configure antenna arrays
-        self._ut_array = AntennaArray(
-                                 num_rows=1,
-                                 num_cols=1,
-                                 polarization="single",
-                                 polarization_type="V",
-                                 antenna_pattern="omni",
-                                 carrier_frequency=self._carrier_frequency)
-
-        self._bs_array = AntennaArray(num_rows=1,
-                                      num_cols=int(self._num_bs_ant/2),
-                                      polarization="dual",
-                                      polarization_type="cross",
-                                      antenna_pattern="38.901",
-                                      carrier_frequency=self._carrier_frequency)
-
-        channel_parameters = {
-            "carrier_frequency": self._carrier_frequency,
-            "ut_array": self._ut_array,
-            "bs_array": self._bs_array,
-            "direction": "uplink",
-            "enable_pathloss": False,
-            "enable_shadow_fading": False,
-        }
-        if self._scenario in ["umi", "uma"]:
-            channel_parameters["o2i_model"] = "low"
-        
-        self._channel_model = self._channel_class(**channel_parameters)
+        # instantiate ut-bs-channel
+        self._channel_model = self._generate_channel(self._scenario, num_tx_ant=self._num_ut_ant)
 
         # Instantiate other building blocks
         self._binary_source = BinarySource()
@@ -171,15 +146,7 @@ class Model(tf.keras.Model):
 
         # here I just create a new channel model as a caller
         if self._jammer_present:
-            jammer_channel_parameters = channel_parameters.copy()
-            self._jammer_array = AntennaArray(num_rows=1,
-                                        num_cols=jammer_parameters["num_tx_ant"],
-                                        polarization="single",
-                                        polarization_type="V",
-                                        antenna_pattern="omni",
-                                        carrier_frequency=self._carrier_frequency)
-            jammer_channel_parameters["ut_array"] = self._jammer_array
-            self._jammer_channel_model = self._channel_class(**jammer_channel_parameters)
+            self._jammer_channel_model = self._generate_channel(self._scenario, num_tx_ant=jammer_parameters["num_tx_ant"])
             self._num_jammer = jammer_parameters["num_tx"]
             self._num_jammer_ant = jammer_parameters["num_tx_ant"]
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
@@ -220,13 +187,52 @@ class Model(tf.keras.Model):
                                                   max_ut_velocity=0.0)
             self._jammer_channel_model.set_topology(*topology)
 
-    # def jammer_variance(self, batch_size, dtype=tf.complex64):
-    #     """Overwrite to change variance of jammer signal before channel.
-    #     Output: rho: [batch_size, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size]
-    #     """
-    #     # shape = [batch_size, self._num_jammer, self._num_jammer_ant, self._num_ofdm_symbols, self._fft_size]
-    #     # return self._jammer_power * tf.ones(shape, dtype=tf.as_dtype(dtype))
-    #     return tf.constant(self._jammer_power, dtype=dtype)
+    def _generate_channel(self, channel_type, **kwargs):
+        """Supports UMi, UMa, RMa, Rayleigh, MultiTapRayleigh"""
+        channel_type_to_class = {
+            "umi": UMi,
+            "uma": UMa,
+            "rma": RMa,
+            "rayleigh": RayleighBlockFading,
+            "multitap_rayleigh": MultiTapRayleighBlockFading,
+        }
+        channel_class = channel_type_to_class[channel_type]
+
+        if channel_type in ["umi", "uma", "rma"]:
+            # only configurable parameters:
+            num_tx_ant = kwargs.get("num_tx_ant", 1)
+            # Configure antenna arrays
+            ut_array = AntennaArray(
+                                num_rows=1,
+                                num_cols=num_tx_ant,
+                                polarization="single",
+                                polarization_type="V",
+                                antenna_pattern="omni",
+                                carrier_frequency=self._carrier_frequency)
+
+            bs_array = AntennaArray(num_rows=1,
+                                num_cols=int(self._num_bs_ant/2),
+                                polarization="dual",
+                                polarization_type="cross",
+                                antenna_pattern="38.901",
+                                carrier_frequency=self._carrier_frequency)
+
+            channel_parameters = {
+                "carrier_frequency": self._carrier_frequency,
+                "ut_array": ut_array,
+                "bs_array": bs_array,
+                "direction": "uplink",
+                "enable_pathloss": False,
+                "enable_shadow_fading": False,
+            }
+            if self._scenario in ["umi", "uma"]:
+                channel_parameters["o2i_model"] = "low"
+        else:
+            # TODO: implement Rayleigh, MultiTapRayleigh
+            raise NotImplementedError(f"Channel type {channel_type} not implemented.")
+
+        return channel_class(**channel_parameters)
+            
 
     def _check_settings(self):
         if self._perfect_jammer_csi:
