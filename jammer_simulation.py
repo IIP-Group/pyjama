@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
+tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,7 +52,6 @@ class Model(tf.keras.Model):
         super().__init__()
         self._scenario = scenario
         self._domain = domain
-        self._channel_class = {"umi": UMi, "uma": UMa, "rma": RMa}[scenario]
         self._perfect_csi = perfect_csi
         self._perfect_jammer_csi = perfect_jammer_csi
         self._num_silent_pilot_symbols = num_silent_pilot_symbols
@@ -71,7 +70,7 @@ class Model(tf.keras.Model):
         self._num_ofdm_symbols = 14
         self._cyclic_prefix_length = 20
         # self._pilot_ofdm_symbol_indices = [2, 11]
-        self._num_bs_ant = 8
+        self._num_bs_ant = 16
         self._num_ut = 4
         self._num_ut_ant = 1
         self._num_bits_per_symbol = 2
@@ -101,7 +100,7 @@ class Model(tf.keras.Model):
         self._sm = StreamManagement(self._rx_tx_association, self._num_streams_per_tx)
 
         # instantiate ut-bs-channel
-        self._channel_model = self._generate_channel(self._scenario, num_tx_ant=self._num_ut_ant)
+        self._channel_model = self._generate_channel(self._scenario, num_tx=self._num_ut, num_tx_ant=self._num_ut_ant)
 
         # Instantiate other building blocks
         self._binary_source = BinarySource()
@@ -146,9 +145,9 @@ class Model(tf.keras.Model):
 
         # here I just create a new channel model as a caller
         if self._jammer_present:
-            self._jammer_channel_model = self._generate_channel(self._scenario, num_tx_ant=jammer_parameters["num_tx_ant"])
             self._num_jammer = jammer_parameters["num_tx"]
             self._num_jammer_ant = jammer_parameters["num_tx_ant"]
+            self._jammer_channel_model = self._generate_channel(self._scenario, num_tx=self._num_jammer, num_tx_ant=self._num_jammer_ant)
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             if(self._domain == "freq"):
                 self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
@@ -170,16 +169,17 @@ class Model(tf.keras.Model):
         
     def new_ut_topology(self, batch_size):
         """Set new user topology"""
-        topology = gen_single_sector_topology(batch_size,
-                                              self._num_ut,
-                                              self._scenario,
-                                              min_ut_velocity=0.0,
-                                              max_ut_velocity=0.0)
-        self._channel_model.set_topology(*topology)
+        if self._scenario in ["umi", "uma", "rma"]:
+            topology = gen_single_sector_topology(batch_size,
+                                                  self._num_ut,
+                                                  self._scenario,
+                                                  min_ut_velocity=0.0,
+                                                  max_ut_velocity=0.0)
+            self._channel_model.set_topology(*topology)
 
     def new_jammer_topology(self, batch_size):
         """Set new jammer topology"""
-        if self._jammer_present:
+        if self._jammer_present and self._scenario in ["umi", "uma", "rma"]:
             topology = gen_single_sector_topology(batch_size,
                                                   self._num_jammer,
                                                   self._scenario,
@@ -227,8 +227,16 @@ class Model(tf.keras.Model):
             }
             if self._scenario in ["umi", "uma"]:
                 channel_parameters["o2i_model"] = "low"
+        elif channel_type in ["rayleigh", "multitap_rayleigh"]:
+            channel_parameters = {
+                "num_tx": kwargs["num_tx"],
+                "num_tx_ant": kwargs["num_tx_ant"],
+                "num_rx": 1,
+                "num_rx_ant": self._num_bs_ant,
+            }
+            if channel_type == "multitap_rayleigh":
+                channel_parameters["num_paths"] = kwargs.get("num_paths", 3)
         else:
-            # TODO: implement Rayleigh, MultiTapRayleigh
             raise NotImplementedError(f"Channel type {channel_type} not implemented.")
 
         return channel_class(**channel_parameters)
@@ -320,8 +328,8 @@ class Model(tf.keras.Model):
 
 
 
-BATCH_SIZE = 2
-MAX_MC_ITER = 100
+BATCH_SIZE = 4
+MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
@@ -378,6 +386,7 @@ model_parameters = {
 # model_parameters["jammer_present"] = False
 # simulate("Freq. Domain, no jammer")
 
+model_parameters["scenario"] = "multitap_rayleigh"
 ber_plots.title = "Time Domain. Perfect CSI. POS."
 model_parameters["jammer_mitigation"] = "ian"
 model_parameters["perfect_jammer_csi"] = True

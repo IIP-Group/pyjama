@@ -140,3 +140,5 @@ def visualize_channel_model(channel, timestep_duration, num_time_steps):
 # num_time_steps = 100
 # timestep_duration = 1e-6
 # visualize_channel_model(channel, timestep_duration, num_time_steps)
+
+# %%

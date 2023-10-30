@@ -97,8 +97,6 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         a, tau = self._channel_model(batch_size, self._rg.num_time_samples + self._l_tot - 1, self._rg.bandwidth)
         h_time = cir_to_time_channel(self._rg.bandwidth, a, tau, self._l_min, self._l_max, self._normalize_channel)
 
-        # TODO: scale jammer signal according to rho
-
         if self._send_cyclic_prefix:
             x_jammer_freq = self._sampler([batch_size, self._num_tx, self._num_tx_ant, self._rg.num_ofdm_symbols, self._rg.fft_size], self._dtype_as_dtype)
             x_jammer_time = self._modulator(x_jammer_freq)
