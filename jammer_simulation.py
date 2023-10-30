@@ -293,9 +293,11 @@ class Model(tf.keras.Model):
         if self._domain == "time":
             y = self._demodulator(y)
         if self._estimate_jammer_covariance:
-            # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
             # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
             jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
+            # # code to display jammer dimensionality
+            # bar_plot(relative_singular_values(jammer_signals).numpy())
+            # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
             jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
         if self._jammer_mitigation == "pos":
             if self._return_jammer_csi:
@@ -325,7 +327,20 @@ class Model(tf.keras.Model):
         return b, llr
 
 
+def relative_singular_values(jammer_signals):
+    """Input: jammer_signals: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]"""
+    j = tf.transpose(jammer_signals, [0, 4, 1, 2, 3])
+    # [batch_size, fft_size, num_rx*rx_ant, num_ofdm_symbols]
+    j = sionna.utils.flatten_dims(j, 2, 2)
+    sigma = tf.linalg.svd(j, compute_uv=False)
+    trace = tf.reduce_sum(sigma, axis=-1)
+    # normalize to sum of eigenvalues = 1
+    sigma = sigma / trace[:, :, None]
+    return tf.reduce_mean(sigma, axis=(0, 1))
 
+def bar_plot(values):
+    plt.bar(np.arange(len(values)), values)
+    plt.show()
 
 
 BATCH_SIZE = 4
@@ -371,6 +386,8 @@ model_parameters = {
     "jammer_parameters": jammer_parameters,
 }
 
+# TODO perfect_jammer_csi is kind of useless (only used in 2 other variables). Also, jammer csi is not returned unless we need it (i.e. jammer mitigation)
+
 # ber_plots.title = "Time vs Freq. Domain, Perfect CSI"
 # model_parameters["perfect_jammer_csi"] = False
 # model_parameters["perfect_csi"] = True
@@ -386,19 +403,19 @@ model_parameters = {
 # model_parameters["jammer_present"] = False
 # simulate("Freq. Domain, no jammer")
 
-model_parameters["scenario"] = "multitap_rayleigh"
-ber_plots.title = "Time Domain. Perfect CSI. POS."
-model_parameters["jammer_mitigation"] = "ian"
-model_parameters["perfect_jammer_csi"] = True
-model_parameters["jammer_present"] = True
-model_parameters["jammer_power"] = 30
-model_parameters["domain"] = "freq"
-simulate("Freq. Domain")
-model_parameters["domain"] = "time"
-jammer_parameters["send_cyclic_prefix"] = True
-simulate("Time Domain, Jammer with CP")
-jammer_parameters["send_cyclic_prefix"] = False
-simulate("Time Domain, Jammer without CP")
+# model_parameters["scenario"] = "multitap_rayleigh"
+# ber_plots.title = "Time Domain. Perfect CSI. POS."
+# model_parameters["jammer_mitigation"] = "ian"
+# model_parameters["perfect_jammer_csi"] = True
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_power"] = 250
+# model_parameters["domain"] = "freq"
+# simulate("Freq. Domain")
+# model_parameters["domain"] = "time"
+# jammer_parameters["send_cyclic_prefix"] = True
+# simulate("Time Domain, Jammer with CP")
+# jammer_parameters["send_cyclic_prefix"] = False
+# simulate("Time Domain, Jammer without CP")
 
 # model_parameters["jammer_present"] = True
 # model_parameters["jammer_mitigation"] = "pos"
@@ -453,6 +470,6 @@ simulate("Time Domain, Jammer without CP")
 
 
 
-ber_plots()
+# ber_plots()
 
 # %%
