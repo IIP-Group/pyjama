@@ -154,12 +154,12 @@ class Model(tf.keras.Model):
             else:
                 if self._return_jammer_csi:
                     # return signal in time domain, jammer freq. response in freq. domain
-                    return_in_time_domain = (True, False)
+                    return_domain = ("time", "freq")
                 else:
-                    return_in_time_domain = True
+                    return_domain = "time"
                 self._jammer = TimeDomainOFDMJammer(self._jammer_channel_model,
                                                     self._rg, return_channel=self._return_jammer_csi,
-                                                    return_in_time_domain=return_in_time_domain,
+                                                    return_domain=return_domain,
                                                     **jammer_parameters)
         
         if self._jammer_mitigation == "pos":
