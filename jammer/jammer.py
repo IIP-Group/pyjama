@@ -6,7 +6,7 @@ from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_t
 from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
-from .utils import sample_function, ofdm_frequency_response_from_cir
+from .utils import sample_function, sparse_mask, ofdm_frequency_response_from_cir
 
 class OFDMJammer(tf.keras.layers.Layer):
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
@@ -34,13 +34,15 @@ class OFDMJammer(tf.keras.layers.Layer):
         
     def call(self, inputs):
         """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
-        Second argument: rho: broadcastable to [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
+        Second argument: rho: broadcastable to [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
         y_unjammed, rho = inputs
-        # input_shape = y_unjammed.shape.as_list()
         input_shape = tf.shape(y_unjammed)
 
-        jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
-        x_jammer = tf.sqrt(rho) * self.sample(jammer_input_shape)
+        # jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
+        jammer_input_shape = tf.concat([[input_shape[0]], [self._num_tx, self._num_tx_ant], input_shape[-2:]], axis=0)
+        x_jammer = self.sample(jammer_input_shape)
+        rho = self.make_sparse(rho, tf.shape(x_jammer), 1.0, 1.0)
+        x_jammer = tf.sqrt(rho) * x_jammer
         if self._return_channel:
             y_jammer, h_freq_jammer = self._ofdm_channel(x_jammer)
         else:
@@ -57,6 +59,14 @@ class OFDMJammer(tf.keras.layers.Layer):
             return self._sample_function(shape, self._dtype_as_dtype)
         else:
             raise TypeError("dtype must be complex")
+
+    def make_sparse(self, data, shape, s_symbol, s_subcarrier):
+        """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero"""
+        data = tf.broadcast_to(data, shape)
+        mask = sparse_mask(shape.numpy(), [1.0, 1.0, 1.0, s_symbol, s_subcarrier])
+        return data * tf.cast(mask, data.dtype)
+
+
     
 
 class TimeDomainOFDMJammer(tf.keras.layers.Layer):
@@ -113,17 +123,3 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
             return y_ret, h_ret
         else:
             return y_time if self._return_domain == "time" else self._demodulator(y_time)
-        # if self._return_in_time_domain:
-        #     if self._return_channel:
-        #         return y_time, h_time
-        #     else:
-        #         return y_time
-        # else:
-        #     y_freq = self._demodulator(y_time)
-        #     if self._return_channel:
-        #         # We need to downsample the path gains `a` to the OFDM symbol rate prior to converting the CIR to the channel frequency response.
-        #         h_freq = ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=self._normalize_channel)
-        #         return y_freq, h_freq
-        #     else:
-        #         return y_freq
-        

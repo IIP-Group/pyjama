@@ -1,7 +1,9 @@
+#%%
 import tensorflow as tf
 import numpy as np
 import sionna
 import copy
+import math
 
 def sample_function(sampler, dtype):
     """
@@ -75,3 +77,26 @@ def ofdm_frequency_response_from_cir(a, tau, rg, normalize):
     a_freq = a_freq[...,:rg.num_ofdm_symbols]
     h_freq = sionna.channel.cir_to_ofdm_channel(frequencies, a_freq, tau, normalize=normalize)
     return h_freq
+
+
+
+# TODO possibly make this use sparse tensors for better performance
+# TODO should we integrate this more general function into jammer (let every input dimension have the option to be sparse)
+def sparse_mask(shape, sparsity, dtype=tf.float64):
+    """shape: list of int. Output shape
+    sparsity: list of float. Same length as shape. Probability of slice being one.
+    Returns a mask with 1.0 for non-zero elements and 0.0 for zero elements."""
+    assert len(shape) == len(sparsity)
+
+    mask = np.ones(shape, dtype=dtype.as_numpy_dtype)
+    for i, s in enumerate(shape):
+        assert s > 0
+        zero_indices = np.random.choice(s, size=round(s*(1-sparsity[i])), replace=False)
+        mask_index = [slice(None)] * len(shape)
+        mask_index[i] = zero_indices
+        mask[tuple(mask_index)] = 0.0
+
+    return tf.convert_to_tensor(mask)
+        
+# x = sparse_mask([5,5], [0.2, 0.8])
+# print(x)

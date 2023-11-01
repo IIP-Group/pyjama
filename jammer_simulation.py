@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-tf.config.run_functions_eagerly(True)
+# tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -388,10 +388,6 @@ model_parameters = {
 
 # TODO perfect_jammer_csi is kind of useless (only used in 2 other variables). Also, jammer csi is not returned unless we need it (i.e. jammer mitigation)
 
-# ber_plots.title = "Time vs Freq. Domain, Perfect CSI"
-# model_parameters["perfect_jammer_csi"] = False
-# model_parameters["perfect_csi"] = True
-
 # model_parameters["domain"] = "time"
 # simulate("Time Domain, no jammer")
 # model_parameters["jammer_present"] = True
@@ -417,9 +413,9 @@ model_parameters = {
 # jammer_parameters["send_cyclic_prefix"] = False
 # simulate("Time Domain, Jammer without CP")
 
-# model_parameters["jammer_present"] = True
-# model_parameters["jammer_mitigation"] = "pos"
-# simulate("LMMSE with Jammer, POS")
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "pos"
+simulate("LMMSE with Jammer, POS")
 
 # model_parameters["jammer_present"] = True
 # model_parameters["jammer_mitigation"] = "ian"
