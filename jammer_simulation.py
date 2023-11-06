@@ -1,6 +1,6 @@
 #%%
 import os
-gpu_num = 5 # Use "" to use the CPU
+gpu_num = 2 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
+tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np

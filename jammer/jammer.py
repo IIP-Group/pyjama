@@ -9,7 +9,7 @@ import copy
 from .utils import sample_function, sparse_mask, ofdm_frequency_response_from_cir
 
 class OFDMJammer(tf.keras.layers.Layer):
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
+    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jamming_type="barrage", pilot_indices=[], density_symbols=1.0, density_subcarriers=1.0, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
         r"""
         sampler: String in ["uniform", "gaussian"], a constellation, or function with signature (shape, dtype) -> tf.Tensor, where elementwise E[|x|^2] = 1
         """
@@ -18,6 +18,11 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._rg = rg
         self._num_tx = num_tx
         self._num_tx_ant = num_tx_ant
+        assert jamming_type in ["barrage", "pilot", "data"]
+        self._jamming_type = jamming_type
+        self._pilot_indices = pilot_indices
+        self._density_symbols = density_symbols
+        self._density_subcarriers = density_subcarriers
         self._normalize_channel = normalize_channel
         self._return_channel = return_channel
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
@@ -41,7 +46,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         # jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
         jammer_input_shape = tf.concat([[input_shape[0]], [self._num_tx, self._num_tx_ant], input_shape[-2:]], axis=0)
         x_jammer = self.sample(jammer_input_shape)
-        rho = self.make_sparse(rho, tf.shape(x_jammer), 1.0, 1.0)
+        rho = self.make_sparse(rho, tf.shape(x_jammer), self._density_symbols, self._density_subcarriers)
         x_jammer = tf.sqrt(rho) * x_jammer
         if self._return_channel:
             y_jammer, h_freq_jammer = self._ofdm_channel(x_jammer)
@@ -63,11 +68,35 @@ class OFDMJammer(tf.keras.layers.Layer):
     def make_sparse(self, data, shape, s_symbol, s_subcarrier):
         """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero"""
         data = tf.broadcast_to(data, shape)
-        mask = sparse_mask(shape.numpy(), [1.0, 1.0, 1.0, s_symbol, s_subcarrier])
-        return data * tf.cast(mask, data.dtype)
 
+        num_symbols, num_subcarriers = shape[-2:]
+        num_nonzero_symbols = tf.cast(tf.round(s_symbol * tf.cast(num_symbols, tf.float32)), tf.int32)
+        num_nonzero_subcarriers = tf.cast(tf.round(s_subcarrier * tf.cast(num_subcarriers, tf.float32)), tf.int32)
+
+        # create sparse masks
+        symbol_mask = tf.concat([tf.ones([num_nonzero_symbols]), tf.zeros([num_symbols - num_nonzero_symbols])], axis=0)
+        symbol_mask = tf.random.shuffle(symbol_mask)
+        subcarrier_mask = tf.concat([tf.ones([num_nonzero_subcarriers]), tf.zeros([num_subcarriers - num_nonzero_subcarriers])], axis=0)
+        subcarrier_mask = tf.random.shuffle(subcarrier_mask)
+
+        return data * tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
+
+    # def zero_by_type(rho, jamming_type, pilot_indices):
+    #     if jamming_type == "barrage":
+    #         return rho
+    #     elif jamming_type == "pilot":
+    #         mask = 
+
+
+    # def make_sparse(self, data, shape, s_symbol, s_subcarrier):
+    #     """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero"""
+    #     data = tf.broadcast_to(data, shape)
+    #     mask = sparse_mask(shape.numpy(), [1.0, 1.0, 1.0, s_symbol, s_subcarrier])
+    #     return data * tf.cast(mask, data.dtype)
 
     
+
+
 
 class TimeDomainOFDMJammer(tf.keras.layers.Layer):
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, send_cyclic_prefix=False, normalize_channel=False, return_channel=False, sampler="uniform", return_domain="freq", dtype=tf.complex64, **kwargs):
