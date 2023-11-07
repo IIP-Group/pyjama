@@ -9,7 +9,7 @@ import copy
 from .utils import sample_function, sparse_mask, ofdm_frequency_response_from_cir
 
 class OFDMJammer(tf.keras.layers.Layer):
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jamming_type="barrage", pilot_indices=[], density_symbols=1.0, density_subcarriers=1.0, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
+    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jamming_type="barrage", density_symbols=1.0, density_subcarriers=1.0, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
         r"""
         sampler: String in ["uniform", "gaussian"], a constellation, or function with signature (shape, dtype) -> tf.Tensor, where elementwise E[|x|^2] = 1
         """
@@ -19,7 +19,6 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._num_tx = num_tx
         self._num_tx_ant = num_tx_ant
         self._jamming_type = jamming_type
-        self._pilot_indices = pilot_indices
         self._density_symbols = density_symbols
         self._density_subcarriers = density_subcarriers
         self._normalize_channel = normalize_channel
@@ -48,7 +47,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         
     def call(self, inputs):
         """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
-        Second argument: rho: broadcastable to [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
+        Second argument: rho: broadcastable to [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
         y_unjammed, rho = inputs
         input_shape = tf.shape(y_unjammed)
 
@@ -78,32 +77,28 @@ class OFDMJammer(tf.keras.layers.Layer):
         """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero"""
         data = tf.broadcast_to(data, shape)
 
-        num_symbols, num_subcarriers = shape[-2:]
-        num_nonzero_symbols = tf.cast(tf.round(self._density_symbols * tf.cast(num_symbols, tf.float32)), tf.int32)
-        num_nonzero_subcarriers = tf.cast(tf.round(self._density_subcarriers * tf.cast(num_subcarriers, tf.float32)), tf.int32)
+        if self._jamming_type == "barrage":
+            num_symbols, num_subcarriers = shape[-2:]
+            num_nonzero_symbols = tf.cast(tf.round(self._density_symbols * tf.cast(num_symbols, tf.float32)), tf.int32)
+            num_nonzero_subcarriers = tf.cast(tf.round(self._density_subcarriers * tf.cast(num_subcarriers, tf.float32)), tf.int32)
 
-        # create sparse masks
-        symbol_mask = tf.concat([tf.ones([num_nonzero_symbols]), tf.zeros([num_symbols - num_nonzero_symbols])], axis=0)
-        symbol_mask = tf.random.shuffle(symbol_mask)
-        subcarrier_mask = tf.concat([tf.ones([num_nonzero_subcarriers]), tf.zeros([num_subcarriers - num_nonzero_subcarriers])], axis=0)
-        subcarrier_mask = tf.random.shuffle(subcarrier_mask)
+            # create sparse masks
+            symbol_mask = tf.concat([tf.ones([num_nonzero_symbols]), tf.zeros([num_symbols - num_nonzero_symbols])], axis=0)
+            symbol_mask = tf.random.shuffle(symbol_mask)
+            subcarrier_mask = tf.concat([tf.ones([num_nonzero_subcarriers]), tf.zeros([num_subcarriers - num_nonzero_subcarriers])], axis=0)
+            subcarrier_mask = tf.random.shuffle(subcarrier_mask)
 
-        return data * tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
-
-    # def zero_by_type(rho, jamming_type, pilot_indices):
-    #     if jamming_type == "barrage":
-    #         return rho
-    #     elif jamming_type == "pilot":
-    #         mask = 
-
-
-    # def make_sparse(self, data, shape, s_symbol, s_subcarrier):
-    #     """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero"""
-    #     data = tf.broadcast_to(data, shape)
-    #     mask = sparse_mask(shape.numpy(), [1.0, 1.0, 1.0, s_symbol, s_subcarrier])
-    #     return data * tf.cast(mask, data.dtype)
-
-    
+            return data * tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
+        
+        # only pilot or data
+        pilot_mask = tf.cast(self._rg.pilot_pattern.mask, tf.bool)
+        # take mask where any UT is transmitting, i.e. sum over all (tx, tx_ant) dimensions
+        pilot_mask = tf.reduce_any(pilot_mask, axis=[0, 1])
+        
+        if self._jamming_type == "pilot":
+            return data * tf.cast(pilot_mask, data.dtype)
+        else:
+            return data * tf.cast(tf.logical_not(pilot_mask), data.dtype)
 
 
 

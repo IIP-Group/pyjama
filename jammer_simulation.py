@@ -413,6 +413,7 @@ model_parameters = {
 # jammer_parameters["send_cyclic_prefix"] = False
 # simulate("Time Domain, Jammer without CP")
 
+jammer_parameters["jamming_type"] = "pilot"
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 simulate("LMMSE with Jammer, POS")
