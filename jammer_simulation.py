@@ -12,7 +12,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-tf.config.run_functions_eagerly(True)
+# tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -67,7 +67,8 @@ class Model(tf.keras.Model):
         self._carrier_frequency = 3.5e9
         self._fft_size = 128
         self._subcarrier_spacing = 30e3
-        self._num_ofdm_symbols = 14
+        # self._num_ofdm_symbols = 14
+        self._num_ofdm_symbols = 64
         self._cyclic_prefix_length = 20
         # self._pilot_ofdm_symbol_indices = [2, 11]
         self._num_bs_ant = 16
@@ -324,7 +325,7 @@ class Model(tf.keras.Model):
         x_hat, no_eff = self._lmmse_equ([y, h_hat, err_var, no])
         llr = self._demapper([x_hat, no_eff])
         llr = tf.reshape(llr, [batch_size, -1])
-        return b, llr
+        return b, llr, relative_singular_values(jammer_signals)
 
 
 def relative_singular_values(jammer_signals):
@@ -343,7 +344,7 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
@@ -378,7 +379,7 @@ model_parameters = {
     "scenario": "umi",
     "perfect_csi": True,
     "domain": "freq",
-    "num_silent_pilot_symbols": 3,
+    "num_silent_pilot_symbols": 4,
     "jammer_present": False,
     "perfect_jammer_csi": False,
     "jammer_mitigation": None,
@@ -387,6 +388,27 @@ model_parameters = {
 }
 
 # TODO perfect_jammer_csi is kind of useless (only used in 2 other variables). Also, jammer csi is not returned unless we need it (i.e. jammer mitigation)
+
+model_parameters["domain"] = "time"
+model_parameters["jammer_present"] = True
+model_parameters["jammer_power"] = 100.0
+model_parameters["jammer_mitigation"] = "pos"
+model_parameters["num_silent_pilot_symbols"] = 50
+model_parameters["scenario"] = "umi"
+ebno_db = 30.0
+# simulate_single(ebno_db)
+rel_svs = []
+model = Model(**model_parameters)
+for i in range(1000):
+    b, llr, rel_sv = model(BATCH_SIZE, ebno_db)
+    rel_svs.append(rel_sv)
+rel_svs = tf.stack(rel_svs)
+mean = tf.reduce_mean(rel_svs, axis=0)
+std = tf.math.reduce_std(rel_svs, axis=0)
+plt.title("UMi")
+plt.bar(np.arange(len(mean)), mean, yerr=2*std)
+
+
 
 # model_parameters["domain"] = "time"
 # simulate("Time Domain, no jammer")
@@ -413,10 +435,10 @@ model_parameters = {
 # jammer_parameters["send_cyclic_prefix"] = False
 # simulate("Time Domain, Jammer without CP")
 
-jammer_parameters["jamming_type"] = "pilot"
-model_parameters["jammer_present"] = True
-model_parameters["jammer_mitigation"] = "pos"
-simulate("LMMSE with Jammer, POS")
+# jammer_parameters["jamming_type"] = "pilot"
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_mitigation"] = "pos"
+# simulate("LMMSE with Jammer, POS")
 
 # model_parameters["jammer_present"] = True
 # model_parameters["jammer_mitigation"] = "ian"
