@@ -48,7 +48,7 @@ from jammer.utils import covariance_estimation_from_signals, ofdm_frequency_resp
 class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
-    def __init__(self, scenario, domain="freq", perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None):
+    def __init__(self, scenario, domain="freq", perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None, return_jammer_signals=False):
         super().__init__()
         self._scenario = scenario
         self._domain = domain
@@ -58,6 +58,7 @@ class Model(tf.keras.Model):
         self._silent_pilot_symbol_indices = tf.range(self._num_silent_pilot_symbols)
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
+        self._return_jammer_signals = return_jammer_signals
         self._jammer_power = tf.cast(jammer_power, tf.complex64)
         self._return_jammer_csi = perfect_jammer_csi and jammer_mitigation
         self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_jammer_csi
@@ -325,7 +326,10 @@ class Model(tf.keras.Model):
         x_hat, no_eff = self._lmmse_equ([y, h_hat, err_var, no])
         llr = self._demapper([x_hat, no_eff])
         llr = tf.reshape(llr, [batch_size, -1])
-        return b, llr, relative_singular_values(jammer_signals)
+        if self._return_jammer_signals:
+            return b, llr, jammer_signals
+        else:
+            return b, llr
 
 
 def relative_singular_values(jammer_signals):
@@ -384,6 +388,7 @@ model_parameters = {
     "perfect_jammer_csi": False,
     "jammer_mitigation": None,
     "jammer_power": 1.0,
+    "return_jammer_signals": False,
     "jammer_parameters": jammer_parameters,
 }
 
@@ -394,14 +399,16 @@ model_parameters["jammer_present"] = True
 model_parameters["jammer_power"] = 100.0
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["num_silent_pilot_symbols"] = 50
+model_parameters["return_jammer_signals"] = True
 model_parameters["scenario"] = "umi"
 ebno_db = 30.0
 # simulate_single(ebno_db)
 rel_svs = []
 model = Model(**model_parameters)
-for i in range(1000):
-    b, llr, rel_sv = model(BATCH_SIZE, ebno_db)
-    rel_svs.append(rel_sv)
+# for i in range(1000):
+for i in range(100):
+    b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
+    rel_svs.append(relative_singular_values(jammer_signals))
 rel_svs = tf.stack(rel_svs)
 mean = tf.reduce_mean(rel_svs, axis=0)
 std = tf.math.reduce_std(rel_svs, axis=0)
