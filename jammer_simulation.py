@@ -15,7 +15,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-tf.config.run_functions_eagerly(True)
+# tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -375,6 +375,7 @@ class Model(tf.keras.Model):
         if self._coderate < 1.0:
             llr = self._decoder(llr)
         llr = tf.reshape(llr, [batch_size, -1])
+        b = tf.reshape(b, [batch_size, -1])
         if self._return_jammer_signals:
             return b, llr, jammer_signals
         else:
@@ -397,7 +398,8 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 1
+# BATCH_SIZE = 1
+BATCH_SIZE = 16
 MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
@@ -469,6 +471,11 @@ def wifi_vs_5g():
                 model_parameters["fft_size"] = 64
                 model_parameters["subcarrier_spacing"] = 312.5e3
                 model_parameters["cyclic_prefix_length"] = 16
+            else:
+                model_parameters["carrier_frequency"] = 3.5e9
+                model_parameters["fft_size"] = 128
+                model_parameters["subcarrier_spacing"] = 30e3
+                model_parameters["cyclic_prefix_length"] = 20
             rel_svs = []
             model = Model(**model_parameters)
             # for i in range(1000):
@@ -569,6 +576,14 @@ def multi_jammers():
     # plt.savefig(f"{name}.png")
     plt.show()
 
+model_parameters["jammer_present"] = True
+model_parameters["perfect_csi"] = False
+model_parameters["jammer_mitigation"] = "pos"
+simulate("No Coding")
+model_parameters["coderate"] = 0.5
+simulate("Coding")
+ber_plots()
+
 # model_parameters["domain"] = "time"
 # model_parameters["jammer_present"] = True
 # model_parameters["jammer_power"] = 316.0
@@ -577,12 +592,12 @@ def multi_jammers():
 # model_parameters["num_ofdm_symbols"] = 64
 # simulate("Time Domain, POS")
 
-model_parameters["coderate"] = 0.5
-model_parameters["domain"] = "time"
-simulate("Time Domain, no jammer")
-model_parameters["jammer_present"] = True
-model_parameters["perfect_jammer_csi"] = True
-simulate("Time Domain, Jammer with CP")
+# model_parameters["coderate"] = 0.5
+# model_parameters["domain"] = "time"
+# simulate("Time Domain, no jammer")
+# model_parameters["jammer_present"] = True
+# model_parameters["perfect_jammer_csi"] = True
+# simulate("Time Domain, Jammer with CP")
 # model_parameters["domain"] = "freq"
 # simulate("Freq. Domain, Jammer with CP")
 # model_parameters["perfect_jammer_csi"] = False
