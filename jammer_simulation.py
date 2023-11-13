@@ -1,6 +1,8 @@
 #%%
 import os
-gpu_num = 2 # Use "" to use the CPU
+import drjit
+# gpu_num = 2 # Use "" to use the CPU
+gpu_num = [0, 1, 2, 3] # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -8,7 +10,8 @@ import tensorflow as tf
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     try:
-        tf.config.experimental.set_memory_growth(gpus[0], True)
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
@@ -48,7 +51,7 @@ from jammer.utils import covariance_estimation_from_signals, ofdm_frequency_resp
 class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
-    def __init__(self, scenario, domain="freq", perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None, return_jammer_signals=False):
+    def __init__(self, scenario, domain="freq", los=None, indoor_probability=0.8, perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None, return_jammer_signals=False):
         super().__init__()
         self._scenario = scenario
         self._domain = domain
@@ -60,6 +63,10 @@ class Model(tf.keras.Model):
         self._jammer_mitigation = jammer_mitigation
         self._return_jammer_signals = return_jammer_signals
         self._jammer_power = tf.cast(jammer_power, tf.complex64)
+        #TODO should these kinds of parameters go into e.g. a dict for the channel parameters?
+        self._los = los
+        self._indoor_probability = indoor_probability
+
         self._return_jammer_csi = perfect_jammer_csi and jammer_mitigation
         self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_jammer_csi
         
@@ -383,6 +390,8 @@ model_parameters = {
     "scenario": "umi",
     "perfect_csi": True,
     "domain": "freq",
+    "los": None,
+    "indoor_probability": 0.8,
     "num_silent_pilot_symbols": 4,
     "jammer_present": False,
     "perfect_jammer_csi": False,
@@ -396,25 +405,35 @@ model_parameters = {
 
 model_parameters["domain"] = "time"
 model_parameters["jammer_present"] = True
-model_parameters["jammer_power"] = 100.0
+model_parameters["jammer_power"] = 316.0
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["num_silent_pilot_symbols"] = 50
 model_parameters["return_jammer_signals"] = True
-model_parameters["scenario"] = "umi"
 ebno_db = 30.0
+name = "Log-Scale"
 # simulate_single(ebno_db)
-rel_svs = []
-model = Model(**model_parameters)
-# for i in range(1000):
-for i in range(100):
-    b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
-    rel_svs.append(relative_singular_values(jammer_signals))
-rel_svs = tf.stack(rel_svs)
-mean = tf.reduce_mean(rel_svs, axis=0)
-std = tf.math.reduce_std(rel_svs, axis=0)
-plt.title("UMi")
-plt.bar(np.arange(len(mean)), mean, yerr=2*std)
-
+fig, (ax0, ax1, ax2) = plt.subplots(1, 3)
+fig.set_size_inches(18.5, 6)
+axis = {"umi": ax0, "uma": ax1, "rma": ax2}
+for scenario in ["umi", "uma", "rma"]:
+    rel_svs = []
+    model_parameters["scenario"] = scenario
+    model = Model(**model_parameters)
+    for i in range(1000):
+        if i % 100 == 0:
+            print(i)
+        b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
+        rel_svs.append(relative_singular_values(jammer_signals))
+    rel_svs = tf.stack(rel_svs)
+    mean = tf.reduce_mean(rel_svs, axis=0)
+    std = tf.math.reduce_std(rel_svs, axis=0)
+    # plot
+    axis[scenario].set_title(scenario)
+    #log scale
+    # axis[scenario].set_yscale("log")
+    axis[scenario].bar(np.arange(len(mean)), mean, yerr=2*std)
+fig.suptitle(name)
+plt.show()
 
 
 # model_parameters["domain"] = "time"
