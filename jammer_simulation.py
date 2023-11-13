@@ -2,7 +2,7 @@
 import os
 import drjit
 # gpu_num = 2 # Use "" to use the CPU
-gpu_num = [0, 1, 2, 3] # Use "" to use the CPU
+gpu_num = 0 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -51,7 +51,28 @@ from jammer.utils import covariance_estimation_from_signals, ofdm_frequency_resp
 class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
-    def __init__(self, scenario, domain="freq", los=None, indoor_probability=0.8, perfect_csi=False, perfect_jammer_csi=False, num_silent_pilot_symbols=0, jammer_present=False, jammer_power=1.0, jammer_parameters={}, jammer_mitigation=None, return_jammer_signals=False):
+    def __init__(self,
+                 scenario,
+                 carrier_frequency=3.5e9,
+                 fft_size=128,
+                 subcarrier_spacing=30e3,
+                 num_ofdm_symbols=14,
+                 cyclic_prefix_length=20,
+                 num_bs_ant=16,
+                 num_ut=4,
+                 num_ut_ant=1,
+                 num_bits_per_symbol=2,
+                 domain="freq",
+                 los=None,
+                 indoor_probability=0.8,
+                 perfect_csi=False,
+                 perfect_jammer_csi=False,
+                 num_silent_pilot_symbols=0,
+                 jammer_present=False,
+                 jammer_power=1.0,
+                 jammer_parameters={},
+                 jammer_mitigation=None,
+                 return_jammer_signals=False):
         super().__init__()
         self._scenario = scenario
         self._domain = domain
@@ -72,17 +93,17 @@ class Model(tf.keras.Model):
         
 
         # Internally set parameters
-        self._carrier_frequency = 3.5e9
-        self._fft_size = 128
-        self._subcarrier_spacing = 30e3
+        self._carrier_frequency = carrier_frequency
+        self._fft_size = fft_size
+        self._subcarrier_spacing = subcarrier_spacing
         # self._num_ofdm_symbols = 14
-        self._num_ofdm_symbols = 64
-        self._cyclic_prefix_length = 20
+        self._num_ofdm_symbols = num_ofdm_symbols
+        self._cyclic_prefix_length = cyclic_prefix_length
         # self._pilot_ofdm_symbol_indices = [2, 11]
-        self._num_bs_ant = 16
-        self._num_ut = 4
-        self._num_ut_ant = 1
-        self._num_bits_per_symbol = 2
+        self._num_bs_ant = num_bs_ant
+        self._num_ut = num_ut
+        self._num_ut_ant = num_ut_ant
+        self._num_bits_per_symbol = num_bits_per_symbol
 
         bs_ut_association = np.zeros([1, self._num_ut])
         bs_ut_association[0, :] = 1
@@ -122,7 +143,9 @@ class Model(tf.keras.Model):
         self._ofdm_channel = OFDMChannel(self._channel_model, self._rg, add_awgn=True,
                                          normalize_channel=True, return_channel=True)
         if self._domain == "time":
+            # TODO only for 802.11n
             self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
+            # self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth, maximum_delay_spread=2.0e-6)
             self._l_tot = self._l_max - self._l_min + 1
             self._time_channel = ApplyTimeChannel(self._rg.num_time_samples,
                                                   l_tot=self._l_tot,
@@ -183,8 +206,9 @@ class Model(tf.keras.Model):
                                                   self._num_ut,
                                                   self._scenario,
                                                   min_ut_velocity=0.0,
-                                                  max_ut_velocity=0.0)
-            self._channel_model.set_topology(*topology)
+                                                  max_ut_velocity=0.0,
+                                                  indoor_probability=self._indoor_probability)
+            self._channel_model.set_topology(*topology, los=self._los)
 
     def new_jammer_topology(self, batch_size):
         """Set new jammer topology"""
@@ -193,8 +217,9 @@ class Model(tf.keras.Model):
                                                   self._num_jammer,
                                                   self._scenario,
                                                   min_ut_velocity=0.0,
-                                                  max_ut_velocity=0.0)
-            self._jammer_channel_model.set_topology(*topology)
+                                                  max_ut_velocity=0.0,
+                                                  indoor_probability=self._indoor_probability)
+            self._jammer_channel_model.set_topology(*topology, los=self._los)
 
     def _generate_channel(self, channel_type, **kwargs):
         """Supports UMi, UMa, RMa, Rayleigh, MultiTapRayleigh"""
@@ -403,49 +428,148 @@ model_parameters = {
 
 # TODO perfect_jammer_csi is kind of useless (only used in 2 other variables). Also, jammer csi is not returned unless we need it (i.e. jammer mitigation)
 
-model_parameters["domain"] = "time"
-model_parameters["jammer_present"] = True
-model_parameters["jammer_power"] = 316.0
-model_parameters["jammer_mitigation"] = "pos"
-model_parameters["num_silent_pilot_symbols"] = 50
-model_parameters["return_jammer_signals"] = True
-ebno_db = 30.0
-name = "Log-Scale"
-# simulate_single(ebno_db)
-fig, (ax0, ax1, ax2) = plt.subplots(1, 3)
-fig.set_size_inches(18.5, 6)
-axis = {"umi": ax0, "uma": ax1, "rma": ax2}
-for scenario in ["umi", "uma", "rma"]:
-    rel_svs = []
-    model_parameters["scenario"] = scenario
-    model = Model(**model_parameters)
-    for i in range(1000):
-        if i % 100 == 0:
-            print(i)
-        b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
-        rel_svs.append(relative_singular_values(jammer_signals))
-    rel_svs = tf.stack(rel_svs)
-    mean = tf.reduce_mean(rel_svs, axis=0)
-    std = tf.math.reduce_std(rel_svs, axis=0)
-    # plot
-    axis[scenario].set_title(scenario)
-    #log scale
-    # axis[scenario].set_yscale("log")
-    axis[scenario].bar(np.arange(len(mean)), mean, yerr=2*std)
-fig.suptitle(name)
-plt.show()
+def wifi_vs_5g():
+    # TODO make maximum delay spread parameter of model (and jammer?)?
+    model_parameters["domain"] = "time"
+    model_parameters["jammer_present"] = True
+    model_parameters["jammer_power"] = 316.0
+    model_parameters["jammer_mitigation"] = "pos"
+    model_parameters["num_silent_pilot_symbols"] = 50
+    model_parameters["num_ofdm_symbols"] = 64
+    model_parameters["return_jammer_signals"] = True
+    ebno_db = 30.0
+    name = "5G vs. 802.11n"
+    # simulate_single(ebno_db)
+    fig, (ax0, ax1, ax2) = plt.subplots(1, 3)
+    fig.set_size_inches(25, 6)
+    axis = {"umi": ax0, "uma": ax1, "rma": ax2}
+    for scenario in ["umi", "uma", "rma"]:
+        model_parameters["scenario"] = scenario
+        for j, protocol in enumerate(["802.11n", "5G"]):
+        # for j, protocol in enumerate(["5G"]):
+            if protocol == "802.11n":
+                model_parameters["carrier_frequency"] = 5.0e9
+                model_parameters["fft_size"] = 64
+                model_parameters["subcarrier_spacing"] = 312.5e3
+                model_parameters["cyclic_prefix_length"] = 16
+            rel_svs = []
+            model = Model(**model_parameters)
+            # for i in range(1000):
+            for i in range(100):
+                if i % 100 == 0:
+                    print(i)
+                b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
+                rel_svs.append(relative_singular_values(jammer_signals))
+            rel_svs = tf.stack(rel_svs)
+            mean = tf.reduce_mean(rel_svs, axis=0)
+            std = tf.math.reduce_std(rel_svs, axis=0)
+            # plot
+            #log scale
+            # axis[scenario].set_yscale("log")
+            axis[scenario].bar(np.arange(len(mean))+(j-0.5)*0.3, mean, 0.3, yerr=2*std, label=f"{protocol}")
+        axis[scenario].set_title(scenario)
+        axis[scenario].legend(loc="upper right")
+    fig.suptitle(name)
+    plt.savefig(f"{name}.png")
+    # plt.show()
 
+def indoor_vs_outdoor():
+    model_parameters["domain"] = "time"
+    model_parameters["jammer_present"] = True
+    model_parameters["jammer_power"] = 316.0
+    model_parameters["jammer_mitigation"] = "pos"
+    model_parameters["num_silent_pilot_symbols"] = 50
+    model_parameters["num_ofdm_symbols"] = 64
+    model_parameters["return_jammer_signals"] = True
+    ebno_db = 30.0
+    name = "Indoor vs. Outdoor, LoS vs. NLoS"
+    # simulate_single(ebno_db)
+    fig, (ax0, ax1, ax2) = plt.subplots(1, 3)
+    fig.set_size_inches(25, 6)
+    axis = {"umi": ax0, "uma": ax1, "rma": ax2}
+    for scenario in ["umi", "uma", "rma"]:
+        model_parameters["scenario"] = scenario
+        for j, setting in enumerate([("los", "indoor"), ("los", "outdoor"), ("nlos", "indoor"), ("nlos", "outdoor")]):
+            los, indoor = setting
+            model_parameters["los"] = True if los == "los" else False
+            model_parameters["indoor_probability"] = 1.0 if indoor == "indoor" else 0.0
+            rel_svs = []
+            model = Model(**model_parameters)
+            for i in range(1000):
+                if i % 100 == 0:
+                    print(i)
+                b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
+                rel_svs.append(relative_singular_values(jammer_signals))
+            rel_svs = tf.stack(rel_svs)
+            mean = tf.reduce_mean(rel_svs, axis=0)
+            std = tf.math.reduce_std(rel_svs, axis=0)
+            # plot
+            #log scale
+            # axis[scenario].set_yscale("log")
+            axis[scenario].bar(np.arange(len(mean))+(j-2)*0.15, mean, 0.15, yerr=2*std, label=f"{los}, {indoor}")
+        axis[scenario].set_title(scenario)
+        axis[scenario].legend(loc="upper right")
+    fig.suptitle(name)
+    plt.savefig(f"{name}.png", bbox_inches='tight')
+    # plt.show()
+
+def multi_jammers():
+    model_parameters["domain"] = "time"
+    model_parameters["jammer_present"] = True
+    model_parameters["jammer_power"] = 316.0
+    model_parameters["jammer_mitigation"] = "pos"
+    model_parameters["num_silent_pilot_symbols"] = 50
+    model_parameters["num_ofdm_symbols"] = 64
+    model_parameters["return_jammer_signals"] = True
+    ebno_db = 30.0
+    name = "Multiple Jammers"
+    # simulate_single(ebno_db)
+    fig, (ax0, ax1, ax2) = plt.subplots(1, 3)
+    fig.set_size_inches(25, 6)
+    axis = {"umi": ax0, "uma": ax1, "rma": ax2}
+    for scenario in ["umi", "uma", "rma"]:
+        for j, jammer_antennas in enumerate([1, 2, 4]):
+            rel_svs = []
+            jammer_parameters["num_tx"] = jammer_antennas
+            model_parameters["scenario"] = scenario
+            model = Model(**model_parameters)
+            for i in range(1000):
+            # for i in range(10):
+                if i % 100 == 0:
+                    print(i)
+                b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
+                rel_svs.append(relative_singular_values(jammer_signals))
+            rel_svs = tf.stack(rel_svs)
+            mean = tf.reduce_mean(rel_svs, axis=0)
+            std = tf.math.reduce_std(rel_svs, axis=0)
+            # plot
+            #log scale
+            # axis[scenario].set_yscale("log")
+            axis[scenario].bar(np.arange(len(mean))+(j-1)*0.2, mean, 0.2, yerr=2*std, label=f"{jammer_antennas} jammer(s)")
+        axis[scenario].set_title(scenario)
+        axis[scenario].legend(loc="upper right")
+    fig.suptitle(name)
+    # plt.savefig(f"{name}.png")
+    plt.show()
 
 # model_parameters["domain"] = "time"
-# simulate("Time Domain, no jammer")
 # model_parameters["jammer_present"] = True
-# model_parameters["perfect_jammer_csi"] = True
-# simulate("Time Domain, Jammer with CP")
-# model_parameters["domain"] = "freq"
-# simulate("Freq. Domain, Jammer with CP")
-# model_parameters["perfect_jammer_csi"] = False
-# model_parameters["jammer_present"] = False
-# simulate("Freq. Domain, no jammer")
+# model_parameters["jammer_power"] = 316.0
+# model_parameters["jammer_mitigation"] = "pos"
+# model_parameters["num_silent_pilot_symbols"] = 50
+# model_parameters["num_ofdm_symbols"] = 64
+# simulate("Time Domain, POS")
+
+model_parameters["domain"] = "time"
+simulate("Time Domain, no jammer")
+model_parameters["jammer_present"] = True
+model_parameters["perfect_jammer_csi"] = True
+simulate("Time Domain, Jammer with CP")
+model_parameters["domain"] = "freq"
+simulate("Freq. Domain, Jammer with CP")
+model_parameters["perfect_jammer_csi"] = False
+model_parameters["jammer_present"] = False
+simulate("Freq. Domain, no jammer")
 
 # model_parameters["scenario"] = "multitap_rayleigh"
 # ber_plots.title = "Time Domain. Perfect CSI. POS."

@@ -78,7 +78,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         data = tf.broadcast_to(data, shape)
 
         if self._jamming_type == "barrage":
-            num_symbols, num_subcarriers = shape[-2:]
+            num_symbols, num_subcarriers = shape[-2], shape[-1]
             num_nonzero_symbols = tf.cast(tf.round(self._density_symbols * tf.cast(num_symbols, tf.float32)), tf.int32)
             num_nonzero_subcarriers = tf.cast(tf.round(self._density_subcarriers * tf.cast(num_subcarriers, tf.float32)), tf.int32)
 
@@ -120,7 +120,9 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
         self._sampler = sample_function(sampler, self._dtype_as_dtype)
 
+        # TODO only for 802.11n
         self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
+        # self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth, maximum_delay_spread=2.0e-6)
         self._l_tot = self._l_max - self._l_min + 1
         self._channel_time = ApplyTimeChannel(self._rg.num_time_samples,
                                               l_tot=self._l_tot,
