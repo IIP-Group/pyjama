@@ -15,7 +15,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
+tf.config.run_functions_eagerly(True)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -62,6 +62,7 @@ class Model(tf.keras.Model):
                  num_ut=4,
                  num_ut_ant=1,
                  num_bits_per_symbol=2,
+                 coderate=1.0,
                  domain="freq",
                  los=None,
                  indoor_probability=0.8,
@@ -96,7 +97,6 @@ class Model(tf.keras.Model):
         self._carrier_frequency = carrier_frequency
         self._fft_size = fft_size
         self._subcarrier_spacing = subcarrier_spacing
-        # self._num_ofdm_symbols = 14
         self._num_ofdm_symbols = num_ofdm_symbols
         self._cyclic_prefix_length = cyclic_prefix_length
         # self._pilot_ofdm_symbol_indices = [2, 11]
@@ -104,6 +104,7 @@ class Model(tf.keras.Model):
         self._num_ut = num_ut
         self._num_ut_ant = num_ut_ant
         self._num_bits_per_symbol = num_bits_per_symbol
+        self._coderate = coderate
 
         bs_ut_association = np.zeros([1, self._num_ut])
         bs_ut_association[0, :] = 1
@@ -135,6 +136,12 @@ class Model(tf.keras.Model):
         # Instantiate other building blocks
         self._binary_source = BinarySource()
         self._qam_source = QAMSource(self._num_bits_per_symbol)
+
+        self._n = int(self._rg.num_data_symbols*self._num_bits_per_symbol)
+        self._k = int(self._n * self._coderate)
+        if coderate < 1.0:
+            self._encoder = LDPC5GEncoder(self._k, self._n)
+            self._decoder = LDPC5GDecoder(self._encoder, hard_out=False)
 
         self._mapper = Mapper("qam", self._num_bits_per_symbol)
         self._rg_mapper = ResourceGridMapper(self._rg)
@@ -287,6 +294,8 @@ class Model(tf.keras.Model):
         "The number of silent pilots must be smaller than the number of OFDM symbols."
         assert self._domain in ["freq", "time"],\
         "domain must be either 'freq' or 'time'"
+        assert self._coderate <= 1.0 and self._coderate >= 0,\
+        "coderate must be in [0, 1]"
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     @tf.function(jit_compile=False)
@@ -295,9 +304,15 @@ class Model(tf.keras.Model):
         self.new_ut_topology(batch_size)
         self.new_jammer_topology(batch_size)
         # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=self._rg)
-        no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
-        b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])
-        x = self._mapper(b)
+        no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._coderate, resource_grid=None)
+        b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx, self._k])
+        # b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])
+        if self._coderate < 1.0:
+            c = self._encoder(b)
+            c = sionna.utils.flatten_last_dims(c, 2)
+        else:
+            c = b
+        x = self._mapper(c)
         # x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
         x = tf.reshape(x, [-1, self._num_tx, self._num_streams_per_tx, self._rg.num_data_symbols])
         x_rg = self._rg_mapper(x)
@@ -357,6 +372,8 @@ class Model(tf.keras.Model):
             h_hat, err_var = self._ls_est([y, no])
         x_hat, no_eff = self._lmmse_equ([y, h_hat, err_var, no])
         llr = self._demapper([x_hat, no_eff])
+        if self._coderate < 1.0:
+            llr = self._decoder(llr)
         llr = tf.reshape(llr, [batch_size, -1])
         if self._return_jammer_signals:
             return b, llr, jammer_signals
@@ -560,16 +577,17 @@ def multi_jammers():
 # model_parameters["num_ofdm_symbols"] = 64
 # simulate("Time Domain, POS")
 
+model_parameters["coderate"] = 0.5
 model_parameters["domain"] = "time"
 simulate("Time Domain, no jammer")
 model_parameters["jammer_present"] = True
 model_parameters["perfect_jammer_csi"] = True
 simulate("Time Domain, Jammer with CP")
-model_parameters["domain"] = "freq"
-simulate("Freq. Domain, Jammer with CP")
-model_parameters["perfect_jammer_csi"] = False
-model_parameters["jammer_present"] = False
-simulate("Freq. Domain, no jammer")
+# model_parameters["domain"] = "freq"
+# simulate("Freq. Domain, Jammer with CP")
+# model_parameters["perfect_jammer_csi"] = False
+# model_parameters["jammer_present"] = False
+# simulate("Freq. Domain, no jammer")
 
 # model_parameters["scenario"] = "multitap_rayleigh"
 # ber_plots.title = "Time Domain. Perfect CSI. POS."
