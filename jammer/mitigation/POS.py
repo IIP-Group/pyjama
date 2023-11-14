@@ -5,7 +5,9 @@ import numpy as np
 import sionna
 
 class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
-    def __init__(self, dtype=tf.complex64, **kwargs):
+    def __init__(self, dimensionality=None, dtype=tf.complex64, **kwargs):
+        """dimensionality: int. Dimensionality of the orthogonal subspace (which is "subtracted"). If None, the maximum dimensionality is assumed."""
+        self._dimensionality = dimensionality
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         
     def set_jammer(self, j):
@@ -25,7 +27,6 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
         """
         jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]
         """
-        # TODO scale covariance matrix
         num_rx_ant = tf.shape(jammer_covariance)[-1]
         jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
         self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - jammer_covariance

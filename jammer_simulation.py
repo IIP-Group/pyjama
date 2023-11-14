@@ -205,7 +205,7 @@ class Model(tf.keras.Model):
             self._pos = POS.OrthogonalSubspaceProjector()
         
         self._check_settings()
-        
+      
     def new_ut_topology(self, batch_size):
         """Set new user topology"""
         if self._scenario in ["umi", "uma", "rma"]:
@@ -398,8 +398,7 @@ def bar_plot(values):
     plt.show()
 
 
-# BATCH_SIZE = 1
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
@@ -479,7 +478,7 @@ def wifi_vs_5g():
             rel_svs = []
             model = Model(**model_parameters)
             # for i in range(1000):
-            for i in range(100):
+            for i in range(1000):
                 if i % 100 == 0:
                     print(i)
                 b, llr, jammer_signals = model(BATCH_SIZE, ebno_db)
@@ -576,13 +575,15 @@ def multi_jammers():
     # plt.savefig(f"{name}.png")
     plt.show()
 
-model_parameters["jammer_present"] = True
-model_parameters["perfect_csi"] = False
-model_parameters["jammer_mitigation"] = "pos"
-simulate("No Coding")
-model_parameters["coderate"] = 0.5
-simulate("Coding")
-ber_plots()
+wifi_vs_5g()
+
+# model_parameters["jammer_present"] = True
+# model_parameters["perfect_csi"] = False
+# model_parameters["jammer_mitigation"] = "pos"
+# simulate("No Coding")
+# model_parameters["coderate"] = 0.5
+# simulate("Coding")
+# ber_plots()
 
 # model_parameters["domain"] = "time"
 # model_parameters["jammer_present"] = True

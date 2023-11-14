@@ -2,6 +2,8 @@
 import tensorflow as tf
 import sionna
 from sionna.channel import ChannelModel
+from sionna.channel.tr38901 import Antenna, AntennaArray, CDL, UMi, UMa, RMa
+from sionna.channel import gen_single_sector_topology
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -120,25 +122,86 @@ class MultiTapRayleighBlockFading(ChannelModel):
         return h, delays
 
 
-def visualize_channel_model(channel, timestep_duration, num_time_steps):
-    a, tau = channel(batch_size=1, num_time_steps=num_time_steps, sampling_frequency=1/timestep_duration)
-    plt.figure()
-    plt.title("Channel impulse response realization")
-    plt.stem(tau[0,0,0,:]/1e-9, np.abs(a)[0,0,0,0,0,:,0])
+def visualize_cir(a, tau):
+    plt.scatter(tau[0,0,0,:]/1e-9, np.abs(a)[0,0,0,0,0,:,0])
     plt.xlabel(r"$\tau$ [ns]")
     plt.ylabel(r"$|a|$")
 
-    plt.figure()
-    plt.title("Time evolution of path gain")
-    plt.plot(np.arange(num_time_steps)*timestep_duration/1e-6, np.real(a)[0,0,0,0,0,0,:])
-    plt.plot(np.arange(num_time_steps)*timestep_duration/1e-6, np.imag(a)[0,0,0,0,0,0,:])
-    plt.xlabel(r"$t$ [us]")
-    plt.ylabel(r"$a$")
-    plt.legend(["Real part", "Imaginary part"])
+    # plt.figure()
+    # for i in range(a.shape[-2]):
+    #     plt.plot(np.abs(a)[0,0,0,0,0,i,:], label=f"Path {i}")
+    # plt.legend()
 
-# channel = MultiTapRayleighBlockFading(num_rx=1, num_rx_ant=1, num_tx=1, num_tx_ant=1, num_paths=4)
-# num_time_steps = 100
-# timestep_duration = 1e-6
-# visualize_channel_model(channel, timestep_duration, num_time_steps)
+def setup_3gpp_channel(scenario, carrier_frequency):
+    # TODO refactor this for less code duplication (cmp. jammer_simulation.py:Model._generate_channel)
+    channel_type_to_class = {
+        "umi": UMi,
+        "uma": UMa,
+        "rma": RMa,
+    }
+    ut_array = AntennaArray(
+                        num_rows=1,
+                        num_cols=1,
+                        polarization="single",
+                        polarization_type="V",
+                        antenna_pattern="omni",
+                        carrier_frequency=carrier_frequency)
+    bs_array = AntennaArray(num_rows=1,
+                        num_cols=1,
+                        polarization="dual",
+                        polarization_type="cross",
+                        antenna_pattern="38.901",
+                        carrier_frequency=carrier_frequency)
+    channel_parameters = {
+        "carrier_frequency": carrier_frequency,
+        "ut_array": ut_array,
+        "bs_array": bs_array,
+        "direction": "uplink",
+        "enable_pathloss": False,
+        "enable_shadow_fading": False,
+    }
+    if scenario in ["umi", "uma"]:
+        channel_parameters["o2i_model"] = "low"
+    channel = channel_type_to_class[scenario](**channel_parameters)
+    return channel
+
+def new_topology(scenario, indoor_probability=0.8):
+    return gen_single_sector_topology(1,
+                                      1,
+                                      scenario,
+                                      min_ut_velocity=0.0,
+                                      max_ut_velocity=0.0,
+                                      indoor_probability=indoor_probability)
+
+def filter_cir(a, tau):
+    # filter paths where a is not zero over all time samples
+    energy_sum = tf.reduce_sum(tf.abs(a)**2, axis=[0,1,2,3,4,6])
+    nonzero_paths = sionna.utils.flatten_last_dims(tf.where(energy_sum > 0.0))
+    a = tf.gather(a, nonzero_paths, axis=-2)
+    tau = tf.gather(tau, nonzero_paths, axis=-1)
+    return a, tau
+
+def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, topology=None, indoor_probability=0.8, los=None):
+    """either provide topology or indoor_probability"""
+    channel = setup_3gpp_channel(scenario=scenario, carrier_frequency=carrier_frequency)
+    if topology is None:
+        topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
+    channel.set_topology(*topology, los=los)
+    # TODO for now, neither num_samples nor sampling frequency matter(?)
+    cir = channel(1000, carrier_frequency)
+    cir = filter_cir(*cir)
+    visualize_cir(*cir)
+
+topology = new_topology(scenario="umi", indoor_probability=0.0)
+for i in range(100):
+    print(i)
+    visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, topology=topology, los=True)
+plt.show()
+# plt.figure()
+# visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, topology=topology)
+# plt.figure()
+# visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, topology=topology)
+# plt.figure()
+# visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, topology=topology)
 
 # %%
