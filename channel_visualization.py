@@ -137,6 +137,7 @@ def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_proba
     plt.tight_layout(rect=[0, 0.03, 1, 0.97])
     plt.show()
 
+# TODO add parameter to keep topology fixed or resample?
 visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_probability=0.8, los=None,
                        num_cir_samples=2000, num_bins=200)
 
