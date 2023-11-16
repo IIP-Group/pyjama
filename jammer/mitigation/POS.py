@@ -3,6 +3,7 @@
 import tensorflow as tf
 import numpy as np
 import sionna
+from utils import reduce_matrix_rank
 
 class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
     def __init__(self, dimensionality=None, dtype=tf.complex64, **kwargs):
@@ -21,7 +22,11 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
         j = sionna.utils.flatten_last_dims(j, 2)
 
         # [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]
-        self._proj = tf.eye(jammer_shape[2], dtype=self.dtype) - tf.matmul(j, sionna.utils.matrix_pinv(j))
+        j_j_pinv = tf.matmul(j, sionna.utils.matrix_pinv(j))
+        if self._dimensionality is not None:
+            j_j_pinv = reduce_matrix_rank(j_j_pinv, self._dimensionality)
+            
+        self._proj = tf.eye(jammer_shape[2], dtype=self.dtype) - j_j_pinv
 
     def set_jammer_covariance(self, jammer_covariance):
         """
@@ -29,6 +34,8 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
         """
         num_rx_ant = tf.shape(jammer_covariance)[-1]
         jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
+        if self._dimensionality is not None:
+            jammer_covariance = reduce_matrix_rank(jammer_covariance, self._dimensionality)
         self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - jammer_covariance
 
 

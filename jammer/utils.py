@@ -97,6 +97,17 @@ def sparse_mask(shape, sparsity, dtype=tf.float64):
         mask[tuple(mask_index)] = 0.0
 
     return tf.convert_to_tensor(mask)
+
+def reduce_matrix_rank(matrix, rank):
+    """Reduce the rank of a matrix by setting the smallest singular values to zero.
+    matrix: [..., M, N]
+    rank: int. Desired rank of matrix.
+    """
+    s, u, v = tf.linalg.svd(matrix, full_matrices=False, compute_uv=True)
+    # set smallest singular values to zero
+    s = tf.where(tf.range(tf.shape(s)[-1]) < rank, s, tf.zeros_like(s))
+    # reconstruct matrix
+    return tf.matmul(tf.matmul(u, tf.linalg.diag(s)), v, adjoint_b=True)
         
 # x = sparse_mask([5,5], [0.2, 0.8])
 # print(x)

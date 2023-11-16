@@ -6,6 +6,7 @@ import sionna
 from sionna.ofdm import OFDMEqualizer
 from sionna.mimo import lmmse_equalizer
 from sionna.utils import flatten_last_dims, expand_to_rank
+from utils import reduce_matrix_rank
 
 
 class IanLMMSEEqualizer(OFDMEqualizer):
@@ -14,11 +15,13 @@ class IanLMMSEEqualizer(OFDMEqualizer):
                  resource_grid,
                  stream_management,
                  whiten_interference=True,
+                 dimensionality=None,
                  dtype=tf.complex64,
                  **kwargs):
 
+        self._dimensionality = dimensionality
         # per default, we set the jammer covariance to the zero (broadcastable), i.e. we assume no jammer
-        self.jammer_covariance = 0.0j
+        self._jammer_covariance = 0.0j
 
         def equalizer(y, h, s):
             return lmmse_equalizer(y, h, s + self.jammer_covariance, whiten_interference)
@@ -49,3 +52,13 @@ class IanLMMSEEqualizer(OFDMEqualizer):
         jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex"""
         
         self.jammer_covariance = jammer_covariance
+
+    @property()
+    def jammer_covariance(self):
+        return self._jammer_covariance
+    
+    @jammer_covariance.setter
+    def jammer_covariance(self, jammer_covariance):
+        if self._dimensionality is not None:
+            jammer_covariance = reduce_matrix_rank(jammer_covariance, self._dimensionality)
+        self._jammer_covariance = jammer_covariance
