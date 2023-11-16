@@ -3,7 +3,6 @@ import tensorflow as tf
 import numpy as np
 import sionna
 import copy
-import math
 
 def sample_function(sampler, dtype):
     """
@@ -18,7 +17,7 @@ def sample_function(sampler, dtype):
         else:
             raise ValueError(f"Unknown sampler {sampler}")
     elif isinstance(sampler, sionna.mapping.Constellation):
-        sample_function = constellation_to_sampler(sampler, dtype=self._dtype_as_dtype)
+        sample_function = constellation_to_sampler(sampler, dtype=dtype)
     elif callable(sampler):
         sample_function = sampler
     else:
