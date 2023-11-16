@@ -58,7 +58,7 @@ class Model(tf.keras.Model):
                  subcarrier_spacing=30e3,
                  num_ofdm_symbols=14,
                  cyclic_prefix_length=20,
-                 num_bs_ant=16,
+                 num_bs_ant=18,
                  num_ut=4,
                  num_ut_ant=1,
                  num_bits_per_symbol=2,
@@ -73,6 +73,7 @@ class Model(tf.keras.Model):
                  jammer_power=1.0,
                  jammer_parameters={},
                  jammer_mitigation=None,
+                 jammer_mitigation_dimensionality=None,
                  return_jammer_signals=False):
         super().__init__()
         self._scenario = scenario
@@ -83,6 +84,7 @@ class Model(tf.keras.Model):
         self._silent_pilot_symbol_indices = tf.range(self._num_silent_pilot_symbols)
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
+        self._jammer_mitigation_dimensionality = jammer_mitigation_dimensionality
         self._return_jammer_signals = return_jammer_signals
         self._jammer_power = tf.cast(jammer_power, tf.complex64)
         #TODO should these kinds of parameters go into e.g. a dict for the channel parameters?
@@ -202,7 +204,7 @@ class Model(tf.keras.Model):
                                                     **jammer_parameters)
         
         if self._jammer_mitigation == "pos":
-            self._pos = POS.OrthogonalSubspaceProjector()
+            self._pos = POS.OrthogonalSubspaceProjector(self._jammer_mitigation_dimensionality)
         
         self._check_settings()
       
@@ -398,11 +400,13 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 1
+BATCH_SIZE = 8
 MAX_MC_ITER = 30
+# MAX_MC_ITER = 150
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
+# NUM_SNR_POINTS = 30
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 ber_plots = PlotBER("POS with CSI Estimation")
 
@@ -439,6 +443,7 @@ model_parameters = {
     "jammer_present": False,
     "perfect_jammer_csi": False,
     "jammer_mitigation": None,
+    "jammer_mitigation_dimensionality": None,
     "jammer_power": 1.0,
     "return_jammer_signals": False,
     "jammer_parameters": jammer_parameters,
@@ -575,12 +580,19 @@ def multi_jammers():
     # plt.savefig(f"{name}.png")
     plt.show()
 
-wifi_vs_5g()
+# wifi_vs_5g()
 
-# model_parameters["jammer_present"] = True
-# model_parameters["perfect_csi"] = False
-# model_parameters["jammer_mitigation"] = "pos"
-# simulate("No Coding")
+model_parameters["jammer_present"] = True
+model_parameters["perfect_csi"] = True
+model_parameters["perfect_jammer_csi"] = True
+model_parameters["jammer_mitigation"] = "pos"
+jammer_parameters["num_tx"] = 3
+model_parameters["jammer_power"] = 1
+for i in range(5):
+    model_parameters["jammer_mitigation_dimensionality"] = i
+    simulate(f"{i} dimension reduction")
+ber_plots.title = "Jammer Mitigation, POS; 3 Jammers"
+ber_plots()
 # model_parameters["coderate"] = 0.5
 # simulate("Coding")
 # ber_plots()

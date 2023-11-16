@@ -103,8 +103,9 @@ def reduce_matrix_rank(matrix, rank):
     rank: int. Desired rank of matrix.
     """
     s, u, v = tf.linalg.svd(matrix, full_matrices=False, compute_uv=True)
+    s = tf.cast(s, matrix.dtype)
     # set smallest singular values to zero
-    s = tf.where(tf.range(tf.shape(s)[-1]) < rank, s, tf.zeros_like(s))
+    s = tf.where(tf.range(tf.shape(s)[-1]) < rank, s, tf.zeros_like(s, dtype=matrix.dtype))
     # reconstruct matrix
     return tf.matmul(tf.matmul(u, tf.linalg.diag(s)), v, adjoint_b=True)
         

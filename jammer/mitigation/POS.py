@@ -3,7 +3,7 @@
 import tensorflow as tf
 import numpy as np
 import sionna
-from utils import reduce_matrix_rank
+from ..utils import reduce_matrix_rank
 
 class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
     def __init__(self, dimensionality=None, dtype=tf.complex64, **kwargs):
