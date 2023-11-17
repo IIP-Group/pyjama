@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import sionna
 import copy
+import math
 
 def sample_function(sampler, dtype):
     """
@@ -108,6 +109,25 @@ def reduce_matrix_rank(matrix, rank):
     s = tf.where(tf.range(tf.shape(s)[-1]) < rank, s, tf.zeros_like(s, dtype=matrix.dtype))
     # reconstruct matrix
     return tf.matmul(tf.matmul(u, tf.linalg.diag(s)), v, adjoint_b=True)
-        
+
+def db_to_linear(db):
+    """Converts from dB to linear scale."""
+    return 10.0**(db/10.0)
+
+def linear_to_db(linear):
+    """Converts from linear to dB scale."""
+    return 10*math.log(float(linear))/math.log(10.0)
+
+class NonNegMaxSquareNorm(tf.keras.constraints.Constraint):
+    def __init__(self, max_squared_norm=1, axis=0):
+        self.max_squared_norm = max_squared_norm
+        self.axis = axis
+
+    def __call__(self, w):
+        w_nonneg = tf.maximum(w, 0.0)
+        squared_norm = tf.reduce_sum(tf.square(w_nonneg), axis=self.axis, keepdims=True)
+        scale = tf.sqrt(self.max_squared_norm / (squared_norm + tf.keras.backend.epsilon()))
+        return w_nonneg * scale
+
 # x = sparse_mask([5,5], [0.2, 0.8])
 # print(x)
