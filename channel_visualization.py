@@ -72,7 +72,7 @@ def filter_cir(a, tau):
     tau = tf.gather(tau, nonzero_paths, axis=-1)
     return a, tau
 
-def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_probability=0.8, los=None, num_cir_samples=2000, num_bins=200):
+def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_probability=0.8, los=None, resample_topology=False, num_cir_samples=2000, num_bins=200):
     """either provide topology or indoor_probability"""
     channel = setup_3gpp_channel(scenario=scenario, carrier_frequency=carrier_frequency)
     topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
@@ -87,6 +87,9 @@ def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_proba
         cir = channel(1, carrier_frequency)
         cir = filter_cir(*cir)
         visualize_cir(*cir)
+        if resample_topology:
+            topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
+            channel.set_topology(*topology, los=los)
     # 2.: empirical distribution of delays tau (number of occurrences)
     # 3. empirical distribution of amplitudes |a| (mean power)
     delays = np.array([])
@@ -107,6 +110,9 @@ def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_proba
         # x is tau, y is |a|^2
         power_points = tf.stack([tau_squeezed, tf.abs(a_squeezed)**2], axis=0)
         delay_power = np.concatenate([delay_power, power_points.numpy()], axis=1)
+        if resample_topology:
+            topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
+            channel.set_topology(*topology, los=los)
     plt.subplot(4,1,2)
     plt.title("Delay distribution: Histogram and CDF")
     plt.xlabel(r"$\tau$ [s]")
@@ -137,8 +143,12 @@ def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_proba
     plt.tight_layout(rect=[0, 0.03, 1, 0.97])
     plt.show()
 
-# TODO add parameter to keep topology fixed or resample?
-visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_probability=0.8, los=None,
-                       num_cir_samples=2000, num_bins=200)
+# for scenario in ["umi", "uma", "rma"]:
+#     visualize_3gpp_channel(scenario=scenario, carrier_frequency=3.5e9, indoor_probability=0.8, los=None,
+#                            num_cir_samples=2000, num_bins=200, resample_topology=True)
+# for los in [True, False]:
+#     for indoor_probability in [0.0, 1.0]:
+#         visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_probability=indoor_probability, los=los,
+#                                num_cir_samples=2000, num_bins=200, resample_topology=True)
 
  # %%
