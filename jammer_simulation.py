@@ -2,7 +2,8 @@
 import os
 import drjit
 # gpu_num = 2 # Use "" to use the CPU
-gpu_num = 0 # Use "" to use the CPU
+# gpu_num = 0 # Use "" to use the CPU
+gpu_num = [0, 1, 2, 3, 4]
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -400,13 +401,12 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 8
-MAX_MC_ITER = 30
-# MAX_MC_ITER = 150
+BATCH_SIZE = 2
+# MAX_MC_ITER = 30
+MAX_MC_ITER = 150
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
-# NUM_SNR_POINTS = 30
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 ber_plots = PlotBER("POS with CSI Estimation")
 
@@ -436,6 +436,7 @@ jammer_parameters = {
 model_parameters = {
     "scenario": "umi",
     "perfect_csi": True,
+    "coderate": 1.0,
     "domain": "freq",
     "los": None,
     "indoor_probability": 0.8,
@@ -582,20 +583,31 @@ def multi_jammers():
 
 # wifi_vs_5g()
 
-model_parameters["jammer_present"] = True
+# Time-Domain Mitigation Strategy evaluation
+model_parameters["num_ut"] = 1
 model_parameters["perfect_csi"] = True
-model_parameters["perfect_jammer_csi"] = True
+model_parameters["num_silent_pilot_symbols"] = 8
+model_parameters["domain"] = "time"
+simulate("No Jammer")
+model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
-jammer_parameters["num_tx"] = 3
-model_parameters["jammer_power"] = 1
-for i in range(5):
+model_parameters["perfect_jammer_csi"] = False
+model_parameters["jammer_power"] = 316.0
+for i in range(1, 5):
     model_parameters["jammer_mitigation_dimensionality"] = i
-    simulate(f"{i} dimension reduction")
-ber_plots.title = "Jammer Mitigation, POS; 3 Jammers"
+    simulate(f"POS, {i} dimensions")
+model_parameters["jammer_mitigation_dimensionality"] = 1
+for coderate in [0.5, 0.2, 0.1]:
+    MAX_MC_ITER = 150 / coderate
+    model_parameters["coderate"] = coderate
+    simulate(f"POS, 1 dimension, {coderate} coderate")
+#  Jammer sending CP + 1-dim POS as baseline
+model_parameters["coderate"] = 1.0
+model_parameters["jammer_mitigation"] = "pos"
+jammer_parameters["send_cyclic_prefix"] = True
+simulate("Jammer with CP, POS, 1 dimension")
+ber_plots.title = "1 Time-Domain Jammer without CP, estimated Jammer CSI. Different Mitigation Strategies."
 ber_plots()
-# model_parameters["coderate"] = 0.5
-# simulate("Coding")
-# ber_plots()
 
 # model_parameters["domain"] = "time"
 # model_parameters["jammer_present"] = True
