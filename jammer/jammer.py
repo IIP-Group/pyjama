@@ -6,14 +6,15 @@ from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_t
 from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
-from .utils import sample_function, sparse_mask, ofdm_frequency_response_from_cir
+from .utils import sample_function, NonNegMaxSquareNorm
 
 class OFDMJammer(tf.keras.layers.Layer):
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jamming_type="barrage", density_symbols=1.0, density_subcarriers=1.0, normalize_channel=False, return_channel=False, sampler="uniform", dtype=tf.complex64, **kwargs):
+    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jamming_type="barrage", density_symbols=1.0, density_subcarriers=1.0, normalize_channel=False, return_channel=False, sampler="uniform", trainable=False, trainable_mask=None, dtype=tf.complex64, **kwargs):
         r"""
         sampler: String in ["uniform", "gaussian"], a constellation, or function with signature (shape, dtype) -> tf.Tensor, where elementwise E[|x|^2] = 1
+        trainable_mask: boolean, shape broadcastable to jammer_input_shape. If True, the corresponding element is trainable. If False, the corresponding element is held constant (jammer_power power). If None, all elements are trainable.
         """
-        super().__init__(trainable=False, dtype=dtype, **kwargs)
+        super().__init__(trainable=trainable, dtype=dtype, **kwargs)
         self._channel_model = channel_model
         self._rg = rg
         self._num_tx = num_tx
@@ -26,6 +27,12 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
         # if sampler is string, we use the corresponding function. Otherwise assign the function directly
         self._sample_function = sample_function(sampler, self._dtype_as_dtype)
+        self._ofdm_channel = OFDMChannel(channel_model=self._channel_model,
+                                         resource_grid=self._rg,
+                                         add_awgn=False, # noise is already added in the ut-bs-channel
+                                         normalize_channel=self._normalize_channel,
+                                         return_channel=self._return_channel,
+                                         dtype=self._dtype_as_dtype)
         self._check_settings()
 
     def _check_settings(self):
@@ -38,12 +45,11 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
-        self._ofdm_channel = OFDMChannel(channel_model=self._channel_model,
-                                         resource_grid=self._rg,
-                                         add_awgn=False, # noise is already added in the ut-bs-channel
-                                         normalize_channel=self._normalize_channel,
-                                         return_channel=self._return_channel,
-                                         dtype=self._dtype_as_dtype)
+        # TODO: implement trainable_mask as described in docstring
+        # below: weights only over ofdm_symbols
+        num_ofdm_symbols = input_shape[0][-2]
+        constraint = NonNegMaxSquareNorm(num_ofdm_symbols)
+        self._weights = tf.Variable(tf.ones([num_ofdm_symbols, 1]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
         
     def call(self, inputs):
         """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
@@ -56,6 +62,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         x_jammer = self.sample(jammer_input_shape)
         rho = self.make_sparse(rho, tf.shape(x_jammer))
         x_jammer = tf.sqrt(rho) * x_jammer
+        x_jammer = tf.cast(self._weights, x_jammer.dtype) * x_jammer
         if self._return_channel:
             y_jammer, h_freq_jammer = self._ofdm_channel(x_jammer)
         else:

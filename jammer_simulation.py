@@ -1,9 +1,7 @@
 #%%
 import os
-import drjit
-# gpu_num = 2 # Use "" to use the CPU
-# gpu_num = 0 # Use "" to use the CPU
-gpu_num = [0, 1, 2, 3, 4]
+# import drjit
+gpu_num = 2 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -20,6 +18,7 @@ tf.get_logger().setLevel('ERROR')
 
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 import time
 import pickle
 
@@ -45,7 +44,7 @@ from jammer.jammer import OFDMJammer, TimeDomainOFDMJammer
 from jammer.mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from channel_models import MultiTapRayleighBlockFading
-from jammer.utils import covariance_estimation_from_signals, ofdm_frequency_response_from_cir
+from jammer.utils import covariance_estimation_from_signals, linear_to_db, db_to_linear
 
 
 # sionna.config.xla_compat=True
@@ -53,7 +52,7 @@ class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
     """
     def __init__(self,
-                 scenario,
+                 scenario="umi",
                  carrier_frequency=3.5e9,
                  fft_size=128,
                  subcarrier_spacing=30e3,
@@ -72,7 +71,10 @@ class Model(tf.keras.Model):
                  num_silent_pilot_symbols=0,
                  jammer_present=False,
                  jammer_power=1.0,
-                 jammer_parameters={},
+                 jammer_parameters={
+                     "num_tx": 1,
+                     "num_tx_ant": 1,
+                     "normalize_channel": True},
                  jammer_mitigation=None,
                  jammer_mitigation_dimensionality=None,
                  return_jammer_signals=False):
@@ -401,9 +403,8 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 2
-# MAX_MC_ITER = 30
-MAX_MC_ITER = 150
+BATCH_SIZE = 1
+MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
 NUM_SNR_POINTS = 10
@@ -419,6 +420,9 @@ def simulate_single(ebno_db):
 
 def simulate(legend): 
     model = Model(**model_parameters)
+    simulate_model(model, legend)
+
+def simulate_model(model, legend):
     ber_plots.simulate(model,
                     ebno_dbs=ebno_dbs,
                     batch_size=BATCH_SIZE,
@@ -426,6 +430,33 @@ def simulate(legend):
                     soft_estimates=True,
                     max_mc_iter=MAX_MC_ITER,
                     show_fig=False)
+    
+def train_model(model, num_iterations, weights_filename="weights.pickle"):
+    optimizer = tf.keras.optimizers.Adam()
+    bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    for i in range(num_iterations):
+        # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
+        ebno_db = 10
+        with tf.GradientTape() as tape:
+            b, llr = model(BATCH_SIZE, ebno_db)
+            loss = -bce(b, llr)
+        # Computing and applying gradients
+        weights = model.trainable_weights
+        grads = tape.gradient(loss, weights)
+        optimizer.apply_gradients(zip(grads, weights))
+        # Print progress
+        print(f"{i}/{num_iterations}  Loss: {loss:.2E}", end="\r")
+        # if i % 100 == 0:
+        #     print(f"{i}/{NUM_TRAINING_ITERATIONS}  Loss: {loss:.2E}", end="\r")
+    # Save the weightsin a file
+    weights = model.get_weights()
+    with open(weights_filename, 'wb') as f:
+        pickle.dump(weights, f)
+
+def load_weights(model, weights_filename="weights.pickle"):
+    with open(weights_filename, 'rb') as f:
+        weights = pickle.load(f)
+    model.set_weights(weights)
 
 jammer_parameters = {
     "num_tx": 1,
@@ -583,31 +614,53 @@ def multi_jammers():
 
 # wifi_vs_5g()
 
-# Time-Domain Mitigation Strategy evaluation
-model_parameters["num_ut"] = 1
-model_parameters["perfect_csi"] = True
-model_parameters["num_silent_pilot_symbols"] = 8
-model_parameters["domain"] = "time"
-simulate("No Jammer")
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
-model_parameters["perfect_jammer_csi"] = False
-model_parameters["jammer_power"] = 316.0
-for i in range(1, 5):
-    model_parameters["jammer_mitigation_dimensionality"] = i
-    simulate(f"POS, {i} dimensions")
 model_parameters["jammer_mitigation_dimensionality"] = 1
-for coderate in [0.5, 0.2, 0.1]:
-    MAX_MC_ITER = 150 / coderate
-    model_parameters["coderate"] = coderate
-    simulate(f"POS, 1 dimension, {coderate} coderate")
-#  Jammer sending CP + 1-dim POS as baseline
-model_parameters["coderate"] = 1.0
-model_parameters["jammer_mitigation"] = "pos"
-jammer_parameters["send_cyclic_prefix"] = True
-simulate("Jammer with CP, POS, 1 dimension")
-ber_plots.title = "1 Time-Domain Jammer without CP, estimated Jammer CSI. Different Mitigation Strategies."
-ber_plots()
+jammer_parameters["trainable"] = True
+model = Model(**model_parameters)
+train_model(model, 10000, "jammer_weights.pickle")
+
+
+
+
+# model_parameters["num_ut"] = 1
+# model_parameters["perfect_csi"] = True
+# model_parameters["num_silent_pilot_symbols"] = 8
+# model_parameters["domain"] = "time"
+# simulate("No Jammer")
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_power"] = db_to_linear(25.0)
+# simulate("Jammer")
+
+# Time-Domain Mitigation Strategy evaluation
+# for jammer_power_db in [0.0, 10.0, 20, 25.0]:
+#     MAX_MC_ITER = 150
+#     model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time")
+#     simulate_model(model, "No Jammer")
+#     for i in range(0, 5):
+#         model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time",
+#                       jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
+#                       jammer_mitigation_dimensionality=i)
+#         simulate_model(model, f"POS, {i} dimensions")
+#     for coderate in [0.5, 0.2]:
+#         MAX_MC_ITER = 150 / coderate
+#         model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time",
+#                       jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
+#                       jammer_mitigation_dimensionality=1, coderate=coderate)
+#         simulate_model(model, f"POS 1 dimension, {coderate} coderate")
+#     MAX_MC_ITER = 150
+#     model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time",
+#                   jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
+#                   jammer_mitigation_dimensionality=1, coderate=1.0,
+#                   jammer_parameters={"send_cyclic_prefix": True,
+#                                      "num_tx_ant": 1,
+#                                      "num_tx": 1,
+#                                      "normalize_channel": True})
+#     simulate_model(model, "Jammer with CP, POS, 1 dimension")
+#     ber_plots.title = f"1 Time-Domain Jammer ({int(jammer_power_db)}dB) without CP, estimated Jammer CSI."
+#     ber_plots(save_fig=True, path=f"time_domain_mitigation_{int(jammer_power_db)}db.png")
+#     ber_plots.reset()
 
 # model_parameters["domain"] = "time"
 # model_parameters["jammer_present"] = True

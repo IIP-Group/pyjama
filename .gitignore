@@ -12,4 +12,5 @@ nvvm
 ./results
 *.csv
 *.pickle
+*.out
 .mat
