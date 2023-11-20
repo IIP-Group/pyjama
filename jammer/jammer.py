@@ -46,13 +46,23 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
-        # input_y_shape = input_shape[0]
+        constraint = NonNegMaxMeanSquareNorm(1)
+        if self._trainable_mask is None:
+            # all weights are trainable
+            y_input_shape = input_shape[0]
+            self._training_weights = tf.Variable(tf.ones(y_input_shape), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
+            pass
+        else:
+            indices = tf.where(self._trainable_mask)
+            count_trainable = tf.shape(indices)[0]
+            self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
+            self._weights = tf.scatter_nd_update(tf.ones(self._trainable_mask.shape), indices, self._training_weights)
         
         # TODO: implement trainable_mask as described in docstring
         # below: weights only over ofdm_symbols
-        num_ofdm_symbols = input_shape[0][-2]
-        constraint = NonNegMaxMeanSquareNorm(1)
-        self._weights = tf.Variable(tf.ones([num_ofdm_symbols, 1]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
+        # num_ofdm_symbols = input_shape[0][-2]
+        # constraint = NonNegMaxMeanSquareNorm(1)
+        # self._weights = tf.Variable(tf.ones([num_ofdm_symbols, 1]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
         
     def call(self, inputs):
         """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
