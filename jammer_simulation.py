@@ -457,12 +457,14 @@ def train_model(model, num_iterations, weights_filename="weights.pickle", log_te
             if log_tensorboard:
                 with train_summary_writer.as_default():
                     tf.summary.scalar('loss', loss, step=i)
-    # Save the weightsin a file
+    # Save the weights in a file
     weights = model.get_weights()
     with open(weights_filename, 'wb') as f:
         pickle.dump(weights, f)
 
 def load_weights(model, weights_filename="weights.pickle"):
+    # run model once to initialize weights
+    model(BATCH_SIZE, 10.0)
     with open(weights_filename, 'rb') as f:
         weights = pickle.load(f)
     model.set_weights(weights)
@@ -475,7 +477,7 @@ jammer_parameters = {
 
 model_parameters = {
     "scenario": "umi",
-    "perfect_csi": True,
+    "perfect_csi": False,
     "coderate": 1.0,
     "domain": "freq",
     "los": None,
@@ -623,13 +625,20 @@ def multi_jammers():
 
 # wifi_vs_5g()
 
+#training
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
+model_train = Model(**model_parameters)
+train_model(model_train, 10000, "jammer_weights.pickle", log_tensorboard=True)
+# inference
+jammer_parameters["trainable"] = False
+simulate("Untrained Jammer")
 model = Model(**model_parameters)
-train_model(model, 3000, "jammer_weights.pickle", log_tensorboard=True)
-
+load_weights(model, "jammer_weights.pickle")
+simulate_model(model, "Trained Jammer")
+ber_plots()
 
 
 
