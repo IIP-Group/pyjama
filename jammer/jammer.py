@@ -6,7 +6,7 @@ from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_t
 from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
-from .utils import sample_function, NonNegMaxSquareNorm
+from .utils import sample_function, NonNegMaxMeanSquareNorm
 
 class OFDMJammer(tf.keras.layers.Layer):
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, jamming_type="barrage", density_symbols=1.0, density_subcarriers=1.0, normalize_channel=False, return_channel=False, sampler="uniform", trainable=False, trainable_mask=None, dtype=tf.complex64, **kwargs):
@@ -24,6 +24,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._density_subcarriers = density_subcarriers
         self._normalize_channel = normalize_channel
         self._return_channel = return_channel
+        self._trainable_mask = trainable_mask
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
         # if sampler is string, we use the corresponding function. Otherwise assign the function directly
         self._sample_function = sample_function(sampler, self._dtype_as_dtype)
@@ -45,10 +46,12 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
+        # input_y_shape = input_shape[0]
+        
         # TODO: implement trainable_mask as described in docstring
         # below: weights only over ofdm_symbols
         num_ofdm_symbols = input_shape[0][-2]
-        constraint = NonNegMaxSquareNorm(num_ofdm_symbols)
+        constraint = NonNegMaxMeanSquareNorm(1)
         self._weights = tf.Variable(tf.ones([num_ofdm_symbols, 1]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
         
     def call(self, inputs):
@@ -60,9 +63,11 @@ class OFDMJammer(tf.keras.layers.Layer):
         # jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
         jammer_input_shape = tf.concat([[input_shape[0]], [self._num_tx, self._num_tx_ant], input_shape[-2:]], axis=0)
         x_jammer = self.sample(jammer_input_shape)
-        rho = self.make_sparse(rho, tf.shape(x_jammer))
-        x_jammer = tf.sqrt(rho) * x_jammer
+        # weights have reduce_mean(|w|^2) <= 1
         x_jammer = tf.cast(self._weights, x_jammer.dtype) * x_jammer
+        rho = self.make_sparse(rho, tf.shape(x_jammer))
+
+        x_jammer = tf.sqrt(rho) * x_jammer
         if self._return_channel:
             y_jammer, h_freq_jammer = self._ofdm_channel(x_jammer)
         else:
@@ -95,17 +100,20 @@ class OFDMJammer(tf.keras.layers.Layer):
             subcarrier_mask = tf.concat([tf.ones([num_nonzero_subcarriers]), tf.zeros([num_subcarriers - num_nonzero_subcarriers])], axis=0)
             subcarrier_mask = tf.random.shuffle(subcarrier_mask)
 
-            return data * tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
-        
-        # only pilot or data
-        pilot_mask = tf.cast(self._rg.pilot_pattern.mask, tf.bool)
-        # take mask where any UT is transmitting, i.e. sum over all (tx, tx_ant) dimensions
-        pilot_mask = tf.reduce_any(pilot_mask, axis=[0, 1])
-        
-        if self._jamming_type == "pilot":
-            return data * tf.cast(pilot_mask, data.dtype)
+            output = data * tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
         else:
-            return data * tf.cast(tf.logical_not(pilot_mask), data.dtype)
+            # only pilot or data
+            pilot_mask = tf.cast(self._rg.pilot_pattern.mask, tf.bool)
+            # take mask where any UT is transmitting, i.e. sum over all (tx, tx_ant) dimensions
+            pilot_mask = tf.reduce_any(pilot_mask, axis=[0, 1])
+        
+            if self._jamming_type == "pilot":
+                output = data * tf.cast(pilot_mask, data.dtype)
+            else:
+                output = data * tf.cast(tf.logical_not(pilot_mask), data.dtype)
+        # scale rho to account for sparsity
+        sparsity = tf.nn.zero_fraction(output)
+        output = output / sparsity
 
 
 

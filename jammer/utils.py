@@ -118,15 +118,17 @@ def linear_to_db(linear):
     """Converts from linear to dB scale."""
     return 10*math.log(float(linear))/math.log(10.0)
 
-class NonNegMaxSquareNorm(tf.keras.constraints.Constraint):
-    def __init__(self, max_squared_norm=1, axis=0):
-        self.max_squared_norm = max_squared_norm
+class NonNegMaxMeanSquareNorm(tf.keras.constraints.Constraint):
+    """Ensures nonnegativity and that the mean of the squared norm of the weights is at most max_squared_norm."""
+    def __init__(self, max_mean_squared_norm=1, axis=None):
+        self.max_mean_squared_norm = max_mean_squared_norm
         self.axis = axis
 
     def __call__(self, w):
         w_nonneg = tf.maximum(w, 0.0)
-        squared_norm = tf.reduce_sum(tf.square(w_nonneg), axis=self.axis, keepdims=True)
-        scale = tf.sqrt(self.max_squared_norm / (squared_norm + tf.keras.backend.epsilon()))
+        mean_squared_norm = tf.reduce_mean(tf.square(w_nonneg), axis=self.axis, keepdims=True)
+        # TODO only scale if mean_squared_norm > max_mean_squared_norm?
+        scale = tf.sqrt(self.max_mean_squared_norm / (mean_squared_norm + tf.keras.backend.epsilon()))
         return w_nonneg * scale
 
 # x = sparse_mask([5,5], [0.2, 0.8])

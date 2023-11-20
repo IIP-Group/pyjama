@@ -626,12 +626,13 @@ def multi_jammers():
 # wifi_vs_5g()
 
 #training
+model_parameters["perfect_csi"] = True
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
 model_train = Model(**model_parameters)
-train_model(model_train, 10000, "jammer_weights.pickle", log_tensorboard=True)
+train_model(model_train, 4000, "jammer_weights.pickle", log_tensorboard=True)
 # inference
 jammer_parameters["trainable"] = False
 simulate("Untrained Jammer")
