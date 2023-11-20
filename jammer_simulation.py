@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import time
+import datetime
 import pickle
 
 from sionna.mimo import StreamManagement
@@ -431,9 +432,15 @@ def simulate_model(model, legend):
                     max_mc_iter=MAX_MC_ITER,
                     show_fig=False)
     
-def train_model(model, num_iterations, weights_filename="weights.pickle"):
+def train_model(model, num_iterations, weights_filename="weights.pickle", log_tensorboard=False):
     optimizer = tf.keras.optimizers.Adam()
     bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    # TODO could take average to make it less jittery. Worth it?
+    if log_tensorboard:
+        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        train_log_dir = 'logs/tensorboard/' + current_time + '/train'
+        train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+
     for i in range(num_iterations):
         # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
         ebno_db = 10
@@ -444,10 +451,12 @@ def train_model(model, num_iterations, weights_filename="weights.pickle"):
         weights = model.trainable_weights
         grads = tape.gradient(loss, weights)
         optimizer.apply_gradients(zip(grads, weights))
-        # Print progress
-        print(f"{i}/{num_iterations}  Loss: {loss:.2E}", end="\r")
-        # if i % 100 == 0:
-        #     print(f"{i}/{NUM_TRAINING_ITERATIONS}  Loss: {loss:.2E}", end="\r")
+        # log progress to tensorboard and console
+        if i % 10 == 0:
+            print(f"{i}/{num_iterations}  Loss: {loss:.2E}", end="\r")
+            if log_tensorboard:
+                with train_summary_writer.as_default():
+                    tf.summary.scalar('loss', loss, step=i)
     # Save the weightsin a file
     weights = model.get_weights()
     with open(weights_filename, 'wb') as f:
@@ -619,7 +628,7 @@ model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
 model = Model(**model_parameters)
-train_model(model, 10000, "jammer_weights.pickle")
+train_model(model, 3000, "jammer_weights.pickle", log_tensorboard=True)
 
 
 
