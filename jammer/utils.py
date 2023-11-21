@@ -120,16 +120,15 @@ def linear_to_db(linear):
 
 class NonNegMaxMeanSquareNorm(tf.keras.constraints.Constraint):
     """Ensures nonnegativity and that the mean of the squared norm of the weights is at most max_squared_norm."""
-    def __init__(self, max_mean_squared_norm=1, axis=None):
+    def __init__(self, max_mean_squared_norm=1.0, axis=None):
         self.max_mean_squared_norm = max_mean_squared_norm
         self.axis = axis
 
     def __call__(self, w):
         w_nonneg = tf.maximum(w, 0.0)
         mean_squared_norm = tf.reduce_mean(tf.square(w_nonneg), axis=self.axis, keepdims=True)
-        # TODO only scale if mean_squared_norm > max_mean_squared_norm?
-        scale = tf.sqrt(self.max_mean_squared_norm / (mean_squared_norm + tf.keras.backend.epsilon()))
-        return w_nonneg * scale
-
-# x = sparse_mask([5,5], [0.2, 0.8])
-# print(x)
+        if(mean_squared_norm > self.max_mean_squared_norm):
+            scale = tf.sqrt(self.max_mean_squared_norm / (mean_squared_norm + tf.keras.backend.epsilon()))
+            return w_nonneg * scale
+        else:
+            return w_nonneg

@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 2 # Use "" to use the CPU
+gpu_num = 1 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -631,6 +631,8 @@ model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
+# jammer_parameters["trainable_mask"] = tf.ones([14,1], dtype=tf.bool)
+jammer_parameters["trainable_mask"] = tf.concat([tf.ones([13,1], dtype=tf.bool), tf.zeros([1,1], dtype=tf.bool)], axis=0)
 model_train = Model(**model_parameters)
 train_model(model_train, 4000, "jammer_weights.pickle", log_tensorboard=True)
 # inference

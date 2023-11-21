@@ -46,19 +46,15 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
-        constraint = NonNegMaxMeanSquareNorm(1)
+        constraint = NonNegMaxMeanSquareNorm(1.0)
         if self._trainable_mask is None:
             # all weights are trainable
-            y_input_shape = input_shape[0]
-            self._training_weights = tf.Variable(tf.ones(y_input_shape), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
-            pass
+            jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
+            self._training_weights = tf.Variable(tf.ones(jammer_input_shape), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
         else:
-            indices = tf.where(self._trainable_mask)
-            count_trainable = tf.shape(indices)[0]
+            self._training_indices = tf.where(self._trainable_mask)
+            count_trainable = tf.shape(self._training_indices)[0]
             self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
-            self._weights = tf.scatter_nd_update(tf.ones(self._trainable_mask.shape), indices, self._training_weights)
-        
-        # TODO: implement trainable_mask as described in docstring
         # below: weights only over ofdm_symbols
         # num_ofdm_symbols = input_shape[0][-2]
         # constraint = NonNegMaxMeanSquareNorm(1)
@@ -73,8 +69,12 @@ class OFDMJammer(tf.keras.layers.Layer):
         # jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
         jammer_input_shape = tf.concat([[input_shape[0]], [self._num_tx, self._num_tx_ant], input_shape[-2:]], axis=0)
         x_jammer = self.sample(jammer_input_shape)
-        # weights have reduce_mean(|w|^2) <= 1
-        x_jammer = tf.cast(self._weights, x_jammer.dtype) * x_jammer
+        # weights have mean(|w|^2) <= 1
+        if self._trainable_mask is None:
+            weights = self._training_weights
+        else:
+            weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, self._training_weights)
+        x_jammer = tf.cast(weights, x_jammer.dtype) * x_jammer
         rho = self.make_sparse(rho, tf.shape(x_jammer))
 
         x_jammer = tf.sqrt(rho) * x_jammer
@@ -123,7 +123,11 @@ class OFDMJammer(tf.keras.layers.Layer):
                 output = data * tf.cast(tf.logical_not(pilot_mask), data.dtype)
         # scale rho to account for sparsity
         sparsity = tf.nn.zero_fraction(output)
-        output = output / sparsity
+        if sparsity < 1.0:
+            scale = 1.0 / (1.0 - tf.cast(sparsity, output.dtype))
+            output = output * scale
+        # else, all elements are zero, so we don't need to scale
+        return output
 
 
 
