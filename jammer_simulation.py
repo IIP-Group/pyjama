@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 1 # Use "" to use the CPU
+gpu_num = 0 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -45,7 +45,7 @@ from jammer.jammer import OFDMJammer, TimeDomainOFDMJammer
 from jammer.mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from channel_models import MultiTapRayleighBlockFading
-from jammer.utils import covariance_estimation_from_signals, linear_to_db, db_to_linear
+from jammer.utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image
 
 
 # sionna.config.xla_compat=True
@@ -432,7 +432,7 @@ def simulate_model(model, legend):
                     max_mc_iter=MAX_MC_ITER,
                     show_fig=False)
     
-def train_model(model, num_iterations, weights_filename="weights.pickle", log_tensorboard=False):
+def train_model(model, num_iterations, weights_filename="weights.pickle", log_tensorboard=False, log_weight_images=False):
     optimizer = tf.keras.optimizers.Adam()
     bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     # TODO could take average to make it less jittery. Worth it?
@@ -457,6 +457,11 @@ def train_model(model, num_iterations, weights_filename="weights.pickle", log_te
             if log_tensorboard:
                 with train_summary_writer.as_default():
                     tf.summary.scalar('loss', loss, step=i)
+        if i % 100 == 0 and log_weight_images:
+            with train_summary_writer.as_default():
+                image = matrix_to_image(model._jammer._weights)
+                tf.summary.image("weights", image, step=i)
+                
     # Save the weights in a file
     weights = model.get_weights()
     with open(weights_filename, 'wb') as f:
@@ -626,20 +631,20 @@ def multi_jammers():
 # wifi_vs_5g()
 
 #training
-model_parameters["perfect_csi"] = True
+model_parameters["perfect_csi"] = False
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
-model_parameters["jammer_mitigation_dimensionality"] = 1
+# model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
-# jammer_parameters["trainable_mask"] = tf.ones([14,1], dtype=tf.bool)
-jammer_parameters["trainable_mask"] = tf.concat([tf.ones([13,1], dtype=tf.bool), tf.zeros([1,1], dtype=tf.bool)], axis=0)
+# jammer which sends during jammer-pilots, but is able to learn during rest
+jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
 model_train = Model(**model_parameters)
-train_model(model_train, 4000, "jammer_weights.pickle", log_tensorboard=True)
-# inference
+train_model(model_train, 40000, "datalearning_jammer_weights.pickle", log_tensorboard=True, log_weight_images=True)
+# # inference
 jammer_parameters["trainable"] = False
 simulate("Untrained Jammer")
 model = Model(**model_parameters)
-load_weights(model, "jammer_weights.pickle")
+load_weights(model, "datalearning_jammer_weights.pickle")
 simulate_model(model, "Trained Jammer")
 ber_plots()
 
