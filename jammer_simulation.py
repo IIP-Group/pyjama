@@ -636,26 +636,32 @@ model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
+
 # jammer which sends during jammer-pilots, but is able to learn during rest
-filename = "datalearning_weights.pickle"
-jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
-model_train = Model(**model_parameters)
-train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
-# jammer which can choose any rg-element to send on
-filename = "whole_rg_weights.pickle"
-jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
-model_train = Model(**model_parameters)
-train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+# filename = "datalearning_weights.pickle"
+# jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
+# model_train = Model(**model_parameters)
+# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+
+# # jammer which can choose any rg-element to send on
+# filename = "whole_rg_weights.pickle"
+# jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
+# model_train = Model(**model_parameters)
+# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+
 # jammer which can only choose symbol times
 filename = "symbol_weights.pickle"
-jammer_parameters["trainable_mask"] = tf.ones([14], dtype=bool)
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
 model_train = Model(**model_parameters)
-train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
-# jammer which can choose non-silent symbol times
-filename = "nonsilent_symbol_weights.pickle"
-jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4], tf.ones([10], dtype=bool), axis=0)], axis=0))
-model_train = Model(**model_parameters)
-train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+train_model(model_train, 5000, filename, log_tensorboard=True)
+
+# # jammer which can choose non-silent symbol times
+# filename = "nonsilent_symbol_weights.pickle"
+# jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4, 1], dtype=bool), tf.ones([10, 1], dtype=bool)], axis=0)
+# model_train = Model(**model_parameters)
+# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+
 # # inference
 # jammer_parameters["trainable"] = False
 # simulate("Untrained Jammer")
