@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 6 # Use "" to use the CPU
+gpu_num = 0 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -653,10 +653,10 @@ jammer_parameters["trainable"] = True
 # train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can only choose symbol times
-filename = "symbol_weights.pickle"
-jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
-model_train = Model(**model_parameters)
-train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
+# filename = "symbol_weights.pickle"
+# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
+# model_train = Model(**model_parameters)
+# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # jammer which can choose non-silent symbol times
 # filename = "nonsilent_symbol_weights.pickle"
@@ -665,11 +665,18 @@ train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_image
 # train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # inference
-# jammer_parameters["trainable"] = False
+jammer_parameters["trainable"] = False
 # simulate("Untrained Jammer")
-# model = Model(**model_parameters)
-# load_weights(model, filename)
-# simulate_model(model, "Trained Jammer")
+for filename, trainable_mask in [("whole_rg_weights.pickle", tf.ones([14,128], dtype=bool)), ("symbol_weights.pickle", tf.ones([14, 1], dtype=bool))]:
+    jammer_parameters["trainable_mask"] = trainable_mask
+    model = Model(**model_parameters)
+    load_weights(model, filename)
+    # simulate_model(model, filename)
+    # calculate BCE
+    for i in range(10):
+        b, llr = model(BATCH_SIZE, 10.0)
+        bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        print(f"{filename}: {bce(b, llr)}")
 # ber_plots()
 
 
