@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 0 # Use "" to use the CPU
+gpu_num = 6 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -433,7 +433,7 @@ def simulate_model(model, legend):
                     show_fig=False)
     
 def train_model(model, num_iterations, weights_filename="weights.pickle", log_tensorboard=False, log_weight_images=False):
-    optimizer = tf.keras.optimizers.Adam()
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
     bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     # TODO could take average to make it less jittery. Worth it?
     if log_tensorboard:
@@ -457,6 +457,9 @@ def train_model(model, num_iterations, weights_filename="weights.pickle", log_te
             if log_tensorboard:
                 with train_summary_writer.as_default():
                     tf.summary.scalar('loss', loss, step=i)
+        # if i % 100 == 0:
+        #     print(f"\nGradients: {grads[0]}")
+        #     print(f"Weights: {weights[0]}")
         if i % 1000 == 0 and log_weight_images:
             with train_summary_writer.as_default():
                 image = matrix_to_image(model._jammer._weights)
@@ -641,26 +644,25 @@ jammer_parameters["trainable"] = True
 # filename = "datalearning_weights.pickle"
 # jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
 # model_train = Model(**model_parameters)
-# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # jammer which can choose any rg-element to send on
 # filename = "whole_rg_weights.pickle"
 # jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
 # model_train = Model(**model_parameters)
-# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can only choose symbol times
 filename = "symbol_weights.pickle"
 jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
 model_train = Model(**model_parameters)
-# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
-train_model(model_train, 5000, filename, log_tensorboard=True)
+train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # jammer which can choose non-silent symbol times
 # filename = "nonsilent_symbol_weights.pickle"
 # jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4, 1], dtype=bool), tf.ones([10, 1], dtype=bool)], axis=0)
 # model_train = Model(**model_parameters)
-# train_model(model_train, 40000, filename, log_tensorboard=True, log_weight_images=True)
+# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # inference
 # jammer_parameters["trainable"] = False
