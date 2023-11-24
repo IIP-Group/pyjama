@@ -151,9 +151,9 @@ def plot_to_image(figure):
   image = tf.expand_dims(image, 0)
   return image
 
-def plot_matrix(a):
+def plot_matrix(a, figsize=(6.4, 4.8)):
     """Plots a matrix as a heatmap. Works only in eager mode."""
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=figsize)
     # im = ax.imshow(a)
     im = ax.matshow(a)
     fig.colorbar(im)
@@ -161,5 +161,20 @@ def plot_matrix(a):
 
 def matrix_to_image(a):
     """Converts a matrix to an image. Works only in eager mode."""
-    fig = plot_matrix(a)
+    fig = plot_matrix(a, figsize=(3.2, 2.4))
     return plot_to_image(fig)
+
+def expected_bitflips(y_true, y_pred, reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE):
+    """Expected BER loss. y_true in {0, 1}, y_pred in [0, 1]."""
+    losses = tf.reduce_sum(y_true * (1-y_pred) + (1-y_true) * (y_pred), axis=-1)
+    # reduce over batch dimension, according to parameter reduction <-TODO
+    return tf.reduce_mean(losses)
+    
+
+# y_true = tf.constant([[0.0, 1.0],
+#                       [1.0, 0.0]])
+# y_pred = tf.constant([[0.1, 0.9],
+#                       [0.0, 1.0]])
+# print(expected_bitflips(y_true, y_pred))
+
+# %%

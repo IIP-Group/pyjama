@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 0 # Use "" to use the CPU
+gpu_num = 1 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -46,6 +46,7 @@ from jammer.mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from channel_models import MultiTapRayleighBlockFading
 from jammer.utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image
+import jammer.utils as utils
 
 
 # sionna.config.xla_compat=True
@@ -434,8 +435,10 @@ def simulate_model(model, legend):
     
 def train_model(model, num_iterations, weights_filename="weights.pickle", log_tensorboard=False, log_weight_images=False):
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
+    # optimizer = tf.keras.optimizers.Adam()
     bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     # TODO could take average to make it less jittery. Worth it?
+    # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     if log_tensorboard:
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         train_log_dir = 'logs/tensorboard/' + current_time + '/train'
@@ -443,10 +446,13 @@ def train_model(model, num_iterations, weights_filename="weights.pickle", log_te
 
     for i in range(num_iterations):
         # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
-        ebno_db = 10
+        ebno_db = 10.0
         with tf.GradientTape() as tape:
             b, llr = model(BATCH_SIZE, ebno_db)
-            loss = -bce(b, llr)
+            # loss = -bce(b, llr)
+            loss = -utils.expected_bitflips(b, tf.sigmoid(llr))
+            # b_inverted = tf.cast(tf.math.logical_not(tf.cast(b, tf.bool)), tf.float32)
+            # loss = bce(b_inverted, llr)
         # Computing and applying gradients
         weights = model.trainable_weights
         grads = tape.gradient(loss, weights)
@@ -460,7 +466,7 @@ def train_model(model, num_iterations, weights_filename="weights.pickle", log_te
         # if i % 100 == 0:
         #     print(f"\nGradients: {grads[0]}")
         #     print(f"Weights: {weights[0]}")
-        if i % 1000 == 0 and log_weight_images:
+        if i % 500 == 0 and log_weight_images:
             with train_summary_writer.as_default():
                 image = matrix_to_image(model._jammer._weights)
                 tf.summary.image("weights", image, step=i)
@@ -635,6 +641,7 @@ def multi_jammers():
 
 #training
 model_parameters["perfect_csi"] = False
+model_parameters["num_ut"] = 1
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
@@ -644,39 +651,44 @@ jammer_parameters["trainable"] = True
 # filename = "datalearning_weights.pickle"
 # jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
 # model_train = Model(**model_parameters)
-# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
+# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
-# # jammer which can choose any rg-element to send on
+# jammer which can choose any rg-element to send on
 # filename = "whole_rg_weights.pickle"
 # jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
 # model_train = Model(**model_parameters)
-# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
+# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can only choose symbol times
 # filename = "symbol_weights.pickle"
 # jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
 # model_train = Model(**model_parameters)
-# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
+# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # jammer which can choose non-silent symbol times
-# filename = "nonsilent_symbol_weights.pickle"
-# jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4, 1], dtype=bool), tf.ones([10, 1], dtype=bool)], axis=0)
-# model_train = Model(**model_parameters)
-# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
+filename = "nonsilent_symbol_weights.pickle"
+jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4, 1], dtype=bool), tf.ones([10, 1], dtype=bool)], axis=0)
+model_train = Model(**model_parameters)
+train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # inference
-jammer_parameters["trainable"] = False
-# simulate("Untrained Jammer")
-for filename, trainable_mask in [("whole_rg_weights.pickle", tf.ones([14,128], dtype=bool)), ("symbol_weights.pickle", tf.ones([14, 1], dtype=bool))]:
-    jammer_parameters["trainable_mask"] = trainable_mask
-    model = Model(**model_parameters)
-    load_weights(model, filename)
-    # simulate_model(model, filename)
-    # calculate BCE
-    for i in range(10):
-        b, llr = model(BATCH_SIZE, 10.0)
-        bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-        print(f"{filename}: {bce(b, llr)}")
+# jammer_parameters["trainable"] = False
+# # simulate("Untrained Jammer")
+# for filename, trainable_mask in [("whole_rg_weights.pickle", tf.ones([14,128], dtype=bool)), ("symbol_weights.pickle", tf.ones([14, 1], dtype=bool))]:
+#     jammer_parameters["trainable_mask"] = trainable_mask
+#     model = Model(**model_parameters)
+#     load_weights(model, filename)
+#     simulate_model(model, filename)
+#     # calculate BCE
+#     mean_bce = tf.keras.metrics.Mean(name='bce')
+#     mean_bitflips = tf.keras.metrics.Mean(name='bitflips')
+#     for i in range(10):
+#         b, llr = model(BATCH_SIZE, 10.0)
+#         bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+#         mean_bce.update_state(bce(b, llr))
+#         bitflips = utils.expected_bitflips(b, tf.sigmoid(llr))
+#         mean_bitflips.update_state(bitflips)
+#     print(f"{filename}: BCE: {mean_bce.result()}, Bitflips: {mean_bitflips.result()}")
 # ber_plots()
 
 
