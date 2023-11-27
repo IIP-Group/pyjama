@@ -79,7 +79,8 @@ class Model(tf.keras.Model):
                      "normalize_channel": True},
                  jammer_mitigation=None,
                  jammer_mitigation_dimensionality=None,
-                 return_jammer_signals=False):
+                 return_jammer_signals=False,
+                 return_symbol_estimates=False):
         super().__init__()
         self._scenario = scenario
         self._domain = domain
@@ -91,6 +92,7 @@ class Model(tf.keras.Model):
         self._jammer_mitigation = jammer_mitigation
         self._jammer_mitigation_dimensionality = jammer_mitigation_dimensionality
         self._return_jammer_signals = return_jammer_signals
+        self._return_symbol_estimates = return_symbol_estimates
         self._jammer_power = tf.cast(jammer_power, tf.complex64)
         #TODO should these kinds of parameters go into e.g. a dict for the channel parameters?
         self._los = los
@@ -383,10 +385,12 @@ class Model(tf.keras.Model):
             llr = self._decoder(llr)
         llr = tf.reshape(llr, [batch_size, -1])
         b = tf.reshape(b, [batch_size, -1])
+        result = (b, llr)
         if self._return_jammer_signals:
-            return b, llr, jammer_signals
-        else:
-            return b, llr
+            result += (jammer_signals,)
+        if self._return_symbol_estimates:
+            result += (x_hat,)
+        return result
 
 
 def relative_singular_values(jammer_signals):
@@ -654,10 +658,10 @@ jammer_parameters["trainable"] = True
 # train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can choose any rg-element to send on
-# filename = "whole_rg_weights.pickle"
-# jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
-# model_train = Model(**model_parameters)
-# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
+filename = "whole_rg_weights_random_init.pickle"
+jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
+model_train = Model(**model_parameters)
+train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can only choose symbol times
 # filename = "symbol_weights.pickle"
@@ -666,10 +670,10 @@ jammer_parameters["trainable"] = True
 # train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # jammer which can choose non-silent symbol times
-filename = "nonsilent_symbol_weights.pickle"
-jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4, 1], dtype=bool), tf.ones([10, 1], dtype=bool)], axis=0)
-model_train = Model(**model_parameters)
-train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
+# filename = "nonsilent_symbol_weights.pickle"
+# jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4, 1], dtype=bool), tf.ones([10, 1], dtype=bool)], axis=0)
+# model_train = Model(**model_parameters)
+# train_model(model_train, 20000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # inference
 # jammer_parameters["trainable"] = False
