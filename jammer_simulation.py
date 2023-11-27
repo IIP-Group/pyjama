@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 1 # Use "" to use the CPU
+gpu_num = 2 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -80,7 +80,7 @@ class Model(tf.keras.Model):
                  jammer_mitigation=None,
                  jammer_mitigation_dimensionality=None,
                  return_jammer_signals=False,
-                 return_symbol_estimates=False):
+                 return_symbols=False):
         super().__init__()
         self._scenario = scenario
         self._domain = domain
@@ -92,7 +92,7 @@ class Model(tf.keras.Model):
         self._jammer_mitigation = jammer_mitigation
         self._jammer_mitigation_dimensionality = jammer_mitigation_dimensionality
         self._return_jammer_signals = return_jammer_signals
-        self._return_symbol_estimates = return_symbol_estimates
+        self._return_symbols = return_symbols
         self._jammer_power = tf.cast(jammer_power, tf.complex64)
         #TODO should these kinds of parameters go into e.g. a dict for the channel parameters?
         self._los = los
@@ -383,13 +383,16 @@ class Model(tf.keras.Model):
         llr = self._demapper([x_hat, no_eff])
         if self._coderate < 1.0:
             llr = self._decoder(llr)
-        llr = tf.reshape(llr, [batch_size, -1])
-        b = tf.reshape(b, [batch_size, -1])
-        result = (b, llr)
+        if self._return_symbols:
+            x = tf.reshape(x, [batch_size, -1])
+            x_hat = tf.reshape(x_hat, [batch_size, -1])
+            result = (x, x_hat)
+        else:
+            llr = tf.reshape(llr, [batch_size, -1])
+            b = tf.reshape(b, [batch_size, -1])
+            result = (b, llr)
         if self._return_jammer_signals:
             result += (jammer_signals,)
-        if self._return_symbol_estimates:
-            result += (x_hat,)
         return result
 
 
@@ -437,10 +440,14 @@ def simulate_model(model, legend):
                     max_mc_iter=MAX_MC_ITER,
                     show_fig=False)
     
-def train_model(model, num_iterations, weights_filename="weights.pickle", log_tensorboard=False, log_weight_images=False):
+def train_model(model,
+                num_iterations,
+                weights_filename="weights.pickle",
+                log_tensorboard=False,
+                log_weight_images=False):
+    """If model._return_symbols is True, we train on symbol error, otherwise on bit error."""
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
-    # optimizer = tf.keras.optimizers.Adam()
-    bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    # bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     if log_tensorboard:
@@ -452,11 +459,16 @@ def train_model(model, num_iterations, weights_filename="weights.pickle", log_te
         # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
         ebno_db = 10.0
         with tf.GradientTape() as tape:
-            b, llr = model(BATCH_SIZE, ebno_db)
-            # loss = -bce(b, llr)
-            loss = -utils.expected_bitflips(b, tf.sigmoid(llr))
-            # b_inverted = tf.cast(tf.math.logical_not(tf.cast(b, tf.bool)), tf.float32)
-            # loss = bce(b_inverted, llr)
+            if model._return_symbols:
+                x, x_hat = model(BATCH_SIZE, ebno_db)
+                # L1 loss
+                loss = -tf.reduce_mean(tf.reduce_sum(tf.abs(x - x_hat), axis=-1))
+            else:
+                b, llr = model(BATCH_SIZE, ebno_db)
+                # loss = -bce(b, llr)
+                loss = -utils.expected_bitflips(b, tf.sigmoid(llr))
+                # b_inverted = tf.cast(tf.math.logical_not(tf.cast(b, tf.bool)), tf.float32)
+                # loss = bce(b_inverted, llr)
         # Computing and applying gradients
         weights = model.trainable_weights
         grads = tape.gradient(loss, weights)
@@ -658,16 +670,18 @@ jammer_parameters["trainable"] = True
 # train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can choose any rg-element to send on
-filename = "whole_rg_weights_random_init.pickle"
-jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
-model_train = Model(**model_parameters)
-train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
-
-# jammer which can only choose symbol times
-# filename = "symbol_weights.pickle"
-# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
+# model_parameters["return_symbols"] = True
+# filename = "whole_rg_weights_random_init.pickle"
+# jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
 # model_train = Model(**model_parameters)
 # train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
+
+# jammer which can only choose symbol times
+model_parameters["return_symbols"] = True
+filename = "symbol_weights.pickle"
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
+model_train = Model(**model_parameters)
+train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # jammer which can choose non-silent symbol times
 # filename = "nonsilent_symbol_weights.pickle"

@@ -177,5 +177,5 @@ def expected_bitflips(y_true, y_pred, reduction=tf.keras.losses.Reduction.SUM_OV
 #                       [0.0, 1.0]])
 # print(expected_bitflips(y_true, y_pred))
 
-plot_matrix(tf.random.normal([14, 128]), figsize=(6.0, 2.4))
+# plot_matrix(tf.random.normal([14, 128]), figsize=(6.0, 2.4))
 # %%
