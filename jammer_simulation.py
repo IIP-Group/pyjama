@@ -149,7 +149,7 @@ class Model(tf.keras.Model):
         self._n = int(self._rg.num_data_symbols*self._num_bits_per_symbol)
         self._k = int(self._n * self._coderate)
         if coderate is not None:
-            self._encoder = LDPC5GEncoder(self._k, self._n)
+            self._encoder = LDPC5GEncoder(self._k, self._n, num_bits_per_symbol=self._num_bits_per_symbol)
             self._decoder = LDPC5GDecoder(self._encoder, hard_out=False)
 
         self._mapper = Mapper("qam", self._num_bits_per_symbol)
