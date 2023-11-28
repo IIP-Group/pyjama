@@ -51,7 +51,7 @@ import jammer.utils as utils
 
 # sionna.config.xla_compat=True
 class Model(tf.keras.Model):
-    """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model. No coding for now.
+    """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model.
     """
     def __init__(self,
                  scenario="umi",
@@ -64,7 +64,7 @@ class Model(tf.keras.Model):
                  num_ut=4,
                  num_ut_ant=1,
                  num_bits_per_symbol=2,
-                 coderate=1.0,
+                 coderate=None,
                  domain="freq",
                  los=None,
                  indoor_probability=0.8,
@@ -148,7 +148,7 @@ class Model(tf.keras.Model):
 
         self._n = int(self._rg.num_data_symbols*self._num_bits_per_symbol)
         self._k = int(self._n * self._coderate)
-        if coderate < 1.0:
+        if coderate is not None:
             self._encoder = LDPC5GEncoder(self._k, self._n)
             self._decoder = LDPC5GDecoder(self._encoder, hard_out=False)
 
@@ -303,8 +303,8 @@ class Model(tf.keras.Model):
         "The number of silent pilots must be smaller than the number of OFDM symbols."
         assert self._domain in ["freq", "time"],\
         "domain must be either 'freq' or 'time'"
-        assert self._coderate <= 1.0 and self._coderate >= 0,\
-        "coderate must be in [0, 1]"
+        assert self._coderate <= 1.0 and self._coderate >= 0 or self._coderate is None,\
+        "coderate must be in [0, 1] or None"
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     @tf.function(jit_compile=False)
@@ -312,11 +312,13 @@ class Model(tf.keras.Model):
         # for good statistics, we simulate a new topology for each batch.
         self.new_ut_topology(batch_size)
         self.new_jammer_topology(batch_size)
-        # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=self._rg)
-        no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._coderate, resource_grid=None)
+        if self._coderate is not None:
+            no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._coderate, resource_grid=None)
+        else:
+            no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
         b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx, self._k])
         # b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])
-        if self._coderate < 1.0:
+        if self._coderate is not None:
             c = self._encoder(b)
             c = sionna.utils.flatten_last_dims(c, 2)
         else:
@@ -353,8 +355,6 @@ class Model(tf.keras.Model):
         if self._estimate_jammer_covariance:
             # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
             jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
-            # # code to display jammer dimensionality
-            # bar_plot(relative_singular_values(jammer_signals).numpy())
             # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
             jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
         if self._jammer_mitigation == "pos":
@@ -381,7 +381,7 @@ class Model(tf.keras.Model):
             h_hat, err_var = self._ls_est([y, no])
         x_hat, no_eff = self._lmmse_equ([y, h_hat, err_var, no])
         llr = self._demapper([x_hat, no_eff])
-        if self._coderate < 1.0:
+        if self._coderate is not None:
             llr = self._decoder(llr)
         if self._return_symbols:
             x = tf.reshape(x, [batch_size, -1])
