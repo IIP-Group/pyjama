@@ -128,6 +128,7 @@ class NonNegMaxMeanSquareNorm(tf.keras.constraints.Constraint):
 
     def __call__(self, w):
         w_nonneg = tf.maximum(w, 0.0)
+        # w_nonneg = tf.maximum(w, 0.1*w) # leaky relu
         mean_squared_norm = tf.reduce_mean(tf.square(w_nonneg), axis=self.axis, keepdims=True)
         if(mean_squared_norm > self.max_mean_squared_norm):
             scale = tf.sqrt(self.max_mean_squared_norm / (mean_squared_norm + tf.keras.backend.epsilon()))

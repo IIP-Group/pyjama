@@ -52,14 +52,14 @@ class OFDMJammer(tf.keras.layers.Layer):
             jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
             # self._training_weights = tf.Variable(tf.ones(jammer_input_shape), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
             # self._training_weights = tf.Variable(tf.ones(jammer_input_shape), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
-            self._training_weights = tf.Variable(tf.random.uniform(jammer_input_shape, minval=0.0, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
+            self._training_weights = tf.Variable(tf.random.uniform(jammer_input_shape, minval=0.8, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
             self._weights = tf.Variable(tf.ones(jammer_input_shape), trainable=False)
         else:
             self._training_indices = tf.where(self._trainable_mask)
             count_trainable = tf.shape(self._training_indices)[0]
             # self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
             # self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
-            self._training_weights = tf.Variable(tf.random.uniform([count_trainable], minval=0.0, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
+            self._training_weights = tf.Variable(tf.random.uniform([count_trainable], minval=0.8, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
             self._weights = tf.Variable(tf.ones(self._trainable_mask.shape), trainable=False)
         # below: weights only over ofdm_symbols
         # num_ofdm_symbols = input_shape[0][-2]

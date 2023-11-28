@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 2 # Use "" to use the CPU
+gpu_num = 1 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -412,7 +412,7 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 1
+BATCH_SIZE = 4
 MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
@@ -458,6 +458,7 @@ def train_model(model,
     for i in range(num_iterations):
         # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
         ebno_db = 10.0
+        # bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         with tf.GradientTape() as tape:
             if model._return_symbols:
                 x, x_hat = model(BATCH_SIZE, ebno_db)
@@ -662,26 +663,26 @@ model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
+model_parameters["return_symbols"] = True
 
 # jammer which sends during jammer-pilots, but is able to learn during rest
-# filename = "datalearning_weights.pickle"
-# jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
-# model_train = Model(**model_parameters)
-# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
+filename = "datalearning_weights_4ue.pickle"
+model_parameters["num_ut"] = 4
+jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
+model_train = Model(**model_parameters)
+train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can choose any rg-element to send on
-# model_parameters["return_symbols"] = True
 # filename = "whole_rg_weights_random_init.pickle"
 # jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
 # model_train = Model(**model_parameters)
 # train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can only choose symbol times
-model_parameters["return_symbols"] = True
-filename = "symbol_weights.pickle"
-jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
-model_train = Model(**model_parameters)
-train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
+# filename = "symbol_weights.pickle"
+# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
+# model_train = Model(**model_parameters)
+# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # # jammer which can choose non-silent symbol times
 # filename = "nonsilent_symbol_weights.pickle"
@@ -691,8 +692,9 @@ train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images
 
 # # inference
 # jammer_parameters["trainable"] = False
-# # simulate("Untrained Jammer")
-# for filename, trainable_mask in [("whole_rg_weights.pickle", tf.ones([14,128], dtype=bool)), ("symbol_weights.pickle", tf.ones([14, 1], dtype=bool))]:
+# simulate("Untrained Jammer")
+# # for filename, trainable_mask in [("whole_rg_weights.pickle", tf.ones([14,128], dtype=bool)), ("symbol_weights.pickle", tf.ones([14, 1], dtype=bool))]:
+# for filename, trainable_mask in [("whole_rg_weights.pickle", tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)])]:
 #     jammer_parameters["trainable_mask"] = trainable_mask
 #     model = Model(**model_parameters)
 #     load_weights(model, filename)
