@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 1 # Use "" to use the CPU
+gpu_num = 0 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -114,6 +114,7 @@ class Model(tf.keras.Model):
         self._num_ut_ant = num_ut_ant
         self._num_bits_per_symbol = num_bits_per_symbol
         self._coderate = coderate
+        self._effective_coderate = coderate if coderate is not None else 1.0
 
         bs_ut_association = np.zeros([1, self._num_ut])
         bs_ut_association[0, :] = 1
@@ -147,7 +148,7 @@ class Model(tf.keras.Model):
         self._qam_source = QAMSource(self._num_bits_per_symbol)
 
         self._n = int(self._rg.num_data_symbols*self._num_bits_per_symbol)
-        self._k = int(self._n * self._coderate)
+        self._k = int(self._n * self._effective_coderate)
         if coderate is not None:
             self._encoder = LDPC5GEncoder(self._k, self._n, num_bits_per_symbol=self._num_bits_per_symbol)
             self._decoder = LDPC5GDecoder(self._encoder, hard_out=False)
@@ -303,7 +304,7 @@ class Model(tf.keras.Model):
         "The number of silent pilots must be smaller than the number of OFDM symbols."
         assert self._domain in ["freq", "time"],\
         "domain must be either 'freq' or 'time'"
-        assert self._coderate <= 1.0 and self._coderate >= 0 or self._coderate is None,\
+        assert self._coderate is None or self._coderate <= 1.0 and self._coderate >= 0,\
         "coderate must be in [0, 1] or None"
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
@@ -313,10 +314,8 @@ class Model(tf.keras.Model):
         # TODO: add parameter to keep topology constant for model lifetime
         self.new_ut_topology(batch_size)
         self.new_jammer_topology(batch_size)
-        if self._coderate is not None:
-            no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._coderate, resource_grid=None)
-        else:
-            no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
+        # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._effective_coderate, resource_grid=None)
+        no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
         b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx, self._k])
         # b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])
         if self._coderate is not None:
@@ -413,7 +412,7 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
@@ -510,7 +509,7 @@ jammer_parameters = {
 model_parameters = {
     "scenario": "umi",
     "perfect_csi": False,
-    "coderate": 1.0,
+    "coderate": None,
     "domain": "freq",
     "los": None,
     "indoor_probability": 0.8,
@@ -659,7 +658,7 @@ def multi_jammers():
 
 #training
 model_parameters["perfect_csi"] = False
-model_parameters["num_ut"] = 1
+model_parameters["num_ut"] = 4
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1

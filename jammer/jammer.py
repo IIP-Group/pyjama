@@ -97,7 +97,9 @@ class OFDMJammer(tf.keras.layers.Layer):
         else:
             # weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, self._training_weights)
             # TODO there is an error here: constant weights should not go through the constraint as they might be scaled down then
-            weights = self._constraint(tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, self._training_weights))
+            # TODO fix below, but check interaction with rho
+            constrained_training_weights = self._constraint(self._training_weights)
+            weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, constrained_training_weights)
             self._weights.assign(weights)
         x_jammer = tf.cast(weights, x_jammer.dtype) * x_jammer
         # x_jammer = tf.cast(weights, x_jammer.dtype) * x_jammer
