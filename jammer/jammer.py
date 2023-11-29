@@ -9,7 +9,21 @@ import copy
 from .utils import sample_function, NonNegMaxMeanSquareNorm
 
 class OFDMJammer(tf.keras.layers.Layer):
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, jamming_type="barrage", density_symbols=1.0, density_subcarriers=1.0, normalize_channel=False, return_channel=False, sampler="uniform", trainable=False, trainable_mask=None, dtype=tf.complex64, **kwargs):
+    def __init__(self,
+                 channel_model,
+                 rg,
+                 num_tx,
+                 num_tx_ant,
+                 jamming_type="barrage",
+                 density_symbols=1.0,
+                 density_subcarriers=1.0,
+                 normalize_channel=False,
+                 return_channel=False,
+                 sampler="uniform",
+                 trainable=False,
+                 trainable_mask=None,
+                 dtype=tf.complex64,
+                 **kwargs):
         r"""
         sampler: String in ["uniform", "gaussian"], a constellation, or function with signature (shape, dtype) -> tf.Tensor, where elementwise E[|x|^2] = 1
         trainable_mask: boolean, shape broadcastable to jammer_input_shape. If True, the corresponding element is trainable. If False, the corresponding element is held constant (jammer_power power). If None, all elements are trainable.
@@ -82,6 +96,7 @@ class OFDMJammer(tf.keras.layers.Layer):
             self._weights.assign(weights)
         else:
             # weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, self._training_weights)
+            # TODO there is an error here: constant weights should not go through the constraint as they might be scaled down then
             weights = self._constraint(tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, self._training_weights))
             self._weights.assign(weights)
         x_jammer = tf.cast(weights, x_jammer.dtype) * x_jammer

@@ -310,6 +310,7 @@ class Model(tf.keras.Model):
     @tf.function(jit_compile=False)
     def call(self, batch_size, ebno_db):
         # for good statistics, we simulate a new topology for each batch.
+        # TODO: add parameter to keep topology constant for model lifetime
         self.new_ut_topology(batch_size)
         self.new_jammer_topology(batch_size)
         if self._coderate is not None:
