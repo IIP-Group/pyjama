@@ -51,7 +51,8 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._check_settings()
 
     def _check_settings(self):
-        assert self._jamming_type in ["barrage", "pilot", "data"], "jamming_type must be one of ['barrage', 'pilot', 'data']"
+        assert self._jamming_type in ["barrage", "pilot", "data", "non_silent"], "jamming_type must be one of ['barrage', 'pilot', 'data']"
+        # TODO if non_silent, check that outer pilot pattern is PilotPatternWithSilence
         assert self._density_symbols >= 0.0 and self._density_symbols <= 1.0, "density_symbols must be in [0, 1]"
         assert self._density_subcarriers >= 0.0 and self._density_subcarriers <= 1.0, "density_subcarriers must be in [0, 1]"
         if self._jamming_type in ["pilot", "data"]:
@@ -147,8 +148,16 @@ class OFDMJammer(tf.keras.layers.Layer):
         
             if self._jamming_type == "pilot":
                 output = data * tf.cast(pilot_mask, data.dtype)
-            else:
+            elif self._jamming_type == "data":
                 output = data * tf.cast(tf.logical_not(pilot_mask), data.dtype)
+            elif self._jamming_type == "non_silent":
+                # TODO make internal_pilot_mask a property of the pilot pattern
+                internal_pilot_mask = tf.cast(self._rg.pilot_pattern._internal_pilot_pattern.mask, tf.bool)
+                internal_pilot_mask = tf.reduce_any(internal_pilot_mask, axis=[0, 1])
+                silent_mask = pilot_mask & tf.logical_not(internal_pilot_mask)
+                output = data * tf.cast(tf.logical_not(silent_mask), data.dtype)
+            else:
+                raise ValueError("jamming_type must be one of ['barrage', 'pilot', 'data', 'non_silent']")
         # scale rho to account for sparsity
         sparsity = tf.nn.zero_fraction(output)
         if sparsity < 1.0:
