@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sionna.channel.tr38901 import Antenna, AntennaArray, CDL, UMi, UMa, RMa
 from sionna.channel import gen_single_sector_topology
+from visualization_utils import axis_add_custom_ticks
 
 
 def visualize_cir(a, tau):
@@ -142,6 +143,65 @@ def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_proba
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.97])
     plt.show()
+
+
+
+
+
+# below 802.11n
+def presentation(scenario="umi", carrier_frequency=5.0e9, sampling_frequency=5.0e-8, indoor_probability=0.8, los=None, resample_topology=False, num_cir_samples=2000, num_bins=200):
+    """either provide topology or indoor_probability"""
+    channel = setup_3gpp_channel(scenario=scenario, carrier_frequency=carrier_frequency)
+    topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
+    channel.set_topology(*topology, los=los)
+    # 2.: empirical distribution of delays tau (number of occurrences)
+    # 3. empirical distribution of amplitudes |a| (mean power)
+    delays = np.array([])
+    delay_power = np.empty((2, 0))
+    for i in range(num_cir_samples):
+        if i % 20 == 0:
+            print(i)
+        cir = channel(1, sampling_frequency)
+        a, tau = filter_cir(*cir)
+        # 2.
+        delays = np.concatenate([delays, tau.numpy().flatten()])
+        # 3.
+        a_squeezed = tf.squeeze(a)
+        # just treat antennas as multiple datapoints
+        tau_squeezed = tf.broadcast_to(tf.squeeze(tau), a_squeezed.shape)
+        a_squeezed = sionna.utils.flatten_last_dims(a_squeezed)
+        tau_squeezed = sionna.utils.flatten_last_dims(tau_squeezed)
+        # x is tau, y is |a|^2
+        power_points = tf.stack([tau_squeezed, tf.abs(a_squeezed)**2], axis=0)
+        delay_power = np.concatenate([delay_power, power_points.numpy()], axis=1)
+        if resample_topology:
+            topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
+            channel.set_topology(*topology, los=los)
+    plt.figure()
+    plt.title("Delay distribution: Power and impulse CDF")
+    plt.ylabel("CDF")
+    plt.ecdf(delays, color="C1")
+    plt.twinx()
+    # average power in delay bins
+    max_delay = np.max(delay_power[0,:])
+    delay_bins = np.linspace(0, max_delay, num_bins+1)
+    power_bins = np.empty(num_bins)
+    for i in range(num_bins):
+        mask = np.logical_and(delay_power[0,:] >= delay_bins[i], delay_power[0,:] < delay_bins[i+1])
+        power_bins[i] = np.mean(delay_power[1,mask])
+    power_bins = np.nan_to_num(power_bins)
+    plt.xlabel(r"$\tau$ [s]")
+    plt.ylabel(r"$|a|^2$")
+    plt.plot(delay_bins[:-1], power_bins)
+    #add ticks for samping frequency
+    ax = plt.gca()
+    axis_add_custom_ticks(ax.xaxis, ticks={100 * sampling_frequency: '100T'})
+
+    name='umi_plot_wifi'
+    plt.savefig(f"{name}.png")
+    # plt.show()
+
+presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=2000, num_bins=200)
 
 # for scenario in ["umi", "uma", "rma"]:
 #     visualize_3gpp_channel(scenario=scenario, carrier_frequency=3.5e9, indoor_probability=0.8, los=None,

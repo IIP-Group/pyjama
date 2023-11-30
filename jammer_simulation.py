@@ -412,11 +412,11 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
-NUM_SNR_POINTS = 10
+NUM_SNR_POINTS = 30
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 ber_plots = PlotBER("POS with CSI Estimation")
 
@@ -658,7 +658,6 @@ def multi_jammers():
 
 #training
 model_parameters["perfect_csi"] = False
-model_parameters["num_ut"] = 4
 model_parameters["jammer_present"] = True
 model_parameters["jammer_mitigation"] = "pos"
 model_parameters["jammer_mitigation_dimensionality"] = 1
@@ -666,19 +665,53 @@ jammer_parameters["trainable"] = True
 model_parameters["return_symbols"] = True
 
 # jammer which sends during jammer-pilots, but is able to learn during rest
-filename = "datalearning_weights_4ue.pickle"
-model_parameters["num_ut"] = 4
-jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
-model_train = Model(**model_parameters)
-train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
+# filename = "datalearning_weights_4ue.pickle"
+# model_parameters["num_ut"] = 1
+# jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
+# model_train = Model(**model_parameters)
+# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
 # jammer which can choose any rg-element to send on
-# filename = "whole_rg_weights_random_init.pickle"
+# filename = "whole_rg_weights_4ue_pow1.pickle"
+# model_parameters["num_ut"] = 4
+# model_parameters["jammer_power"] = 1.0
 # jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
 # model_train = Model(**model_parameters)
 # train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
 
-# jammer which can only choose symbol times
+# ber_plots.title = "Learning Jammers, PoS Mitigation"
+BATCH_SIZE = 16
+# MAX_MC_ITER = 200
+MAX_MC_ITER = 5
+jammer_parameters["trainable"] = False
+model_parameters["return_symbols"] = False
+# untrained jammer, only over non-silent symbols
+for num_ut in [1, 4]:
+    model_parameters["num_ut"] = num_ut
+    model_parameters["jammer_power"] = 1.0
+    jammer_parameters["jamming_type"] = "non_silent"
+    model = Model(**model_parameters)
+
+    # run once to initialize weights
+    model(BATCH_SIZE, 10.0)
+    model._jammer._training_weights.assign(tf.ones(model._jammer._training_weights.shape))
+    
+    simulate_model(model, f"Untrained Jammer, UEs: {num_ut}")
+# trained jammer
+for p in ['1']:
+    power = 1 if p == '1' else 0.5
+    for num_ut in [1, 4]:
+        filename = f"whole_rg_weights_{num_ut}ue_pow{p}.pickle"
+        model_parameters["num_ut"] = num_ut
+        model_parameters["jammer_power"] = power
+        jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
+        model = Model(**model_parameters)
+        load_weights(model, filename)
+        # db = 0 if power == 1 else -3
+        # simulate_model(model, f"UEs: {num_ut}, Jammer Power: {db}dB")
+        simulate_model(model, f"Trained Jammer, UEs: {num_ut}")
+ber_plots(ylim=[1.0e-2, 1.0])
+
 # filename = "symbol_weights.pickle"
 # jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=bool)
 # model_train = Model(**model_parameters)
@@ -723,33 +756,38 @@ train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images
 # simulate("Jammer")
 
 # Time-Domain Mitigation Strategy evaluation
-# for jammer_power_db in [0.0, 10.0, 20, 25.0]:
-#     MAX_MC_ITER = 150
-#     model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time")
-#     simulate_model(model, "No Jammer")
-#     for i in range(0, 5):
-#         model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time",
-#                       jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
-#                       jammer_mitigation_dimensionality=i)
-#         simulate_model(model, f"POS, {i} dimensions")
-#     for coderate in [0.5, 0.2]:
-#         MAX_MC_ITER = 150 / coderate
-#         model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time",
-#                       jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
-#                       jammer_mitigation_dimensionality=1, coderate=coderate)
-#         simulate_model(model, f"POS 1 dimension, {coderate} coderate")
-#     MAX_MC_ITER = 150
-#     model = Model(num_ut=1, perfect_csi=True, num_silent_pilot_symbols=8, domain="time",
+# BATCH_SIZE = 2
+# experiment_max_mc_iter = 5000
+
+# # jammer_power_db = 10.0
+# jammer_power_db = 25.0
+# perfect_csi = True
+# MAX_MC_ITER = experiment_max_mc_iter
+# model = Model(num_ut=1, perfect_csi=perfect_csi, num_silent_pilot_symbols=8, domain="time")
+# simulate_model(model, "No Jammer")
+# for i in [0, 1, 4]:
+#     model = Model(num_ut=1, perfect_csi=perfect_csi, num_silent_pilot_symbols=8, domain="time",
 #                   jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
-#                   jammer_mitigation_dimensionality=1, coderate=1.0,
-#                   jammer_parameters={"send_cyclic_prefix": True,
-#                                      "num_tx_ant": 1,
-#                                      "num_tx": 1,
-#                                      "normalize_channel": True})
-#     simulate_model(model, "Jammer with CP, POS, 1 dimension")
-#     ber_plots.title = f"1 Time-Domain Jammer ({int(jammer_power_db)}dB) without CP, estimated Jammer CSI."
-#     ber_plots(save_fig=True, path=f"time_domain_mitigation_{int(jammer_power_db)}db.png")
-#     ber_plots.reset()
+#                   jammer_mitigation_dimensionality=i)
+#     simulate_model(model, f"POS, {i} dimensions")
+# for coderate in [0.5, 0.25]:
+#     MAX_MC_ITER = experiment_max_mc_iter / coderate
+#     model = Model(num_ut=1, perfect_csi=perfect_csi, num_silent_pilot_symbols=8, domain="time",
+#                   jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
+#                   jammer_mitigation_dimensionality=1, coderate=coderate)
+#     simulate_model(model, f"POS 1 dimension, {coderate} coderate")
+# MAX_MC_ITER = experiment_max_mc_iter
+# model = Model(num_ut=1, perfect_csi=perfect_csi, num_silent_pilot_symbols=8, domain="time",
+#               jammer_present=True, jammer_power=db_to_linear(jammer_power_db), jammer_mitigation="pos", perfect_jammer_csi=False,
+#               jammer_mitigation_dimensionality=1, coderate=None,
+#               jammer_parameters={"send_cyclic_prefix": True,
+#                                  "num_tx_ant": 1,
+#                                  "num_tx": 1,
+#                                  "normalize_channel": True})
+# simulate_model(model, "Jammer with CP, POS, 1 dimension")
+# ber_plots.title = f"1 Time-Domain Jammer ({int(jammer_power_db)}dB) without CP, estimated Jammer CSI."
+# ber_plots(ylim=[1.0e-5, 1.0], save_fig=True, path=f"time_domain_mitigation_{int(jammer_power_db)}db_bak.png")
+# ber_plots.reset()
 
 # model_parameters["domain"] = "time"
 # model_parameters["jammer_present"] = True
