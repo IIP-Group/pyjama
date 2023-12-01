@@ -17,6 +17,7 @@ import numpy as np
 from sionna.channel.tr38901 import Antenna, AntennaArray, CDL, UMi, UMa, RMa
 from sionna.channel import gen_single_sector_topology
 from visualization_utils import axis_add_custom_ticks
+from matplotlib.ticker import FormatStrFormatter, FixedFormatter, FixedLocator, MultipleLocator
 
 
 def visualize_cir(a, tau):
@@ -149,7 +150,8 @@ def visualize_3gpp_channel(scenario="umi", carrier_frequency=3.5e9, indoor_proba
 
 
 # below 802.11n
-def presentation(scenario="umi", carrier_frequency=5.0e9, sampling_frequency=5.0e-8, indoor_probability=0.8, los=None, resample_topology=False, num_cir_samples=2000, num_bins=200):
+# TODO: don't confuse sampling frequency with spacing
+def presentation(scenario="umi", carrier_frequency=3.5e9, sampling_time=3.255e-8, indoor_probability=0.8, los=None, resample_topology=False, num_cir_samples=2000, num_bins=200):
     """either provide topology or indoor_probability"""
     channel = setup_3gpp_channel(scenario=scenario, carrier_frequency=carrier_frequency)
     topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
@@ -161,7 +163,7 @@ def presentation(scenario="umi", carrier_frequency=5.0e9, sampling_frequency=5.0
     for i in range(num_cir_samples):
         if i % 20 == 0:
             print(i)
-        cir = channel(1, sampling_frequency)
+        cir = channel(1, 1/sampling_time)
         a, tau = filter_cir(*cir)
         # 2.
         delays = np.concatenate([delays, tau.numpy().flatten()])
@@ -178,11 +180,19 @@ def presentation(scenario="umi", carrier_frequency=5.0e9, sampling_frequency=5.0
             topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
             channel.set_topology(*topology, los=los)
     plt.figure()
+    ax = plt.gca()
+    # ax.tick_params(axis='x', labelsize=7)
+    ax.xaxis.set_major_locator(MultipleLocator(0.5e-5))
+
     plt.title("Delay distribution: Power and impulse CDF")
     plt.ylabel("CDF")
     plt.ecdf(delays, color="C1")
     plt.twinx()
+    #add ticks for samping frequency
+    axis_add_custom_ticks(ax.xaxis, ticks={100 * sampling_time: '100T'})
+    ax.get_xticklabels()[2].set_horizontalalignment('right')
     # average power in delay bins
+    # max_delay = np.max(delay_power[0,:])
     max_delay = np.max(delay_power[0,:])
     delay_bins = np.linspace(0, max_delay, num_bins+1)
     power_bins = np.empty(num_bins)
@@ -193,15 +203,13 @@ def presentation(scenario="umi", carrier_frequency=5.0e9, sampling_frequency=5.0
     plt.xlabel(r"$\tau$ [s]")
     plt.ylabel(r"$|a|^2$")
     plt.plot(delay_bins[:-1], power_bins)
-    #add ticks for samping frequency
-    ax = plt.gca()
-    axis_add_custom_ticks(ax.xaxis, ticks={100 * sampling_frequency: '100T'})
 
-    name='umi_plot_wifi'
-    plt.savefig(f"{name}.png")
-    # plt.show()
+    # name='umi_plot_5G'
+    # plt.savefig(f"{name}.png")
+    plt.show()
 
 presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=2000, num_bins=200)
+# presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=100, num_bins=100)
 
 # for scenario in ["umi", "uma", "rma"]:
 #     visualize_3gpp_channel(scenario=scenario, carrier_frequency=3.5e9, indoor_probability=0.8, los=None,

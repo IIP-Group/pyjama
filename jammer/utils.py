@@ -136,6 +136,18 @@ class NonNegMaxMeanSquareNorm(tf.keras.constraints.Constraint):
         else:
             return w_nonneg
 
+def reduce_mean_power(a, axis=None, keepdims=False):
+    # calculate power on each axis. If axis is None, reduce all axes
+    return tf.reduce_mean(tf.square(tf.abs(a)), axis=axis, keepdims=keepdims)
+
+def normalize_power(a, is_amplitude=True):
+    # if is_amplitude, a is in amplitude, else a is in power
+    if is_amplitude:
+        return a / tf.sqrt(reduce_mean_power(a))
+    else:
+        return a / tf.reduce_mean(a)
+
+
 def plot_to_image(figure):
   """Converts the matplotlib plot specified by 'figure' to a PNG image and
   returns it. The supplied figure is closed and inaccessible after this call."""
@@ -179,4 +191,6 @@ def expected_bitflips(y_true, y_pred, reduction=tf.keras.losses.Reduction.SUM_OV
 # print(expected_bitflips(y_true, y_pred))
 
 # plot_matrix(tf.random.normal([14, 128]), figsize=(6.0, 2.4))
+
+# normalize_power(tf.concat([tf.ones([2, 2]), tf.zeros([2,2])], axis=0))
 # %%

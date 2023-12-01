@@ -64,22 +64,16 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._constraint = NonNegMaxMeanSquareNorm(1.0)
         if self._trainable_mask is None:
             # all weights are trainable
-            jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
-            # self._training_weights = tf.Variable(tf.ones(jammer_input_shape), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
-            # self._training_weights = tf.Variable(tf.ones(jammer_input_shape), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
-            self._training_weights = tf.Variable(tf.random.uniform(jammer_input_shape, minval=0.8, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
-            self._weights = tf.Variable(tf.ones(jammer_input_shape), trainable=False)
+            self._trainable_mask = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
+
+        self._training_indices = tf.where(self._trainable_mask)
+        count_trainable = tf.shape(self._training_indices)[0]
+        if self.trainable:
+            self._training_weights = tf.Variable(tf.random.uniform([count_trainable], minval=0.8, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=True)
         else:
-            self._training_indices = tf.where(self._trainable_mask)
-            count_trainable = tf.shape(self._training_indices)[0]
-            # self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
-            # self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
-            self._training_weights = tf.Variable(tf.random.uniform([count_trainable], minval=0.8, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable)
-            self._weights = tf.Variable(tf.ones(self._trainable_mask.shape), trainable=False)
-        # below: weights only over ofdm_symbols
-        # num_ofdm_symbols = input_shape[0][-2]
-        # constraint = NonNegMaxMeanSquareNorm(1)
-        # self._weights = tf.Variable(tf.ones([num_ofdm_symbols, 1]), dtype=self._dtype_as_dtype.real_dtype, trainable=self.trainable, constraint=constraint)
+            self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=False)
+            
+        self._weights = tf.Variable(tf.ones(self._trainable_mask.shape), trainable=False)
         
     def call(self, inputs):
         """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
@@ -90,20 +84,14 @@ class OFDMJammer(tf.keras.layers.Layer):
         # jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
         jammer_input_shape = tf.concat([[input_shape[0]], [self._num_tx, self._num_tx_ant], input_shape[-2:]], axis=0)
         x_jammer = self.sample(jammer_input_shape)
+
+        # TODO check interaction with rho
         # weights have mean(|w|^2) <= 1
-        if self._trainable_mask is None:
-            # weights = self._training_weights
-            weights = self._constraint(self._training_weights)
-            self._weights.assign(weights)
-        else:
-            # weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, self._training_weights)
-            # TODO there is an error here: constant weights should not go through the constraint as they might be scaled down then
-            # TODO fix below, but check interaction with rho
-            constrained_training_weights = self._constraint(self._training_weights)
-            weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, constrained_training_weights)
-            self._weights.assign(weights)
+        constrained_training_weights = self._constraint(self._training_weights)
+        weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, constrained_training_weights)
+        self._weights.assign(weights)
+
         x_jammer = tf.cast(weights, x_jammer.dtype) * x_jammer
-        # x_jammer = tf.cast(weights, x_jammer.dtype) * x_jammer
         rho = self.make_sparse(rho, tf.shape(x_jammer))
 
         x_jammer = tf.sqrt(rho) * x_jammer
