@@ -64,7 +64,8 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._constraint = NonNegMaxMeanSquareNorm(1.0)
         if self._trainable_mask is None:
             # all weights are trainable
-            self._trainable_mask = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
+            jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
+            self._trainable_mask = tf.ones(jammer_input_shape, dtype=tf.bool)
 
         self._training_indices = tf.where(self._trainable_mask)
         count_trainable = tf.shape(self._training_indices)[0]
@@ -113,7 +114,9 @@ class OFDMJammer(tf.keras.layers.Layer):
             raise TypeError("dtype must be complex")
 
     def make_sparse(self, data, shape):
-        """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero"""
+        """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero.
+        Data is scaled so that the mean power of the output equals the mean power of the input.
+        Data is assumed to be power (not amplitude)."""
         data = tf.broadcast_to(data, shape)
 
         if self._jamming_type == "barrage":
@@ -127,7 +130,7 @@ class OFDMJammer(tf.keras.layers.Layer):
             subcarrier_mask = tf.concat([tf.ones([num_nonzero_subcarriers]), tf.zeros([num_subcarriers - num_nonzero_subcarriers])], axis=0)
             subcarrier_mask = tf.random.shuffle(subcarrier_mask)
 
-            output = data * tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
+            sparsity_mask = tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
         else:
             # only pilot or data
             pilot_mask = tf.cast(self._rg.pilot_pattern.mask, tf.bool)
@@ -135,19 +138,20 @@ class OFDMJammer(tf.keras.layers.Layer):
             pilot_mask = tf.reduce_any(pilot_mask, axis=[0, 1])
         
             if self._jamming_type == "pilot":
-                output = data * tf.cast(pilot_mask, data.dtype)
+                sparsity_mask = tf.cast(pilot_mask, data.dtype)
             elif self._jamming_type == "data":
-                output = data * tf.cast(tf.logical_not(pilot_mask), data.dtype)
+                sparsity_mask = tf.cast(tf.logical_not(pilot_mask), data.dtype)
             elif self._jamming_type == "non_silent":
                 # TODO make internal_pilot_mask a property of the pilot pattern
                 internal_pilot_mask = tf.cast(self._rg.pilot_pattern._internal_pilot_pattern.mask, tf.bool)
                 internal_pilot_mask = tf.reduce_any(internal_pilot_mask, axis=[0, 1])
                 silent_mask = pilot_mask & tf.logical_not(internal_pilot_mask)
-                output = data * tf.cast(tf.logical_not(silent_mask), data.dtype)
+                sparsity_mask = tf.cast(tf.logical_not(silent_mask), data.dtype)
             else:
                 raise ValueError("jamming_type must be one of ['barrage', 'pilot', 'data', 'non_silent']")
-        # scale rho to account for sparsity
-        sparsity = tf.nn.zero_fraction(output)
+        # scale rho to account for sparsity introduced by make_sparse. Sparsity of data should not contribute to this!
+        output = data * sparsity_mask
+        sparsity = tf.nn.zero_fraction(sparsity_mask)
         if sparsity < 1.0:
             scale = 1.0 / (1.0 - tf.cast(sparsity, output.dtype))
             output = output * scale
