@@ -117,6 +117,11 @@ class OFDMJammer(tf.keras.layers.Layer):
         """Returns data broadcasted to shape, where s_symbol*num_symbols symbols and s_subcarrier*num_subcarriers subcarriers are non-zero.
         Data is scaled so that the mean power of the output equals the mean power of the input.
         Data is assumed to be power (not amplitude)."""
+        # the meaning of the sparsity parameters with non-barrage jammers is not clear. For now, the sparsity parameters are only permitted for barrage jammers.
+        if self._jamming_type != "barrage":
+            assert self._density_symbols == 1.0, "density_symbols must be 1.0 for any jamming_type other than 'barrage'"
+            assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for any jamming_type other than 'barrage'"
+
         data = tf.broadcast_to(data, shape)
 
         if self._jamming_type == "barrage":
