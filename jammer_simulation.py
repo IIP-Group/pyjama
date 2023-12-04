@@ -1,7 +1,7 @@
 #%%
 import os
 # import drjit
-gpu_num = 1 # Use "" to use the CPU
+gpu_num = 0 # Use "" to use the CPU
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
@@ -47,6 +47,8 @@ from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, Pil
 from channel_models import MultiTapRayleighBlockFading
 from jammer.utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power
 import jammer.utils as utils
+
+from tensorflow.python.keras.losses import BinaryCrossentropy, MeanAbsoluteError, MeanSquaredError
 
 
 # sionna.config.xla_compat=True
@@ -146,7 +148,6 @@ class Model(tf.keras.Model):
 
         # Instantiate other building blocks
         self._binary_source = BinarySource()
-        self._qam_source = QAMSource(self._num_bits_per_symbol)
 
         self._n = int(self._rg.num_data_symbols*self._num_bits_per_symbol)
         self._k = int(self._n * self._effective_coderate)
@@ -442,11 +443,16 @@ def simulate_model(model, legend):
                     show_fig=False)
     
 def train_model(model,
-                num_iterations,
+                loss_fn=None,
+                loss_over_logits=None,
+                num_iterations=5000,
                 weights_filename="weights.pickle",
                 log_tensorboard=False,
                 log_weight_images=False):
-    """If model._return_symbols is True, we train on symbol error, otherwise on bit error."""
+    """If model._return_symbols is True, we train on symbol error, otherwise on bit error.
+    if loss_fn is None, we use the "default" loss function.
+    If model._return_symbols is False and loss_over_logits is False, a sigmoid is applied to the logits before calculating the loss.
+    Otherwise, loss_over_logits is ignored."""
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
     # bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     # TODO could take average to make it less jittery. Worth it?
@@ -455,22 +461,23 @@ def train_model(model,
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         train_log_dir = 'logs/tensorboard/' + current_time + '/train'
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+        
+    if loss_fn is None:
+        if model._return_symbols:
+            # negative L1 loss
+            loss_fn = negative_function(MeanAbsoluteError())
+        else:
+            loss_fn = negative_function(utils.expected_bitflips)
+            loss_over_logits = False
 
     for i in range(num_iterations):
         # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
         ebno_db = 10.0
-        # bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         with tf.GradientTape() as tape:
-            if model._return_symbols:
-                x, x_hat = model(BATCH_SIZE, ebno_db)
-                # L1 loss
-                loss = -tf.reduce_mean(tf.reduce_sum(tf.abs(x - x_hat), axis=-1))
-            else:
-                b, llr = model(BATCH_SIZE, ebno_db)
-                # loss = -bce(b, llr)
-                loss = -utils.expected_bitflips(b, tf.sigmoid(llr))
-                # b_inverted = tf.cast(tf.math.logical_not(tf.cast(b, tf.bool)), tf.float32)
-                # loss = bce(b_inverted, llr)
+            label, predicted = model(BATCH_SIZE, ebno_db)
+            if not model._return_symbols and not loss_over_logits:
+                predicted = tf.sigmoid(predicted)
+            loss = loss_fn(label, predicted)
         # Computing and applying gradients
         weights = model.trainable_weights
         grads = tape.gradient(loss, weights)
@@ -481,9 +488,6 @@ def train_model(model,
             if log_tensorboard:
                 with train_summary_writer.as_default():
                     tf.summary.scalar('loss', loss, step=i)
-        # if i % 100 == 0:
-        #     print(f"\nGradients: {grads[0]}")
-        #     print(f"Weights: {weights[0]}")
         if i % 500 == 0 and log_weight_images:
             with train_summary_writer.as_default():
                 image = matrix_to_image(model._jammer._weights)
@@ -511,6 +515,11 @@ def mean_L1_loss(model, ebno_db, num_iterations):
         loss = tf.reduce_mean(tf.reduce_sum(tf.abs(x - x_hat), axis=-1))
         mean_loss.update_state(loss)
     return mean_loss.result()
+
+def negative_function(fn):
+    def negative_fn(*args, **kwargs):
+        return -fn(*args, **kwargs)
+    return negative_fn
 
 jammer_parameters = {
     "num_tx": 1,
@@ -676,7 +685,7 @@ model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
 model_parameters["return_symbols"] = True
 
-# jammer which sends during jammer-pilots, but is able to learn during rest
+# # jammer which sends during jammer-pilots, but is able to learn during rest
 # filename = "datalearning_weights_4ue.pickle"
 # model_parameters["num_ut"] = 1
 # jammer_parameters["trainable_mask"] = tf.concat([tf.zeros([4,128], dtype=bool), tf.ones([10,128], dtype=tf.bool)], axis=0)
@@ -686,38 +695,40 @@ model_parameters["return_symbols"] = True
 # jammer which can choose any rg-element to send on
 # filename = "whole_rg_weights_4ue_pow1.pickle"
 # model_parameters["num_ut"] = 4
-# model_parameters["jammer_power"] = 1.0
-# jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
-# model_train = Model(**model_parameters)
-# train_model(model_train, 5000, filename, log_tensorboard=True, log_weight_images=True)
+filename = "whole_rg_weights_1ue_pow1.pickle"
+model_parameters["num_ut"] = 1
+model_parameters["jammer_power"] = 1.0
+jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
+model_train = Model(**model_parameters)
+train_model(model_train, weights_filename=filename, log_tensorboard=True, log_weight_images=True)
 
-ber_plots.title = "Learning Jammers, PoS Mitigation"
-new_cycler = plt.cycler('linestyle', ['--', '-', '--', '-']) + plt.cycler('color', ['blue', 'blue', 'orange', 'orange'])
-plt.rcParams['axes.prop_cycle'] = new_cycler
-BATCH_SIZE = 16
-MAX_MC_ITER = 50
-NUM_SNR_POINTS = 10
-ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
+# ber_plots.title = "Learning Jammers, PoS Mitigation"
+# new_cycler = plt.cycler('linestyle', ['--', '-', '--', '-']) + plt.cycler('color', ['blue', 'blue', 'orange', 'orange'])
+# plt.rcParams['axes.prop_cycle'] = new_cycler
+# BATCH_SIZE = 16
+# MAX_MC_ITER = 50
+# NUM_SNR_POINTS = 10
+# ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 
-jammer_parameters["trainable"] = False
-model_parameters["return_symbols"] = False
-power = 1.0
-# untrained jammer, only over non-silent symbols
-for num_ut in [1, 4]:
-    model_parameters["num_ut"] = num_ut
-    model_parameters["jammer_power"] = normalize_power(tf.concat([tf.zeros([4,1]), tf.ones([10,1])], axis=0), is_amplitude=False) * power
-    model = Model(**model_parameters)
-    simulate_model(model, f"Untrained Jammer, UEs: {num_ut}")
-# trained jammer
-for num_ut in [1, 4]:
-    filename = f"whole_rg_weights_{num_ut}ue_pow1.pickle"
-    model_parameters["num_ut"] = num_ut
-    model_parameters["jammer_power"] = power
-    jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
-    model = Model(**model_parameters)
-    load_weights(model, filename)
-    simulate_model(model, f"Trained Jammer, UEs: {num_ut}")
-ber_plots(ylim=[1.0e-2, 1.0])
+# jammer_parameters["trainable"] = False
+# model_parameters["return_symbols"] = False
+# power = 1.0
+# # untrained jammer, only over non-silent symbols
+# for num_ut in [1, 4]:
+#     model_parameters["num_ut"] = num_ut
+#     model_parameters["jammer_power"] = normalize_power(tf.concat([tf.zeros([4,1]), tf.ones([10,1])], axis=0), is_amplitude=False) * power
+#     model = Model(**model_parameters)
+#     simulate_model(model, f"Untrained Jammer, UEs: {num_ut}")
+# # trained jammer
+# for num_ut in [1, 4]:
+#     filename = f"whole_rg_weights_{num_ut}ue_pow1.pickle"
+#     model_parameters["num_ut"] = num_ut
+#     model_parameters["jammer_power"] = power
+#     jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
+#     model = Model(**model_parameters)
+#     load_weights(model, filename)
+#     simulate_model(model, f"Trained Jammer, UEs: {num_ut}")
+# ber_plots(ylim=[1.0e-2, 1.0])
     
 
 # # sanity checks
