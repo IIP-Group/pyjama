@@ -165,7 +165,10 @@ def plot_to_image(figure):
   return image
 
 def plot_matrix(a, figsize=(6.4, 4.8)):
-    """Plots a matrix as a heatmap. Works only in eager mode."""
+    """Plots a matrix as a heatmap. Works only in eager mode.
+    If a has more than 2 dimensions, the first element of all dimensions but the last 2 is taken."""
+    if len(a.shape) > 2:
+        a = a[(0,) * (len(a.shape) - 2)]
     fig, ax = plt.subplots(figsize=figsize)
     # im = ax.imshow(a)
     im = ax.matshow(a, aspect='auto')
@@ -173,12 +176,13 @@ def plot_matrix(a, figsize=(6.4, 4.8)):
     return fig
 
 def matrix_to_image(a):
-    """Converts a matrix to an image. Works only in eager mode."""
+    """Converts a matrix to an image."""
     fig = plot_matrix(a, figsize=(6.0, 2.4))
     return plot_to_image(fig)
 
 def expected_bitflips(y_true, y_pred, reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE):
     """Expected BER loss. y_true in {0, 1}, y_pred in [0, 1]."""
+    # TODO: this is just L1 loss, isn't it?
     losses = tf.reduce_sum(y_true * (1-y_pred) + (1-y_true) * (y_pred), axis=-1)
     # reduce over batch dimension, according to parameter reduction <-TODO
     return tf.reduce_mean(losses)
