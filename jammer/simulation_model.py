@@ -41,12 +41,11 @@ from sionna.mapping import Mapper, Demapper
 from sionna.utils import BinarySource, ebnodb2no, sim_ber, plot_ber, QAMSource, PlotBER
 from sionna.utils.metrics import compute_ber
 
-from jammer import OFDMJammer, TimeDomainOFDMJammer
-from mitigation import POS, IAN
-from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
-from channel_models import MultiTapRayleighBlockFading
-from utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power
-import utils
+from .jammer import OFDMJammer, TimeDomainOFDMJammer
+from .mitigation import POS, IAN
+from .custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
+from .channel_models import MultiTapRayleighBlockFading
+from .utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power, expected_bitflips
 
 from tensorflow.python.keras.losses import BinaryCrossentropy, MeanAbsoluteError, MeanSquaredError
 
@@ -466,7 +465,7 @@ def train_model(model,
             # negative L1 loss
             loss_fn = negative_function(MeanAbsoluteError())
         else:
-            loss_fn = negative_function(utils.expected_bitflips)
+            loss_fn = negative_function(expected_bitflips)
             loss_over_logits = False
 
     for i in range(num_iterations):
@@ -694,12 +693,12 @@ model_parameters["return_symbols"] = True
 # jammer which can choose any rg-element to send on
 # filename = "whole_rg_weights_4ue_pow1.pickle"
 # model_parameters["num_ut"] = 4
-filename = "whole_rg_weights_1ue_pow1.pickle"
-model_parameters["num_ut"] = 1
-model_parameters["jammer_power"] = 1.0
-jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
-model_train = Model(**model_parameters)
-train_model(model_train, weights_filename=filename, log_tensorboard=True, log_weight_images=True)
+# filename = "whole_rg_weights_1ue_pow1.pickle"
+# model_parameters["num_ut"] = 1
+# model_parameters["jammer_power"] = 1.0
+# jammer_parameters["trainable_mask"] = tf.ones([14,128], dtype=bool)
+# model_train = Model(**model_parameters)
+# train_model(model_train, weights_filename=filename, log_tensorboard=True, log_weight_images=True)
 
 # ber_plots.title = "Learning Jammers, PoS Mitigation"
 # new_cycler = plt.cycler('linestyle', ['--', '-', '--', '-']) + plt.cycler('color', ['blue', 'blue', 'orange', 'orange'])
