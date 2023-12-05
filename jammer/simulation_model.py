@@ -447,7 +447,8 @@ def train_model(model,
                 num_iterations=5000,
                 weights_filename="weights.pickle",
                 log_tensorboard=False,
-                log_weight_images=False):
+                log_weight_images=False,
+                show_final_weights=False):
     """If model._return_symbols is True, we train on symbol error, otherwise on bit error.
     if loss_fn is None, we use the "default" loss function.
     If model._return_symbols is False and loss_over_logits is False, a sigmoid is applied to the logits before calculating the loss.
@@ -495,6 +496,12 @@ def train_model(model,
     weights = model.get_weights()
     with open(weights_filename, 'wb') as f:
         pickle.dump(weights, f)
+
+    if show_final_weights:
+        plot_matrix(model._jammer._weights)
+        plt.title(weights_filename)
+        plt.show()
+
 
 def load_weights(model, weights_filename="weights.pickle"):
     # run model once to initialize weights

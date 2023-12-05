@@ -10,7 +10,7 @@ nvvm
 *.asv
 *.xml
 ./results
-/logs/
+logs/
 *.csv
 *.pickle
 *.out
