@@ -41,12 +41,12 @@ from sionna.mapping import Mapper, Demapper
 from sionna.utils import BinarySource, ebnodb2no, sim_ber, plot_ber, QAMSource, PlotBER
 from sionna.utils.metrics import compute_ber
 
-from jammer.jammer import OFDMJammer, TimeDomainOFDMJammer
-from jammer.mitigation import POS, IAN
+from jammer import OFDMJammer, TimeDomainOFDMJammer
+from mitigation import POS, IAN
 from custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from channel_models import MultiTapRayleighBlockFading
-from jammer.utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power
-import jammer.utils as utils
+from utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power
+import utils
 
 from tensorflow.python.keras.losses import BinaryCrossentropy, MeanAbsoluteError, MeanSquaredError
 
@@ -454,7 +454,6 @@ def train_model(model,
     If model._return_symbols is False and loss_over_logits is False, a sigmoid is applied to the logits before calculating the loss.
     Otherwise, loss_over_logits is ignored."""
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
-    # bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     if log_tensorboard:
