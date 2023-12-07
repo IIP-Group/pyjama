@@ -446,6 +446,7 @@ def simulate_model(model, legend):
     
 def train_model(model,
                 loss_fn=None,
+                ebno_db=5.0,
                 loss_over_logits=None,
                 num_iterations=5000,
                 weights_filename="weights.pickle",
@@ -474,7 +475,6 @@ def train_model(model,
 
     for i in range(num_iterations):
         # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
-        ebno_db = 5.0
         with tf.GradientTape() as tape:
             label, predicted = model(BATCH_SIZE, ebno_db)
             if not model._return_symbols and not loss_over_logits:
