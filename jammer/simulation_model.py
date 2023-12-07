@@ -49,6 +49,17 @@ from .utils import covariance_estimation_from_signals, linear_to_db, db_to_linea
 
 from tensorflow.python.keras.losses import BinaryCrossentropy, MeanAbsoluteError, MeanSquaredError
 
+# TODO find a better way than global variables
+BATCH_SIZE = 2
+MAX_MC_ITER = 30
+EBN0_DB_MIN = -5.0
+EBN0_DB_MAX = 15.0
+NUM_SNR_POINTS = 15
+ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
+# TODO let the plot ylim always be 1.0
+ber_plots = PlotBER()
+
+
 
 # sionna.config.xla_compat=True
 class Model(tf.keras.Model):
@@ -195,8 +206,8 @@ class Model(tf.keras.Model):
 
         # here I just create a new channel model as a caller
         if self._jammer_present:
-            self._num_jammer = jammer_parameters["num_tx"]
-            self._num_jammer_ant = jammer_parameters["num_tx_ant"]
+            self._num_jammer = jammer_parameters["num_tx"] = jammer_parameters.get("num_tx", 1)
+            self._num_jammer_ant = jammer_parameters["num_tx_ant"] = jammer_parameters.get("num_tx_ant", 1)
             self._jammer_channel_model = self._generate_channel(self._scenario, num_tx=self._num_jammer, num_tx_ant=self._num_jammer_ant)
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             if(self._domain == "freq"):
@@ -413,14 +424,6 @@ def bar_plot(values):
     plt.show()
 
 
-BATCH_SIZE = 2
-MAX_MC_ITER = 30
-EBN0_DB_MIN = -5.0
-EBN0_DB_MAX = 15.0
-NUM_SNR_POINTS = 15
-ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
-ber_plots = PlotBER("POS with CSI Estimation")
-
 def simulate_single(ebno_db):
     model = Model(**model_parameters)
     b, llr = model(BATCH_SIZE, ebno_db)
@@ -471,7 +474,7 @@ def train_model(model,
 
     for i in range(num_iterations):
         # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
-        ebno_db = 10.0
+        ebno_db = 5.0
         with tf.GradientTape() as tape:
             label, predicted = model(BATCH_SIZE, ebno_db)
             if not model._return_symbols and not loss_over_logits:
@@ -679,8 +682,6 @@ def multi_jammers():
     fig.suptitle(name)
     # plt.savefig(f"{name}.png")
     plt.show()
-
-# wifi_vs_5g()
 
 #training
 model_parameters["perfect_csi"] = False

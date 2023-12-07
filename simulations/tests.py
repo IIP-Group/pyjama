@@ -28,14 +28,13 @@ model_parameters["jammer_mitigation_dimensionality"] = 1
 jammer_parameters["trainable"] = True
 model_parameters["return_symbols"] = True
 
-abs_mse = lambda y_true, y_pred: tf.reduce_mean(tf.square(tf.abs(y_true - y_pred)))
+# needed, as keras MSE does not take |.|
+abs_sqrt = lambda y_true, y_pred: tf.reduce_mean(tf.sqrt(tf.abs(y_true - y_pred)))
+abs_log = lambda y_true, y_pred: tf.reduce_mean(tf.math.log(tf.abs(y_true - y_pred) + 1))
 # name, loss_fn, over symbols?, loss_over_logits
 parameters = [
-    ("L1 over symbols", negative_function(MeanAbsoluteError()), True, False),
-    ("MSE over symbols", negative_function(abs_mse), True, False),
-    ("MSE over bit estimates", negative_function(MeanSquaredError()), False, False),
-    ("L1 over bit estimates", negative_function(MeanAbsoluteError()), False, False),
-    ("BCE over bit estimates (logits)", BinaryCrossentropy(from_logits=True), False, True),
+    ("log over bit estimates", negative_function(abs_log), False, False),
+    ("sqrt over bit estimates", negative_function(abs_sqrt), False, False),
 ]
 
 for name, loss_fn, over_symbols, loss_over_logits in parameters:
@@ -47,6 +46,4 @@ for name, loss_fn, over_symbols, loss_over_logits in parameters:
                 weights_filename=f"weights/{name}.pickle",
                 log_tensorboard=True,
                 log_weight_images=True,
-                show_final_weights=True,
-                num_iterations=20)
-# %%
+                show_final_weights=True)

@@ -17,7 +17,7 @@ class OFDMJammer(tf.keras.layers.Layer):
                  jamming_type="barrage",
                  density_symbols=1.0,
                  density_subcarriers=1.0,
-                 normalize_channel=False,
+                 normalize_channel=True,
                  return_channel=False,
                  sampler="uniform",
                  trainable=False,
