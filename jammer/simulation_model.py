@@ -529,29 +529,6 @@ def negative_function(fn):
         return -fn(*args, **kwargs)
     return negative_fn
 
-jammer_parameters = {
-    "num_tx": 1,
-    "num_tx_ant": 1,
-    "normalize_channel": True,
-}
-
-model_parameters = {
-    "scenario": "umi",
-    "perfect_csi": False,
-    "coderate": None,
-    "domain": "freq",
-    "los": None,
-    "indoor_probability": 0.8,
-    "num_silent_pilot_symbols": 4,
-    "jammer_present": False,
-    "perfect_jammer_csi": False,
-    "jammer_mitigation": None,
-    "jammer_mitigation_dimensionality": None,
-    "jammer_power": 1.0,
-    "return_jammer_signals": False,
-    "jammer_parameters": jammer_parameters,
-}
-
 # TODO perfect_jammer_csi is kind of useless (only used in 2 other variables). Also, jammer csi is not returned unless we need it (i.e. jammer mitigation)
 
 def wifi_vs_5g():
@@ -684,12 +661,12 @@ def multi_jammers():
     plt.show()
 
 #training
-model_parameters["perfect_csi"] = False
-model_parameters["jammer_present"] = True
-model_parameters["jammer_mitigation"] = "pos"
-model_parameters["jammer_mitigation_dimensionality"] = 1
-jammer_parameters["trainable"] = True
-model_parameters["return_symbols"] = True
+# model_parameters["perfect_csi"] = False
+# model_parameters["jammer_present"] = True
+# model_parameters["jammer_mitigation"] = "pos"
+# model_parameters["jammer_mitigation_dimensionality"] = 1
+# jammer_parameters["trainable"] = True
+# model_parameters["return_symbols"] = True
 
 # # jammer which sends during jammer-pilots, but is able to learn during rest
 # filename = "datalearning_weights_4ue.pickle"
