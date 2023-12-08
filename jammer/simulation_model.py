@@ -461,7 +461,7 @@ def train_model(model,
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     if log_tensorboard:
-        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         train_log_dir = 'logs/tensorboard/' + current_time + '/train'
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
         
