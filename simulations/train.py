@@ -34,32 +34,46 @@ model_parameters["num_silent_pilot_symbols"] = 4
 jammer_parameters["trainable"] = True
 model_parameters["jammer_parameters"] = jammer_parameters
 # changing but constant
-jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
 
 
-# needed, as keras MSE does not take |.|
-abs_mse = lambda y_true, y_pred: tf.reduce_mean(tf.square(tf.abs(y_true - y_pred)))
-abs_log = lambda y_true, y_pred: tf.reduce_mean(tf.math.log(tf.abs(y_true - y_pred) + 1))
-# name, loss_fn, over symbols?, loss_over_logits
-parameters = [
-    ("L1 over symbols", negative_function(MeanAbsoluteError()), True, False),
-    ("MSE over symbols", negative_function(abs_mse), True, False),
-    ("L1 over bit estimates", negative_function(MeanAbsoluteError()), False, False),
-    ("MSE over bit estimates", negative_function(MeanSquaredError()), False, False),
-    ("BCE over bit estimates (logits)", BinaryCrossentropy(from_logits=True), False, True),
-    ("log over bit estimates", negative_function(abs_log), False, False),
-]
+# # needed, as keras MSE does not take |.|
+# abs_mse = lambda y_true, y_pred: tf.reduce_mean(tf.square(tf.abs(y_true - y_pred)))
+# abs_log = lambda y_true, y_pred: tf.reduce_mean(tf.math.log(tf.abs(y_true - y_pred) + 1))
+# # name, loss_fn, over symbols?, loss_over_logits
+# parameters = [
+#     ("L1 over symbols", negative_function(MeanAbsoluteError()), True, False),
+#     ("MSE over symbols", negative_function(abs_mse), True, False),
+#     ("L1 over bit estimates", negative_function(MeanAbsoluteError()), False, False),
+#     ("MSE over bit estimates", negative_function(MeanSquaredError()), False, False),
+#     ("BCE over bit estimates (logits)", BinaryCrossentropy(from_logits=True), False, True),
+#     ("log over bit estimates", negative_function(abs_log), False, False),
+# ]
 
 sim.BATCH_SIZE = 2
 
-name, loss_fn, over_symbols, loss_over_logits = parameters[parameter_num]
-model = Model(**model_parameters, return_symbols=over_symbols)
+# name, loss_fn, over_symbols, loss_over_logits = parameters[parameter_num]
+# model = Model(**model_parameters, return_symbols=over_symbols)
+# train_model(model,
+#             loss_fn=loss_fn,
+#             loss_over_logits=loss_over_logits,
+#             weights_filename=f"weights/{name} symbol_weights.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=0.0)
+
+# different SNRs
+# parameters = np.arange(-2.5, 10.5, 2.5, dtype=np.float32)
+parameters = np.arange(-5.0, 0.5, 2.5, dtype=np.float32)
+model = Model(**model_parameters)
 train_model(model,
-            loss_fn=loss_fn,
-            loss_over_logits=loss_over_logits,
-            weights_filename=f"weights/{name} symbol_weights.pickle",
+            loss_fn=negative_function(MeanAbsoluteError()),
+            loss_over_logits=False,
+            weights_filename=f"weights/{parameters[parameter_num]}dB_relufix.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
             num_iterations=2000,
-            ebno_db=0.0)
+            ebno_db=parameters[parameter_num])

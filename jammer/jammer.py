@@ -6,7 +6,7 @@ from sionna.channel import subcarrier_frequencies, cir_to_ofdm_channel, cir_to_t
 from sionna.channel import ApplyTimeChannel, TimeChannel
 import tensorflow as tf
 import copy
-from .utils import sample_function, NonNegMaxMeanSquareNorm
+from .utils import sample_function, NonNegMaxMeanSquareNorm, MaxMeanSquareNorm
 
 class OFDMJammer(tf.keras.layers.Layer):
     def __init__(self,
@@ -61,7 +61,8 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
-        self._constraint = NonNegMaxMeanSquareNorm(1.0)
+        # self._constraint = NonNegMaxMeanSquareNorm(1.0)
+        self._constraint = MaxMeanSquareNorm(1.0)
         if self._trainable_mask is None:
             # all weights are trainable
             jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)

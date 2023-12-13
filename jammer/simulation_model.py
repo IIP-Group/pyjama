@@ -435,13 +435,14 @@ def simulate(legend):
     model = Model(**model_parameters)
     simulate_model(model, legend)
 
-def simulate_model(model, legend):
+def simulate_model(model, legend, add_bler=False):
     ber_plots.simulate(model,
                     ebno_dbs=ebno_dbs,
                     batch_size=BATCH_SIZE,
                     legend=legend,
                     soft_estimates=True,
                     max_mc_iter=MAX_MC_ITER,
+                    add_bler=add_bler,
                     show_fig=False)
     
 def train_model(model,

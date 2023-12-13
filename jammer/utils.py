@@ -128,13 +128,26 @@ class NonNegMaxMeanSquareNorm(tf.keras.constraints.Constraint):
 
     def __call__(self, w):
         w_nonneg = tf.maximum(w, 0.0)
-        # w_nonneg = tf.maximum(w, 0.1*w) # leaky relu
         mean_squared_norm = tf.reduce_mean(tf.square(w_nonneg), axis=self.axis, keepdims=True)
         if(mean_squared_norm > self.max_mean_squared_norm):
             scale = tf.sqrt(self.max_mean_squared_norm / (mean_squared_norm + tf.keras.backend.epsilon()))
             return w_nonneg * scale
         else:
             return w_nonneg
+
+class MaxMeanSquareNorm(tf.keras.constraints.Constraint):
+    """Ensures that the mean of the squared norm of the weights is at most max_squared_norm."""
+    def __init__(self, max_mean_squared_norm=1.0, axis=None):
+        self.max_mean_squared_norm = max_mean_squared_norm
+        self.axis = axis
+
+    def __call__(self, w):
+        mean_squared_norm = tf.reduce_mean(tf.square(w), axis=self.axis, keepdims=True)
+        if(mean_squared_norm > self.max_mean_squared_norm):
+            scale = tf.sqrt(self.max_mean_squared_norm / (mean_squared_norm + tf.keras.backend.epsilon()))
+            return w * scale
+        else:
+            return w
 
 def reduce_mean_power(a, axis=None, keepdims=False):
     # calculate power on each axis. If axis is None, reduce all axes
