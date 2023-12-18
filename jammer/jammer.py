@@ -61,8 +61,8 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
-        self._constraint = NonNegMaxMeanSquareNorm(1.0)
-        # self._constraint = MaxMeanSquareNorm(1.0)
+        # self._constraint = NonNegMaxMeanSquareNorm(1.0)
+        self._constraint = MaxMeanSquareNorm(1.0)
         if self._trainable_mask is None:
             # all weights are trainable
             jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)

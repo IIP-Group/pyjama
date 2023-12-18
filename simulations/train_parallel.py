@@ -3,8 +3,8 @@ from subprocess import Popen
 from time import sleep
 
 # TODO only same number of GPUs as parameter indices to run supported right now
-gpus = range(6)
-parameter_indices_to_run = range(6)
+gpus = range(4)
+parameter_indices_to_run = range(4)
 
 procs = []
 for gpu_num, parameter_num in zip(gpus, parameter_indices_to_run):
