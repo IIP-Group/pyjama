@@ -61,8 +61,8 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
-        # self._constraint = NonNegMaxMeanSquareNorm(1.0)
-        self._constraint = MaxMeanSquareNorm(1.0)
+        self._constraint = NonNegMaxMeanSquareNorm(1.0)
+        # self._constraint = MaxMeanSquareNorm(1.0)
         if self._trainable_mask is None:
             # all weights are trainable
             jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
@@ -71,7 +71,9 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._training_indices = tf.where(self._trainable_mask)
         count_trainable = tf.shape(self._training_indices)[0]
         if self.trainable:
-            self._training_weights = tf.Variable(tf.random.uniform([count_trainable], minval=0.8, maxval=1.0), dtype=self._dtype_as_dtype.real_dtype, trainable=True)
+            self._training_weights = tf.Variable(tf.random.uniform([count_trainable], minval=0.8, maxval=1.0),
+                                                #  dtype=self._dtype_as_dtype.real_dtype, trainable=True, constraint=self._constraint)
+                                                 dtype=self._dtype_as_dtype.real_dtype, trainable=True)
         else:
             self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=False)
             
@@ -90,6 +92,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         # TODO check interaction with rho
         # weights have mean(|w|^2) <= 1
         constrained_training_weights = self._constraint(self._training_weights)
+        # constrained_training_weights = self._training_weights
         weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, constrained_training_weights)
         self._weights.assign(weights)
 

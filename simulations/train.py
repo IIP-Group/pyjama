@@ -65,13 +65,12 @@ sim.BATCH_SIZE = 2
 #             ebno_db=0.0)
 
 # different SNRs
-# parameters = np.arange(-2.5, 10.5, 2.5, dtype=np.float32)
-parameters = np.arange(-5.0, 0.5, 2.5, dtype=np.float32)
+parameters = np.arange(-2.5, 10.5, 2.5, dtype=np.float32)
 model = Model(**model_parameters)
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/{parameters[parameter_num]}dB_relufix.pickle",
+            weights_filename=f"weights/{parameters[parameter_num]}dB_nonconstraint.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
