@@ -85,7 +85,7 @@ model = Model(**model_parameters)
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/ue_{parameters[parameter_num]}_relufix.pickle",
+            weights_filename=f"weights/ue_{parameters[parameter_num]}_relufix_constraint.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
