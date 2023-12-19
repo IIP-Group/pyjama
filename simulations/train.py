@@ -34,6 +34,7 @@ model_parameters["num_silent_pilot_symbols"] = 4
 jammer_parameters["trainable"] = True
 model_parameters["jammer_parameters"] = jammer_parameters
 # changing but constant
+# jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
 jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
 sim.BATCH_SIZE = 1
@@ -78,16 +79,31 @@ sim.BATCH_SIZE = 1
 #             num_iterations=2000,
 #             ebno_db=parameters[parameter_num])
 
-# different number of UEs
-parameters = np.arange(1, 5, dtype=np.int32)
-model_parameters["num_ut"] = parameters[parameter_num]
+# # different number of UEs
+# parameters = np.arange(1, 5, dtype=np.int32)
+# model_parameters["num_ut"] = parameters[parameter_num]
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(MeanAbsoluteError()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/ue_{parameters[parameter_num]}_relufix_symbol_weights.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=0.0)
+
+
+# # different SNRs, symbol learning 4ue
+model_parameters["num_ut"] = 4
+parameters = np.arange(-2.5, 10.5, 2.5, dtype=np.float32)
 model = Model(**model_parameters)
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/ue_{parameters[parameter_num]}_relufix_symbol_weights.pickle",
+            weights_filename=f"weights/ue_4_{parameters[parameter_num]}dB.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
             num_iterations=2000,
-            ebno_db=0.0)
+            ebno_db=parameters[parameter_num])
