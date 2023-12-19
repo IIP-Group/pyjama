@@ -34,7 +34,7 @@ model_parameters["num_silent_pilot_symbols"] = 4
 jammer_parameters["trainable"] = True
 model_parameters["jammer_parameters"] = jammer_parameters
 # changing but constant
-jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
 sim.BATCH_SIZE = 1
 
@@ -85,7 +85,7 @@ model = Model(**model_parameters)
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/ue_{parameters[parameter_num]}_relufix_constraint.pickle",
+            weights_filename=f"weights/ue_{parameters[parameter_num]}_relufix_symbol_weights.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
