@@ -18,6 +18,7 @@ tf.get_logger().setLevel('ERROR')
 from tensorflow.python.keras.losses import MeanAbsoluteError, MeanSquaredError, BinaryCrossentropy
 
 from jammer.simulation_model import *
+from jammer.utils import *
 import jammer.simulation_model as sim
 
 # common parameters
@@ -33,8 +34,8 @@ model_parameters["num_silent_pilot_symbols"] = 4
 jammer_parameters["trainable"] = True
 model_parameters["jammer_parameters"] = jammer_parameters
 # changing but constant
-# jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
-jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
 sim.BATCH_SIZE = 1
 
@@ -67,11 +68,13 @@ sim.BATCH_SIZE = 1
 
 # # different SNRs
 # parameters = np.arange(-2.5, 10.5, 2.5, dtype=np.float32)
+# jammer_parameters["training_constraint"] = MaxMeanSquareNorm(1.0)
+# jammer_parameters["constraint_integrated"] = False
 # model = Model(**model_parameters)
 # train_model(model,
 #             loss_fn=negative_function(MeanAbsoluteError()),
 #             loss_over_logits=False,
-#             weights_filename=f"weights/{parameters[parameter_num]}dB_nonconstraint.pickle",
+#             weights_filename=f"weights/{parameters[parameter_num]}dB_relufix_constraint.pickle",
 #             log_tensorboard=True,
 #             log_weight_images=True,
 #             show_final_weights=False,
@@ -109,7 +112,6 @@ sim.BATCH_SIZE = 1
 
 
 # massive grid: training with different jammer power and different number of UEs
-# TODO symbols 14->18, subcarriers 128->64
 num_ut = range(1, 9)
 jammer_power = [db_to_linear(x) for x in np.arange(-2.5, 15.1, 2.5, dtype=np.float32)]
 parameters = [(x, y) for x in num_ut for y in jammer_power]
