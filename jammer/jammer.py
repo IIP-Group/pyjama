@@ -22,11 +22,15 @@ class OFDMJammer(tf.keras.layers.Layer):
                  sampler="uniform",
                  trainable=False,
                  trainable_mask=None,
+                 training_constraint=MaxMeanSquareNorm(1.0),
+                # TODO is this a good name for this parameter?
+                 constraint_integrated=True,
                  dtype=tf.complex64,
                  **kwargs):
         r"""
         sampler: String in ["uniform", "gaussian"], a constellation, or function with signature (shape, dtype) -> tf.Tensor, where elementwise E[|x|^2] = 1
         trainable_mask: boolean, shape broadcastable to jammer_input_shape. If True, the corresponding element is trainable. If False, the corresponding element is held constant (jammer_power power). If None, all elements are trainable.
+        constraint_integrated: boolean. If True, the constraint is integrated into the network. If False, the constraint is applied after each optimization step.
         """
         super().__init__(trainable=trainable, dtype=dtype, **kwargs)
         self._channel_model = channel_model
@@ -39,6 +43,8 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._normalize_channel = normalize_channel
         self._return_channel = return_channel
         self._trainable_mask = trainable_mask
+        self._training_constraint = training_constraint
+        self._constraint_integrated = constraint_integrated
         self._dtype_as_dtype = tf.as_dtype(self.dtype)
         # if sampler is string, we use the corresponding function. Otherwise assign the function directly
         self._sample_function = sample_function(sampler, self._dtype_as_dtype)
@@ -61,8 +67,6 @@ class OFDMJammer(tf.keras.layers.Layer):
             assert self._density_subcarriers == 1.0, "density_subcarriers must be 1.0 for jamming_type 'pilot' or 'data'"
             
     def build(self, input_shape):
-        # self._constraint = NonNegMaxMeanSquareNorm(1.0)
-        self._constraint = MaxMeanSquareNorm(1.0)
         if self._trainable_mask is None:
             # all weights are trainable
             jammer_input_shape = tf.concat([[self._num_tx, self._num_tx_ant], input_shape[0][-2:]], axis=0)
@@ -71,9 +75,9 @@ class OFDMJammer(tf.keras.layers.Layer):
         self._training_indices = tf.where(self._trainable_mask)
         count_trainable = tf.shape(self._training_indices)[0]
         if self.trainable:
+            constraint = None if self._constraint_integrated else self._training_constraint
             self._training_weights = tf.Variable(tf.random.uniform([count_trainable], minval=0.8, maxval=1.0),
-                                                #  dtype=self._dtype_as_dtype.real_dtype, trainable=True, constraint=self._constraint)
-                                                 dtype=self._dtype_as_dtype.real_dtype, trainable=True)
+                                                 dtype=self._dtype_as_dtype.real_dtype, trainable=True, constraint=constraint)
         else:
             self._training_weights = tf.Variable(tf.ones([count_trainable]), dtype=self._dtype_as_dtype.real_dtype, trainable=False)
             
@@ -91,8 +95,10 @@ class OFDMJammer(tf.keras.layers.Layer):
 
         # TODO check interaction with rho
         # weights have mean(|w|^2) <= 1
-        constrained_training_weights = self._constraint(self._training_weights)
-        # constrained_training_weights = self._training_weights
+        if self._constraint_integrated:
+            constrained_training_weights = self._training_constraint(self._training_weights)
+        else:
+            constrained_training_weights = self._training_weights
         weights = tf.tensor_scatter_nd_update(tf.ones(self._trainable_mask.shape), self._training_indices, constrained_training_weights)
         self._weights.assign(weights)
 
