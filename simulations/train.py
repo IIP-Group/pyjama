@@ -20,7 +20,6 @@ from tensorflow.python.keras.losses import MeanAbsoluteError, MeanSquaredError, 
 from jammer.simulation_model import *
 import jammer.simulation_model as sim
 
-
 # common parameters
 model_parameters = {}
 jammer_parameters = {}
@@ -95,15 +94,39 @@ sim.BATCH_SIZE = 1
 
 
 # # different SNRs, symbol learning 4ue
-model_parameters["num_ut"] = 4
-parameters = np.arange(-2.5, 10.5, 2.5, dtype=np.float32)
+# model_parameters["num_ut"] = 4
+# parameters = np.arange(-2.5, 10.5, 2.5, dtype=np.float32)
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(MeanAbsoluteError()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/ue_4_{parameters[parameter_num]}dB.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=parameters[parameter_num])
+
+
+# massive grid: training with different jammer power and different number of UEs
+# TODO symbols 14->18, subcarriers 128->64
+num_ut = range(1, 9)
+jammer_power = [db_to_linear(x) for x in np.arange(-2.5, 15.1, 2.5, dtype=np.float32)]
+parameters = [(x, y) for x in num_ut for y in jammer_power]
+n, p = parameters[parameter_num]
+model_parameters["num_ut"] = n
+model_parameters["jammer_power"] = p
+model_parameters["num_ofdm_symbols"] = 18
+model_parameters["fft_size"] = 64
+jammer_parameters["trainable_mask"] = tf.ones([18, 1], dtype=tf.bool)
 model = Model(**model_parameters)
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/ue_4_{parameters[parameter_num]}dB.pickle",
+            weights_filename=f"weights/grid/ue_{n}_power_{linear_to_db(p):.1f}dB.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
             num_iterations=2000,
-            ebno_db=parameters[parameter_num])
+            ebno_db=5.0)
+
