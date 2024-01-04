@@ -1,6 +1,6 @@
 import sys
-gpu_num = int(sys.argv[1])
-parameter_num = int(sys.argv[2])
+gpu_num = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+parameter_num = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
@@ -20,6 +20,7 @@ from tensorflow.python.keras.losses import MeanAbsoluteError, MeanSquaredError, 
 from jammer.simulation_model import *
 from jammer.utils import *
 import jammer.simulation_model as sim
+from simulations.experimental_losses import *
 
 # common parameters
 model_parameters = {}
@@ -34,8 +35,8 @@ model_parameters["num_silent_pilot_symbols"] = 4
 jammer_parameters["trainable"] = True
 model_parameters["jammer_parameters"] = jammer_parameters
 # changing but constant
-jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
-# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+# jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
 sim.BATCH_SIZE = 1
 
@@ -112,23 +113,61 @@ sim.BATCH_SIZE = 1
 
 
 # massive grid: training with different jammer power and different number of UEs
-num_ut = range(1, 9)
-jammer_power = [db_to_linear(x) for x in np.arange(-2.5, 15.1, 2.5, dtype=np.float32)]
-parameters = [(x, y) for x in num_ut for y in jammer_power]
-n, p = parameters[parameter_num]
-model_parameters["num_ut"] = n
-model_parameters["jammer_power"] = p
-model_parameters["num_ofdm_symbols"] = 18
-model_parameters["fft_size"] = 64
-jammer_parameters["trainable_mask"] = tf.ones([18, 1], dtype=tf.bool)
+# num_ut = range(1, 9)
+# jammer_power = [db_to_linear(x) for x in np.arange(-2.5, 15.1, 2.5, dtype=np.float32)]
+# parameters = [(x, y) for x in num_ut for y in jammer_power]
+# n, p = parameters[parameter_num]
+# model_parameters["num_ut"] = n
+# model_parameters["jammer_power"] = p
+# model_parameters["num_ofdm_symbols"] = 18
+# model_parameters["fft_size"] = 64
+# jammer_parameters["trainable_mask"] = tf.ones([18, 1], dtype=tf.bool)
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(MeanAbsoluteError()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/grid/ue_{n}_power_{linear_to_db(p):.1f}dB.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=5.0)
+
+# # different SNRs, experimental loss
+# parameters = np.arange(-5.0, 10.5, 2.5, dtype=np.float32)
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(QuadraticCutoffLoss()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/{parameters[parameter_num]}dB_quadratic.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=parameters[parameter_num])
+
+# # different SNRs, experimental loss
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(QuadraticCutoffLoss()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/{parameters[parameter_num]}dB_quadratic.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=0.0)
+
+# # different number of UEs, experimental loss
+parameters = np.arange(1, 5, dtype=np.int32)
+model_parameters["num_ut"] = parameters[parameter_num]
 model = Model(**model_parameters)
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/grid/ue_{n}_power_{linear_to_db(p):.1f}dB.pickle",
+            weights_filename=f"weights/ue_{parameters[parameter_num]}_quadratic_symbol_weights.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
             num_iterations=2000,
-            ebno_db=5.0)
-
+            ebno_db=0.0)

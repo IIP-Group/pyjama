@@ -447,7 +447,7 @@ def simulate_model(model, legend, add_bler=False):
     
 def train_model(model,
                 loss_fn=None,
-                ebno_db=5.0,
+                ebno_db=2.5,
                 loss_over_logits=None,
                 num_iterations=5000,
                 weights_filename="weights.pickle",
