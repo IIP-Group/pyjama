@@ -2,8 +2,9 @@ from subprocess import Popen
 from collections import deque
 from threading import Thread
 
-gpus = [2, 3, 4, 5, 6, 7]
-parameter_indices_to_run = range(4)
+# gpus = [1, 2, 3, 4, 5, 6, 7]
+gpus = [4, 5]
+parameter_indices_to_run = range(2)
 # parameter_indices_to_run = range(7)
 
 # Create a queue for each GPU

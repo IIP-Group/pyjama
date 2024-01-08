@@ -163,7 +163,7 @@ class Model(tf.keras.Model):
         self._k = int(self._n * self._effective_coderate)
         if coderate is not None:
             self._encoder = LDPC5GEncoder(self._k, self._n, num_bits_per_symbol=self._num_bits_per_symbol)
-            self._decoder = LDPC5GDecoder(self._encoder, hard_out=False)
+            self._decoder = LDPC5GDecoder(self._encoder, hard_out=False, num_iter=1)
 
         self._mapper = Mapper("qam", self._num_bits_per_symbol)
         self._rg_mapper = ResourceGridMapper(self._rg)
@@ -509,7 +509,8 @@ def train_model(model,
 
 def load_weights(model, weights_filename="weights.pickle"):
     # run model once to initialize weights
-    model(BATCH_SIZE, 10.0)
+    # model(BATCH_SIZE, 10.0)
+    model(1, 10.0)
     with open(weights_filename, 'rb') as f:
         weights = pickle.load(f)
     model.set_weights(weights)

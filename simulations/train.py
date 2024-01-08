@@ -38,7 +38,8 @@ model_parameters["jammer_parameters"] = jammer_parameters
 # jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
 jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
-sim.BATCH_SIZE = 1
+sim.BATCH_SIZE = 2
+# sim.BATCH_SIZE = 1
 
 
 # training on different loss functions
@@ -159,13 +160,28 @@ sim.BATCH_SIZE = 1
 #             ebno_db=0.0)
 
 # # different number of UEs, experimental loss
-parameters = np.arange(1, 5, dtype=np.int32)
+# parameters = np.arange(1, 5, dtype=np.int32)
+# model_parameters["num_ut"] = parameters[parameter_num]
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(MeanAbsoluteError()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/ue_{parameters[parameter_num]}_quadratic_symbol_weights.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=0.0)
+
+# 1 & 4 UEs, trained on coded channel information bits
+parameters = [1, 4]
 model_parameters["num_ut"] = parameters[parameter_num]
+model_parameters["coderate"] = 0.5
 model = Model(**model_parameters)
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/ue_{parameters[parameter_num]}_quadratic_symbol_weights.pickle",
+            weights_filename=f"weights/ue_{parameters[parameter_num]}_coded_symbol_weights_real.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
