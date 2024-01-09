@@ -1,10 +1,10 @@
 from subprocess import Popen
 from collections import deque
 from threading import Thread
+import datetime
 
-# gpus = [1, 2, 3, 4, 5, 6, 7]
-gpus = [4, 5]
-parameter_indices_to_run = range(2)
+gpus = [0, 1, 2, 3, 4]
+parameter_indices_to_run = range(16)
 # parameter_indices_to_run = range(7)
 
 # Create a queue for each GPU
@@ -20,7 +20,7 @@ def handle_gpu_queue(gpu_num, queue):
     while queue:
         parameter_num = queue.popleft()
         p = Popen(["python", "train.py", str(gpu_num), str(parameter_num)])
-        print(f"Started process {p.pid} on GPU {gpu_num} with parameter {parameter_num}")
+        print(f"Started process {p.pid} on GPU {gpu_num} with parameter {parameter_num} at {datetime.datetime.now().strftime('%X')}")
         p.wait()
 
 # Start a thread for each GPU
