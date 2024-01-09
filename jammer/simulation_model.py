@@ -168,7 +168,9 @@ class Model(tf.keras.Model):
         self._k = int(self._n * self._effective_coderate)
         if coderate is not None:
             self._encoder = LDPC5GEncoder(self._k, self._n, num_bits_per_symbol=self._num_bits_per_symbol)
-            self._decoder = LDPC5GDecoder(self._encoder, hard_out=False, **decoder_parameters)
+            self._decoder = (
+                ReturnIntermediateLDPC5GDecoder(self._encoder, hard_out=False, **decoder_parameters) if self._return_decoder_iterations
+                else LDPC5GDecoder(self._encoder, hard_out=False, **decoder_parameters))
 
         self._mapper = Mapper("qam", self._num_bits_per_symbol)
         self._rg_mapper = ResourceGridMapper(self._rg)
@@ -412,19 +414,22 @@ class Model(tf.keras.Model):
             result += (jammer_signals,)
         return result
 
-class IntermediateReturnLDPC5GDecoder(LDPC5GDecoder):
+class ReturnIntermediateLDPC5GDecoder(LDPC5GDecoder):
     """ A wrapper around LDPC5GDecoder which returns llrs after each iteration.
     This can be useful if gradients through a normal LDPC5GDecoder are not good enough.
     Returns: [..., num_iters]
     """
-    def __init__(**kwargs):
-        super().__init__({**kwargs, "stateful": True})
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **{**kwargs, "stateful": True})
+
+    def build(self, input_shape):
+        super().build([input_shape, None])
     
     def call(self, llr_ch):
         msg_vn = None
         llr_decs = []
         for i in range(self.num_iter):
-            llr_dec, msg_vn = super().call(llr_ch, msg_vn)
+            llr_dec, msg_vn = super().call([llr_ch, msg_vn])
             llr_decs.append(llr_dec)
         return tf.stack(llr_decs, axis=-1)
 
@@ -468,7 +473,7 @@ def simulate_model(model, legend, add_bler=False):
     
 def train_model(model,
                 loss_fn=None,
-                ebno_db=2.5,
+                ebno_db=0.0,
                 loss_over_logits=None,
                 num_iterations=5000,
                 weights_filename="weights.pickle",
@@ -497,7 +502,6 @@ def train_model(model,
             loss_over_logits = False
 
     for i in range(num_iterations):
-        # ebno_db = tf.random.uniform(shape=[BATCH_SIZE], minval=EBN0_DB_MIN, maxval=EBN0_DB_MAX)
         with tf.GradientTape() as tape:
             label, predicted = model(BATCH_SIZE, ebno_db)
             if not model._return_symbols and not loss_over_logits:
