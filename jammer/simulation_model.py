@@ -66,6 +66,8 @@ class Model(tf.keras.Model):
     """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model.
     """
 
+    # TODO the dict-arguments could also be replaced by **kwargs. Deliberate.
+    # see https://rhettinger.wordpress.com/2011/05/26/super-considered-super/ for reference.
     def __init__(self,
                  scenario="umi",
                  carrier_frequency=3.5e9,
@@ -78,6 +80,7 @@ class Model(tf.keras.Model):
                  num_ut_ant=1,
                  num_bits_per_symbol=2,
                  coderate=None,
+                 decoder_parameters={},
                  domain="freq",
                  los=None,
                  indoor_probability=0.8,
@@ -93,7 +96,8 @@ class Model(tf.keras.Model):
                  jammer_mitigation=None,
                  jammer_mitigation_dimensionality=None,
                  return_jammer_signals=False,
-                 return_symbols=False):
+                 return_symbols=False,
+                 return_decoder_iterations=False):
         super().__init__()
         self._scenario = scenario
         self._domain = domain
@@ -106,6 +110,7 @@ class Model(tf.keras.Model):
         self._jammer_mitigation_dimensionality = jammer_mitigation_dimensionality
         self._return_jammer_signals = return_jammer_signals
         self._return_symbols = return_symbols
+        self._return_decoder_iterations = return_decoder_iterations
         self._jammer_power = tf.cast(jammer_power, tf.complex64)
         #TODO should these kinds of parameters go into e.g. a dict for the channel parameters?
         self._los = los
@@ -163,7 +168,7 @@ class Model(tf.keras.Model):
         self._k = int(self._n * self._effective_coderate)
         if coderate is not None:
             self._encoder = LDPC5GEncoder(self._k, self._n, num_bits_per_symbol=self._num_bits_per_symbol)
-            self._decoder = LDPC5GDecoder(self._encoder, hard_out=False, num_iter=1)
+            self._decoder = LDPC5GDecoder(self._encoder, hard_out=False, **decoder_parameters)
 
         self._mapper = Mapper("qam", self._num_bits_per_symbol)
         self._rg_mapper = ResourceGridMapper(self._rg)
@@ -407,6 +412,22 @@ class Model(tf.keras.Model):
             result += (jammer_signals,)
         return result
 
+class IntermediateReturnLDPC5GDecoder(LDPC5GDecoder):
+    """ A wrapper around LDPC5GDecoder which returns llrs after each iteration.
+    This can be useful if gradients through a normal LDPC5GDecoder are not good enough.
+    Returns: [..., num_iters]
+    """
+    def __init__(**kwargs):
+        super().__init__({**kwargs, "stateful": True})
+    
+    def call(self, llr_ch):
+        msg_vn = None
+        llr_decs = []
+        for i in range(self.num_iter):
+            llr_dec, msg_vn = super().call(llr_ch, msg_vn)
+            llr_decs.append(llr_dec)
+        return tf.stack(llr_decs, axis=-1)
+
 
 def relative_singular_values(jammer_signals):
     """Input: jammer_signals: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]"""
@@ -462,8 +483,9 @@ def train_model(model,
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     if log_tensorboard:
+        name = weights_filename.split("/")[-1].rsplit(".", 1)[0]
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-        train_log_dir = 'logs/tensorboard/' + current_time + '/train'
+        train_log_dir = 'logs/tensorboard/' + current_time + '-' + name + '/train'
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
         
     if loss_fn is None:
