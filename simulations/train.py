@@ -15,6 +15,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
+tf.config.run_functions_eagerly(True)
 from tensorflow.python.keras.losses import MeanAbsoluteError, MeanSquaredError, BinaryCrossentropy
 
 from jammer.simulation_model import *
@@ -175,27 +176,34 @@ sim.BATCH_SIZE = 2
 
 # 1 & 4 UEs, trained on coded channel information bits
 # num_ut, num_iter (decoder), cn_type (decoder)
-num_uts = [1, 4]
-num_iters = [1, 2, 4, 8]
-cn_types = ["boxplus-phi", "minsum"]
-parameters = [(x, y, z) for x in num_uts for y in num_iters for z in cn_types]
+# num_uts = [1, 4]
+# num_iters = [1, 2, 4, 8]
+# cn_types = ["boxplus-phi", "minsum"]
+# parameters = [(x, y, z) for x in num_uts for y in num_iters for z in cn_types]
 
-num_ut = parameters[parameter_num][0]
-num_iter = parameters[parameter_num][1]
-cn_type = parameters[parameter_num][2]
-model_parameters["num_ut"] = num_ut
-model_parameters["decoder_parameters"] = {
-    "num_iter": num_iter,
-    "cn_type": cn_type
-}
+# num_ut = parameters[parameter_num][0]
+# num_iter = parameters[parameter_num][1]
+# cn_type = parameters[parameter_num][2]
+# model_parameters["num_ut"] = num_ut
+# model_parameters["decoder_parameters"] = {
+#     "num_iter": num_iter,
+#     "cn_type": cn_type
+# }
+# model_parameters["coderate"] = 0.5
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(MeanAbsoluteError()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/coded/rg/ue_{num_ut}_{cn_type}_{num_iter}_iter.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=2000,
+#             ebno_db=0.0)
+
+model_parameters["return_decoder_iterations"] = True
 model_parameters["coderate"] = 0.5
 model = Model(**model_parameters)
-train_model(model,
-            loss_fn=negative_function(MeanAbsoluteError()),
-            loss_over_logits=False,
-            weights_filename=f"weights/coded/rg/ue_{num_ut}_{cn_type}_{num_iter}_iter.pickle",
-            log_tensorboard=True,
-            log_weight_images=True,
-            show_final_weights=False,
-            num_iterations=2000,
-            ebno_db=0.0)
+llrs, b_hat = model(2, 0.0)
+print(llrs.shape)
+print(b_hat.shape)
