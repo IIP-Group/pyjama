@@ -419,17 +419,18 @@ class ReturnIntermediateLDPC5GDecoder(LDPC5GDecoder):
     This can be useful if gradients through a normal LDPC5GDecoder are not good enough.
     Returns: [..., num_iters]
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **{**kwargs, "stateful": True})
+    def __init__(self, *args, num_iter=10, **kwargs):
+        self._num_internal_iter = num_iter
+        super().__init__(*args, **{**kwargs, "stateful": True, "num_iter": 1})
 
     def build(self, input_shape):
         super().build([input_shape, None])
     
     def call(self, llr_ch):
-        msg_vn = None
         llr_decs = []
-        for i in range(self.num_iter):
-            llr_dec, msg_vn = super().call([llr_ch, msg_vn])
+        msg_vn = None
+        for i in range(self._num_internal_iter):
+            llr_dec, msg_vn = super().call((llr_ch, msg_vn))
             llr_decs.append(llr_dec)
         return tf.stack(llr_decs, axis=-1)
 
