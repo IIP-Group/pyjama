@@ -1,5 +1,5 @@
 import sys
-gpu_num = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+gpu_num = int(sys.argv[1]) if len(sys.argv) > 1 else 1
 parameter_num = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 
 import os
@@ -36,8 +36,8 @@ model_parameters["num_silent_pilot_symbols"] = 4
 jammer_parameters["trainable"] = True
 model_parameters["jammer_parameters"] = jammer_parameters
 # changing but constant
-jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
-# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+# jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
 sim.BATCH_SIZE = 2
 # sim.BATCH_SIZE = 1
@@ -201,9 +201,27 @@ sim.BATCH_SIZE = 2
 #             num_iterations=2000,
 #             ebno_db=0.0)
 
+exponentials = [False, True]
+alphas = np.arange(0.0, 1.1, 0.1, dtype=np.float32)
+num_iters = [1, 2, 4, 8, 16]
+parameters = [(x, y, z) for x in exponentials for y in alphas for z in num_iters]
+exponential, alpha, num_iter = parameters[parameter_num]
+
+model_parameters["num_ut"] = 1
+model_parameters["decoder_parameters"] = {
+    "num_iter": num_iter,
+    "cn_type": "minsum"
+}
 model_parameters["return_decoder_iterations"] = True
 model_parameters["coderate"] = 0.5
 model = Model(**model_parameters)
-llrs, b_hat = model(2, 0.0)
-print(llrs.shape)
-print(b_hat.shape)
+loss = IterationLoss(alpha=alpha, exponential_alpha_scaling=exponential)
+train_model(model,
+            loss_fn=negative_function(loss),
+            loss_over_logits=False,
+            weights_filename=f"weights/coded/symbol/iteration_loss/ue_1_alpha_{alpha}_exp_{exponential}_{num_iter}_iter.pickle",
+            log_tensorboard=True,
+            log_weight_images=True,
+            show_final_weights=False,
+            num_iterations=2000,
+            ebno_db=0.0)

@@ -200,6 +200,27 @@ def expected_bitflips(y_true, y_pred, reduction=tf.keras.losses.Reduction.SUM_OV
     # reduce over batch dimension, according to parameter reduction <-TODO
     return tf.reduce_mean(losses)
     
+class IterationLoss(tf.keras.losses.Loss):
+    """Loss function for iterative decoding. Calculates the loss for each iteration separately and returns the weighted sum.
+    If exponential_alpha_scaling is true, the alpha for each iteration is alpha^(n-i), where i is the iteration number and n the total number of iterations.
+    Otherwise, each iteration is scaled by alpha"""
+    def __init__(self, alpha=0.5, exponential_alpha_scaling=True, reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE):
+        self._alpha = alpha
+        self._exponention_alpha_scaling = exponential_alpha_scaling
+        super(IterationLoss, self).__init__(reduction=reduction)
+
+    def call(self, b, llr_iterations):
+        # batch, num_bits * num_iterations -> batch, num_bits, num_iterations
+        llr_iterations = tf.reshape(llr_iterations, [llr_iterations.shape[0], b.shape[1], -1])
+
+        num_iterations = llr_iterations.shape[2]
+        alpha = tf.ones([num_iterations]) * self._alpha
+        if self._exponention_alpha_scaling:
+            alpha = alpha ** tf.range(num_iterations, 0, -1, dtype=alpha.dtype)
+
+        difference = tf.abs(b[..., tf.newaxis] - llr_iterations)
+        difference *= alpha
+        return tf.reduce_mean(tf.reduce_sum(difference, axis=2))
 
 # y_true = tf.constant([[0.0, 1.0],
 #                       [1.0, 0.0]])

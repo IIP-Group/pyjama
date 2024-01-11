@@ -533,6 +533,21 @@ def train_model(model,
         plt.title(weights_filename)
         plt.show()
 
+# TODO just integrate this at the end of training, with parameter 'validate_ber'
+def tensorboard_validate_model(model, log_name):
+    """Simple BER validation on tensorboard"""
+    # setup tensorboard
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    train_log_dir = 'logs/tensorboard/' + current_time + '-' + log_name + '/validate'
+    train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+    # validate
+    ber, _ = sionna.utils.sim_ber(model, ebno_dbs, BATCH_SIZE, MAX_MC_ITER, soft_estimates=True, verbose=False)
+    for i, ber_value in enumerate(ber):
+        with train_summary_writer.as_default():
+            # we need y log_10 scale, otherwise we cannot see the low BER
+            # ber = tf.math.log(ber_value)/tf.math.log(tf.constant(10.0, dtype=tf.float64))
+            tf.summary.scalar('BER', ber_value, step=i)
+
 
 def load_weights(model, weights_filename="weights.pickle"):
     # run model once to initialize weights
