@@ -200,6 +200,7 @@ def expected_bitflips(y_true, y_pred, reduction=tf.keras.losses.Reduction.SUM_OV
     # reduce over batch dimension, according to parameter reduction <-TODO
     return tf.reduce_mean(losses)
     
+# TODO test with alpha decreasing with loss-steps taken (i.e. more weight on last iteration)
 class IterationLoss(tf.keras.losses.Loss):
     """Loss function for iterative decoding. Calculates the loss for each iteration separately and returns the weighted sum.
     If exponential_alpha_scaling is true, the alpha for each iteration is alpha^(n-i), where i is the iteration number and n the total number of iterations.
@@ -216,7 +217,7 @@ class IterationLoss(tf.keras.losses.Loss):
         num_iterations = llr_iterations.shape[2]
         alpha = tf.ones([num_iterations]) * self._alpha
         if self._exponention_alpha_scaling:
-            alpha = alpha ** tf.range(num_iterations, 0, -1, dtype=alpha.dtype)
+            alpha = alpha ** tf.range(num_iterations-1, -0.1, -1, dtype=alpha.dtype)
 
         difference = tf.abs(b[..., tf.newaxis] - llr_iterations)
         difference *= alpha

@@ -328,7 +328,7 @@ class Model(tf.keras.Model):
 
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     @tf.function(jit_compile=False)
-    def call(self, batch_size, ebno_db):
+    def call(self, batch_size, ebno_db, training=None):
         # for good statistics, we simulate a new topology for each batch.
         # TODO: add parameter to keep topology constant for model lifetime
         self.new_ut_topology(batch_size)
@@ -402,6 +402,10 @@ class Model(tf.keras.Model):
         llr = self._demapper([x_hat, no_eff])
         if self._coderate is not None:
             llr = self._decoder(llr)
+            # during training, we want to return intermediate decoding results. During inference, we want to return the final result.
+            if self._return_decoder_iterations and not training:
+                llr = llr[..., -1]
+                
         if self._return_symbols:
             x = tf.reshape(x, [batch_size, -1])
             x_hat = tf.reshape(x_hat, [batch_size, -1])
@@ -486,13 +490,14 @@ def train_model(model,
     if loss_fn is None, we use the "default" loss function.
     If model._return_symbols is False and loss_over_logits is False, a sigmoid is applied to the logits before calculating the loss.
     Otherwise, loss_over_logits is ignored."""
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.003)
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     name = weights_filename.split("/")[-1].rsplit(".", 1)[0]
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     if log_tensorboard:
-        train_log_dir = 'logs/tensorboard/' + current_time + '-' + name + '/train'
+        train_log_dir = 'logs/tensorboard/' + current_time + '-' + name# + '/train'
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
         
     if loss_fn is None:
@@ -505,7 +510,7 @@ def train_model(model,
 
     for i in range(num_iterations):
         with tf.GradientTape() as tape:
-            label, predicted = model(BATCH_SIZE, ebno_db)
+            label, predicted = model(BATCH_SIZE, ebno_db, training=True)
             if not model._return_symbols and not loss_over_logits:
                 predicted = tf.sigmoid(predicted)
             loss = loss_fn(label, predicted)
@@ -526,7 +531,7 @@ def train_model(model,
     
     #BER validation
     if validate_ber_tensorboard:
-        validate_log_dir = 'logs/tensorboard/' + current_time + '-' + name + '/validate'
+        validate_log_dir = 'logs/tensorboard/' + current_time + '-' + name# + '/validate'
         tensorboard_validate_model(model, validate_log_dir)
 
     # Save the weights in a file
@@ -545,7 +550,9 @@ def tensorboard_validate_model(model, log_dir):
     # setup tensorboard
     train_summary_writer = tf.summary.create_file_writer(log_dir)
     # validate
-    ber, _ = sionna.utils.sim_ber(model, ebno_dbs, BATCH_SIZE, MAX_MC_ITER, soft_estimates=True, verbose=False)
+    # TODO we should have a different batch size for validation. Hence, this should be a parameter.
+    ber, _ = sionna.utils.sim_ber(model, ebno_dbs, 8, MAX_MC_ITER, soft_estimates=True, verbose=False)
+    # ber, _ = sionna.utils.sim_ber(model, ebno_dbs, BATCH_SIZE, MAX_MC_ITER, soft_estimates=True, verbose=False)
     for i, ber_value in enumerate(ber):
         with train_summary_writer.as_default():
             tf.summary.scalar('BER', ber_value, step=i)

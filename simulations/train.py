@@ -177,7 +177,7 @@ sim.BATCH_SIZE = 2
 # 1 & 4 UEs, trained on coded channel information bits
 # num_ut, num_iter (decoder), cn_type (decoder)
 # num_uts = [1, 4]
-# num_iters = [1, 2, 4, 8]
+# num_iters = [8, 12, 16]
 # cn_types = ["boxplus-phi", "minsum"]
 # parameters = [(x, y, z) for x in num_uts for y in num_iters for z in cn_types]
 
@@ -194,20 +194,50 @@ sim.BATCH_SIZE = 2
 # train_model(model,
 #             loss_fn=negative_function(MeanAbsoluteError()),
 #             loss_over_logits=False,
-#             weights_filename=f"weights/coded/rg/ue_{num_ut}_{cn_type}_{num_iter}_iter.pickle",
+#             weights_filename=f"weights/coded/symbol/ue_{num_ut}_{cn_type}_{num_iter}_iter.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=3000,
+#             ebno_db=0.0,
+#             validate_ber_tensorboard=True)
+
+
+
+# exponentials = [False, True]
+# alphas = np.arange(0.0, 1.1, 0.1, dtype=np.float32)
+# num_iters = [1, 2, 4, 8, 16]
+# parameters = [(x, y, z) for x in exponentials for y in alphas for z in num_iters]
+# exponential, alpha, num_iter = parameters[parameter_num]
+
+# model_parameters["num_ut"] = 1
+# model_parameters["decoder_parameters"] = {
+#     "num_iter": num_iter,
+#     "cn_type": "minsum"
+# }
+# model_parameters["return_decoder_iterations"] = True
+# model_parameters["coderate"] = 0.5
+# model = Model(**model_parameters)
+# loss = IterationLoss(alpha=alpha, exponential_alpha_scaling=exponential)
+# train_model(model,
+#             loss_fn=negative_function(loss),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/coded/symbol/iteration_loss/ue_1_alpha_{alpha}_exp_{exponential}_{num_iter}_iter.pickle",
 #             log_tensorboard=True,
 #             log_weight_images=True,
 #             show_final_weights=False,
 #             num_iterations=2000,
 #             ebno_db=0.0)
 
-exponentials = [False, True]
-alphas = np.arange(0.0, 1.1, 0.1, dtype=np.float32)
-num_iters = [1, 2, 4, 8, 16]
-parameters = [(x, y, z) for x in exponentials for y in alphas for z in num_iters]
-exponential, alpha, num_iter = parameters[parameter_num]
 
-model_parameters["num_ut"] = 1
+num_uts = [1, 4]
+exponentials = [False, True]
+num_iters = [8, 12, 16, 20]
+alphas = np.arange(0.1, 1.0, 0.2, dtype=np.float32)
+parameters = [(w, x, y, z) for w in num_uts for x in exponentials for y in num_iters for z in alphas]
+num_ut, exponential, num_iter, alpha = parameters[parameter_num]
+
+model_parameters["num_ut"] = num_ut
 model_parameters["decoder_parameters"] = {
     "num_iter": num_iter,
     "cn_type": "minsum"
@@ -219,9 +249,10 @@ loss = IterationLoss(alpha=alpha, exponential_alpha_scaling=exponential)
 train_model(model,
             loss_fn=negative_function(loss),
             loss_over_logits=False,
-            weights_filename=f"weights/coded/symbol/iteration_loss/ue_1_alpha_{alpha}_exp_{exponential}_{num_iter}_iter.pickle",
+            weights_filename=f"weights/coded/symbol/iteration_loss_2/ue_{num_ut}_alpha_{alpha:.1}_exp_{exponential}_{num_iter}_iter.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
-            num_iterations=2000,
-            ebno_db=0.0)
+            num_iterations=5000,
+            ebno_db=0.0,
+            validate_ber_tensorboard=True)
