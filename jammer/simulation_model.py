@@ -479,6 +479,7 @@ def train_model(model,
                 num_iterations=5000,
                 weights_filename="weights.pickle",
                 log_tensorboard=False,
+                validate_ber_tensorboard=False,
                 log_weight_images=False,
                 show_final_weights=False):
     """If model._return_symbols is True, we train on symbol error, otherwise on bit error.
@@ -488,9 +489,9 @@ def train_model(model,
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
+    name = weights_filename.split("/")[-1].rsplit(".", 1)[0]
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     if log_tensorboard:
-        name = weights_filename.split("/")[-1].rsplit(".", 1)[0]
-        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         train_log_dir = 'logs/tensorboard/' + current_time + '-' + name + '/train'
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
         
@@ -522,7 +523,12 @@ def train_model(model,
             with train_summary_writer.as_default():
                 image = matrix_to_image(model._jammer._weights)
                 tf.summary.image("weights", image, step=i)
-                
+    
+    #BER validation
+    if validate_ber_tensorboard:
+        validate_log_dir = 'logs/tensorboard/' + current_time + '-' + name + '/validate'
+        tensorboard_validate_model(model, validate_log_dir)
+
     # Save the weights in a file
     weights = model.get_weights()
     with open(weights_filename, 'wb') as f:
@@ -533,19 +539,15 @@ def train_model(model,
         plt.title(weights_filename)
         plt.show()
 
-# TODO just integrate this at the end of training, with parameter 'validate_ber'
-def tensorboard_validate_model(model, log_name):
+
+def tensorboard_validate_model(model, log_dir):
     """Simple BER validation on tensorboard"""
     # setup tensorboard
-    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-    train_log_dir = 'logs/tensorboard/' + current_time + '-' + log_name + '/validate'
-    train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+    train_summary_writer = tf.summary.create_file_writer(log_dir)
     # validate
     ber, _ = sionna.utils.sim_ber(model, ebno_dbs, BATCH_SIZE, MAX_MC_ITER, soft_estimates=True, verbose=False)
     for i, ber_value in enumerate(ber):
         with train_summary_writer.as_default():
-            # we need y log_10 scale, otherwise we cannot see the low BER
-            # ber = tf.math.log(ber_value)/tf.math.log(tf.constant(10.0, dtype=tf.float64))
             tf.summary.scalar('BER', ber_value, step=i)
 
 
