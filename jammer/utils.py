@@ -210,16 +210,16 @@ class IterationLoss(tf.keras.losses.Loss):
         self._exponention_alpha_scaling = exponential_alpha_scaling
         super(IterationLoss, self).__init__(reduction=reduction)
 
-    def call(self, b, llr_iterations):
+    def call(self, b, b_hat_iterations):
         # batch, num_bits * num_iterations -> batch, num_bits, num_iterations
-        llr_iterations = tf.reshape(llr_iterations, [llr_iterations.shape[0], b.shape[1], -1])
+        b_hat_iterations = tf.reshape(b_hat_iterations, [b_hat_iterations.shape[0], b.shape[1], -1])
 
-        num_iterations = llr_iterations.shape[2]
+        num_iterations = b_hat_iterations.shape[2]
         alpha = tf.ones([num_iterations]) * self._alpha
         if self._exponention_alpha_scaling:
             alpha = alpha ** tf.range(num_iterations-1, -0.1, -1, dtype=alpha.dtype)
 
-        difference = tf.abs(b[..., tf.newaxis] - llr_iterations)
+        difference = tf.abs(b[..., tf.newaxis] - b_hat_iterations)
         difference *= alpha
         return tf.reduce_mean(tf.reduce_sum(difference, axis=2))
 
