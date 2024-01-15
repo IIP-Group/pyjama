@@ -491,7 +491,7 @@ def train_model(model,
     If model._return_symbols is False and loss_over_logits is False, a sigmoid is applied to the logits before calculating the loss.
     Otherwise, loss_over_logits is ignored."""
     # optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.003)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     name = weights_filename.split("/")[-1].rsplit(".", 1)[0]
