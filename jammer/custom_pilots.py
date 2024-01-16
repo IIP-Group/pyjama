@@ -39,7 +39,7 @@ class PilotPatternWithSilence(PilotPattern):
             num_pilots_before = np.sum(mask[:, :, :silent_index, :], axis=(2,3))
             for i in range(num_tx):
                 for j in range(num_streams_per_tx):
-                    insert_index = num_pilots_before[i, j] + 1
+                    insert_index = num_pilots_before[i, j]
                     pilots[i][j][insert_index:insert_index] = [0+0j] * num_effective_subcarriers
                     # pilots = np.insert(pilots, num_pilots_before[i, j], 0+0j, axis=2)
                     #pilots[i, j, num_pilots_before[i, j], :] = 0+0j
