@@ -346,6 +346,7 @@ class Model(tf.keras.Model):
         # x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
         x = tf.reshape(x, [-1, self._num_tx, self._num_streams_per_tx, self._rg.num_data_symbols])
         x_rg = self._rg_mapper(x)
+        # TODO add Mash here
         if self._domain == "freq":
             # y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
             # h: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]
@@ -371,6 +372,7 @@ class Model(tf.keras.Model):
         # after (potential) jammer, convert signal to freqency domain. Jammer is configured to always return j in freq. domain.
         if self._domain == "time":
             y = self._demodulator(y)
+        # TODO add DeMash here
         if self._estimate_jammer_covariance:
             # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
             jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
