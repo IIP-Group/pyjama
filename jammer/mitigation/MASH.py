@@ -56,8 +56,6 @@ class Mash(tf.keras.layers.Layer):
         self._renew_secret = renew_secret
         self._sc_ind = tf.cast(resource_grid.effective_subcarrier_ind, tf.int64)
         self.C = None
-        # self._silent_pilot_indices = tf.where(tf.math.reduce_all(resource_grid.pilot_pattern.pilots == 0j, axis=(0, 1)))
-        # self._haar_approximation = HaarApproximation(resource_grid.num_effective_subcarriers)
 
     def call(self, inputs):
         """Input:
