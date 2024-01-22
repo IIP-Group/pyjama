@@ -42,7 +42,7 @@ from sionna.utils import BinarySource, ebnodb2no, sim_ber, plot_ber, QAMSource, 
 from sionna.utils.metrics import compute_ber
 
 from .jammer import OFDMJammer, TimeDomainOFDMJammer
-from .mitigation import POS, IAN
+from .mitigation import POS, IAN, MASH
 from .custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from .channel_models import MultiTapRayleighBlockFading
 from .utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power, expected_bitflips
@@ -54,7 +54,7 @@ BATCH_SIZE = 2
 MAX_MC_ITER = 30
 EBN0_DB_MIN = -5.0
 EBN0_DB_MAX = 15.0
-NUM_SNR_POINTS = 15
+NUM_SNR_POINTS = 16
 ebno_dbs = np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, NUM_SNR_POINTS)
 # TODO let the plot ylim always be 1.0
 ber_plots = PlotBER()
@@ -95,6 +95,7 @@ class Model(tf.keras.Model):
                      "normalize_channel": True},
                  jammer_mitigation=None,
                  jammer_mitigation_dimensionality=None,
+                 mash=False,
                  return_jammer_signals=False,
                  return_symbols=False,
                  return_decoder_iterations=False):
@@ -108,6 +109,7 @@ class Model(tf.keras.Model):
         self._jammer_present = jammer_present
         self._jammer_mitigation = jammer_mitigation
         self._jammer_mitigation_dimensionality = jammer_mitigation_dimensionality
+        self._mash = mash
         self._return_jammer_signals = return_jammer_signals
         self._return_symbols = return_symbols
         self._return_decoder_iterations = return_decoder_iterations
@@ -232,6 +234,10 @@ class Model(tf.keras.Model):
         
         if self._jammer_mitigation == "pos":
             self._pos = POS.OrthogonalSubspaceProjector(self._jammer_mitigation_dimensionality)
+
+        if self._mash:
+            self._masher = MASH.Mash(self._rg)
+            self._demasher = MASH.DeMash(self._masher)
         
         self._check_settings()
       
@@ -346,7 +352,8 @@ class Model(tf.keras.Model):
         # x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]
         x = tf.reshape(x, [-1, self._num_tx, self._num_streams_per_tx, self._rg.num_data_symbols])
         x_rg = self._rg_mapper(x)
-        # TODO add Mash here
+        if self._mash:
+            x_rg = self._masher(x_rg)
         if self._domain == "freq":
             # y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
             # h: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]
@@ -372,7 +379,8 @@ class Model(tf.keras.Model):
         # after (potential) jammer, convert signal to freqency domain. Jammer is configured to always return j in freq. domain.
         if self._domain == "time":
             y = self._demodulator(y)
-        # TODO add DeMash here
+        if self._mash:
+            y = self._demasher(y)
         if self._estimate_jammer_covariance:
             # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
             jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)

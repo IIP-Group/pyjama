@@ -1,22 +1,5 @@
 """Mitigation via Subspace Hiding (MASH)"""
 #%%
-import os
-# import drjit
-gpu_num = 0 # Use "" to use the CPU
-os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import sionna
-import tensorflow as tf
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
-tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
-
 import tensorflow as tf
 import numpy as np
 import sionna
@@ -82,7 +65,7 @@ class Mash(tf.keras.layers.Layer):
         # remove guard and DC bands -> [batch_size, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers]
         x = tf.gather(inputs, self._sc_ind, axis=-1)
         # flatten RG
-        before_flatten_shape = x.shape
+        before_flatten_shape = tf.shape(x)
         x = flatten_last_dims(x, 2)
         n = x.shape[-1]
         if self._renew_secret or self.C is None:
@@ -114,7 +97,7 @@ class DeMash(tf.keras.layers.Layer):
         # remove guard and DC bands -> [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, num_effective_subcarriers]
         y = tf.gather(inputs, self._mash._sc_ind, axis=-1)
         # flatten RG
-        shape_before_flatten = y.shape
+        shape_before_flatten = tf.shape(y)
         y = flatten_last_dims(y, 2)
         # x contains zeros at silent pilot indices. I.e. we can just multiply with C (and C^H) to demash.
         y = self._mash.C.multiply_from_right(y, adjoint=True)
