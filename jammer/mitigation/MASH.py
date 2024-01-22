@@ -47,7 +47,7 @@ class HaarApproximation:
             # x @ A = (A^H @ x^H)^H
             x = tf.linalg.adjoint(x)
             for i in range(self._num_iterations):
-                x = self._norm_factor * tf.signal.ifft(x)
+                x = 1./self._norm_factor * tf.signal.ifft(x)
                 x = tf.linalg.diag(self._diag_values[i]) @ x
         return tf.linalg.adjoint(x)
 
@@ -110,46 +110,48 @@ class DeMash(tf.keras.layers.Layer):
 
         
 
-num_ofdm_symbols = 8
-fft_size = 20
-subcarrier_spacing = 15e3
-num_tx = 2
-num_streams_per_tx = 2
-cyclic_prefix_length = 10
+def test():
+    num_ofdm_symbols = 8
+    fft_size = 20
+    subcarrier_spacing = 15e3
+    num_tx = 2
+    num_streams_per_tx = 2
+    cyclic_prefix_length = 10
+    
+    rg = sionna.ofdm.ResourceGrid(num_ofdm_symbols=num_ofdm_symbols,
+                      fft_size=fft_size,
+                      subcarrier_spacing=subcarrier_spacing,
+                      num_tx=num_tx,
+                      num_streams_per_tx=num_streams_per_tx,
+                      cyclic_prefix_length=cyclic_prefix_length,
+                      pilot_pattern="kronecker",
+                      pilot_ofdm_symbol_indices = [2],
+                      dc_null=True,
+                      num_guard_carriers=(0,3))
+    rg.pilot_pattern = PilotPatternWithSilence(rg.pilot_pattern, [0, 1])
+    # rg.show()
+    # rg.pilot_pattern.show()
+    
+    mash = Mash(rg)
+    demash = DeMash(mash)
+    num_bits = rg.num_data_symbols * 2
+    # batch_size, num_tx, num_streams_per_tx, num_bits
+    mapper = sionna.mapping.Mapper('qam', 2)
+    rg_mapper = sionna.ofdm.ResourceGridMapper(rg)
+    
+    x = tf.zeros((1, num_tx, num_streams_per_tx, num_bits), dtype=tf.complex64)
+    x = mapper(x)
+    x = rg_mapper(x)
+    x = mash(x)
+    print(x.shape)
+    import matplotlib.pyplot as plt
+    for i in range(num_tx):
+        for j in range(num_streams_per_tx):
+            plt.figure()
+            plt.imshow(tf.math.real(x[0,i,j]))
+            plt.title(f"tx {i} stream {j}")
 
-rg = sionna.ofdm.ResourceGrid(num_ofdm_symbols=num_ofdm_symbols,
-                  fft_size=fft_size,
-                  subcarrier_spacing=subcarrier_spacing,
-                  num_tx=num_tx,
-                  num_streams_per_tx=num_streams_per_tx,
-                  cyclic_prefix_length=cyclic_prefix_length,
-                  pilot_pattern="kronecker",
-                  pilot_ofdm_symbol_indices = [2],
-                  dc_null=True,
-                  num_guard_carriers=(0,3))
-rg.pilot_pattern = PilotPatternWithSilence(rg.pilot_pattern, [0, 1])
-# rg.show()
-# rg.pilot_pattern.show()
+test()
 
-mash = Mash(rg)
-demash = DeMash(mash)
-num_bits = rg.num_data_symbols * 2
-# batch_size, num_tx, num_streams_per_tx, num_bits
-mapper = sionna.mapping.Mapper('qam', 2)
-rg_mapper = sionna.ofdm.ResourceGridMapper(rg)
 
-x = tf.zeros((1, num_tx, num_streams_per_tx, num_bits), dtype=tf.complex64)
-x = mapper(x)
-x = rg_mapper(x)
-x = mash(x)
-print(x.shape)
-import matplotlib.pyplot as plt
-for i in range(num_tx):
-    for j in range(num_streams_per_tx):
-        plt.figure()
-        plt.imshow(tf.math.real(x[0,i,j]))
-        plt.title(f"tx {i} stream {j}")
-
-# fft_matrix = tf.sqrt(tf.constant(0.2, dtype=tf.complex64)) * tf.signal.fft(tf.eye(5, dtype=tf.complex64))
-# i = tf.matmul(fft_matrix, fft_matrix, adjoint_b=True)
-# print(tf.complex(tf.round(tf.math.real(i)), tf.round(tf.math.imag(i))))
+# %%
