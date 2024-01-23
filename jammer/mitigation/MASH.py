@@ -1,7 +1,7 @@
 """Mitigation via Subspace Hiding (MASH)"""
 #%%
 import tensorflow as tf
-tf.config.run_functions_eagerly(True)
+# tf.config.run_functions_eagerly(True)
 import numpy as np
 import sionna
 from sionna.utils import flatten_last_dims
@@ -95,6 +95,11 @@ class DeMash(tf.keras.layers.Layer):
         [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex: The whole RG."""
         # remove guard and DC bands -> [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, num_effective_subcarriers]
         y = tf.gather(inputs, self._mash._sc_ind, axis=-1)
+        guard_0_ind = tf.range(0, self._mash._rg.num_guard_carriers[0])
+        guard_1_ind = tf.range(self._mash._rg.fft_size - self._mash._rg.num_guard_carriers[1], self._mash._rg.fft_size)
+        dc_ind = [self._mash._rg.dc_ind] if self._mash._rg.dc_null else []
+        dc_guard_ind = tf.concat([guard_0_ind, dc_ind, guard_1_ind], axis=0)
+        y_dc_guard = tf.gather(inputs, dc_guard_ind, axis=-1)
         # flatten RG
         shape_before_flatten = tf.shape(y)
         y = flatten_last_dims(y, 2)
@@ -107,7 +112,11 @@ class DeMash(tf.keras.layers.Layer):
         x_shape = tf.concat([[tf.shape(inputs, tf.int64)[-1]], tf.shape(inputs, tf.int64)[:-1]], axis=0)
         y = tf.scatter_nd(
             indices, y, x_shape)
-        # TODO should we add the real received guard and DC bands?
+        # TODO should we add the real received guard and DC bands? If not remove the following lines
+        dc_guard_ind = tf.expand_dims(dc_guard_ind, -1)
+        y_dc_guard = tf.transpose(y_dc_guard, (4, 0, 1, 2, 3))
+        y = tf.tensor_scatter_nd_update(y, dc_guard_ind, y_dc_guard)
+
         return tf.transpose(y, (1, 2, 3, 4, 0))
 
         
@@ -132,8 +141,8 @@ def test():
                       dc_null=True,
                       num_guard_carriers=(0,3))
     rg.pilot_pattern = PilotPatternWithSilence(rg.pilot_pattern, [0, 1])
-    # rg.show()
-    # rg.pilot_pattern.show()
+    rg.show()
+    rg.pilot_pattern.show()
     
     mash = Mash(rg)
     demash = DeMash(mash)
@@ -145,22 +154,26 @@ def test():
     lmmse_eq = sionna.ofdm.LMMSEEqualizer(rg, stream_management, whiten_interference=True)
     remove_nulled_subcarriers = sionna.ofdm.RemoveNulledSubcarriers(rg)
     
-    # x = tf.zeros((1, num_tx, num_streams_per_tx, num_bits), dtype=tf.complex64)
-    x = tf.random.uniform((1, num_tx, num_streams_per_tx, num_bits))
+    x = tf.zeros((1, num_tx, num_streams_per_tx, num_bits))
+    # x = tf.random.uniform((1, num_tx, num_streams_per_tx, num_bits))
     x = tf.cast(x > 0.5, tf.complex64)
     x = mapper(x)
     x_rg = rg_mapper(x)
     x = mash(x_rg)
     x_demashed = demash(x)
     # now test through channel
+    # rayleigh
+    # channel = sionna.channel.RayleighBlockFading(1, 18, num_tx, num_streams_per_tx)
+    # ofdm_channel = sionna.channel.OFDMChannel(channel, rg, add_awgn=True,
+    #                            normalize_channel=True, return_channel=True)
     ofdm_channel = create_ofdm_channel(rg, num_tx, num_streams_per_tx)
-    ebno_db = 100
+    ebno_db = 10.0
     no = sionna.utils.ebnodb2no(ebno_db, 2, coderate=1.0, resource_grid=None)
     y, h = ofdm_channel([x, no])
     y_demashed = demash(y)
     h_hat = remove_nulled_subcarriers(h)
     err_var = 0.0
-    x_hat, no_eff = lmmse_eq([y, h_hat, err_var, no])
+    x_hat, no_eff = lmmse_eq([y_demashed, h_hat, err_var, no])
     x_hat_rg = rg_mapper(x_hat)
     
     for i in range(num_tx):
