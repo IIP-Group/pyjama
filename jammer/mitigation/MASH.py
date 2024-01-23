@@ -1,6 +1,7 @@
 """Mitigation via Subspace Hiding (MASH)"""
 #%%
 import tensorflow as tf
+tf.config.run_functions_eagerly(True)
 import numpy as np
 import sionna
 from sionna.utils import flatten_last_dims
@@ -63,7 +64,7 @@ class Mash(tf.keras.layers.Layer):
         # remove guard and DC bands -> [batch_size, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers]
         x = tf.gather(inputs, self._sc_ind, axis=-1)
         # flatten RG
-        before_flatten_shape = tf.shape(x)
+        shape_before_flatten = tf.shape(x)
         x = flatten_last_dims(x, 2)
         n = x.shape[-1]
         if self._renew_secret or self.C is None:
@@ -74,7 +75,7 @@ class Mash(tf.keras.layers.Layer):
         # x contains zeros at silent pilot indices. I.e. we can just multiply with C (and C^H) to demash.
         x = self.C.multiply_from_right(x)
         # reshape to RG without guard and DC bands
-        x = tf.reshape(x, before_flatten_shape)
+        x = tf.reshape(x, shape_before_flatten)
         # add guard and DC bands again
         x = tf.transpose(x, (4, 0, 1, 2, 3))
         indices = tf.expand_dims(self._sc_ind, -1)
@@ -112,6 +113,7 @@ class DeMash(tf.keras.layers.Layer):
         
 
 def test():
+    import matplotlib.pyplot as plt
     num_ofdm_symbols = 8
     fft_size = 20
     subcarrier_spacing = 15e3
@@ -139,8 +141,10 @@ def test():
     # batch_size, num_tx, num_streams_per_tx, num_bits
     mapper = sionna.mapping.Mapper('qam', 2)
     rg_mapper = sionna.ofdm.ResourceGridMapper(rg)
+    stream_management = sionna.mimo.StreamManagement(np.ones([1, num_tx]), num_streams_per_tx)
+    lmmse_eq = sionna.ofdm.LMMSEEqualizer(rg, stream_management, whiten_interference=True)
+    remove_nulled_subcarriers = sionna.ofdm.RemoveNulledSubcarriers(rg)
     
-    import matplotlib.pyplot as plt
     # x = tf.zeros((1, num_tx, num_streams_per_tx, num_bits), dtype=tf.complex64)
     x = tf.random.uniform((1, num_tx, num_streams_per_tx, num_bits))
     x = tf.cast(x > 0.5, tf.complex64)
@@ -148,15 +152,66 @@ def test():
     x_rg = rg_mapper(x)
     x = mash(x_rg)
     x_demashed = demash(x)
+    # now test through channel
+    ofdm_channel = create_ofdm_channel(rg, num_tx, num_streams_per_tx)
+    ebno_db = 100
+    no = sionna.utils.ebnodb2no(ebno_db, 2, coderate=1.0, resource_grid=None)
+    y, h = ofdm_channel([x, no])
+    y_demashed = demash(y)
+    h_hat = remove_nulled_subcarriers(h)
+    err_var = 0.0
+    x_hat, no_eff = lmmse_eq([y, h_hat, err_var, no])
+    x_hat_rg = rg_mapper(x_hat)
+    
     for i in range(num_tx):
         for j in range(num_streams_per_tx):
-            fig, axs = plt.subplots(1, 3)
+            fig, axs = plt.subplots(1, 4)
             plt.title(f"tx {i} stream {j}")
             axs[0].imshow(tf.math.real(x_rg[0,i,j]))
             axs[1].imshow(tf.math.real(x[0,i,j]))
             axs[2].imshow(tf.math.real(x_demashed[0,i,j]))
+            # TODO this is receive vector
+            axs[3].imshow(tf.math.real(x_hat_rg[0,i,j]))
 
-# test()
+def create_ofdm_channel(rg, num_tx, num_tx_ant, num_bs_ant=18, carrier_frequency=3.5e9, batch_size=1):
+    # Configure antenna arrays
+    ut_array = sionna.channel.tr38901.AntennaArray(
+                        num_rows=1,
+                        num_cols=num_tx_ant,
+                        polarization="single",
+                        polarization_type="V",
+                        antenna_pattern="omni",
+                        carrier_frequency=carrier_frequency)
+
+    bs_array = sionna.channel.tr38901.AntennaArray(num_rows=1,
+                        num_cols=int(num_bs_ant/2),
+                        polarization="dual",
+                        polarization_type="cross",
+                        antenna_pattern="38.901",
+                        carrier_frequency=carrier_frequency)
+
+    channel_parameters = {
+        "carrier_frequency": carrier_frequency,
+        "ut_array": ut_array,
+        "bs_array": bs_array,
+        "direction": "uplink",
+        "enable_pathloss": False,
+        "enable_shadow_fading": False,
+    }
+    channel_parameters["o2i_model"] = "low"
+    channel = sionna.channel.tr38901.UMi(**channel_parameters)
+    topology = sionna.channel.gen_single_sector_topology(batch_size,
+                                          num_tx,
+                                          "umi",
+                                          min_ut_velocity=0.0,
+                                          max_ut_velocity=0.0,
+                                          indoor_probability=0.7)
+    channel.set_topology(*topology)
+    ofdm_channel = sionna.channel.OFDMChannel(channel, rg, add_awgn=True,
+                               normalize_channel=True, return_channel=True)
+    return ofdm_channel
+
+test()
 # h = HaarApproximation(3)
 # x = tf.eye(3, dtype=tf.complex64)
 # x = h.multiply_from_right(x)
