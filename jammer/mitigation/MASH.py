@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 import sionna
 from sionna.utils import flatten_last_dims
-from jammer.custom_pilots import PilotPatternWithSilence
+from jammer.pilots import PilotPatternWithSilence
 
 class HaarApproximation:
     """Approximates a Haar matrix `A` as F@diag(E_1)@F@diag(E_2)... where F FFT and E_i vectors with values -1 or 1."""
