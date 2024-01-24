@@ -43,7 +43,7 @@ from sionna.utils.metrics import compute_ber
 
 from .jammer import OFDMJammer, TimeDomainOFDMJammer
 from .mitigation import POS, IAN, MASH
-from .custom_pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
+from .pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from .channel_models import MultiTapRayleighBlockFading
 from .utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power, expected_bitflips
 
