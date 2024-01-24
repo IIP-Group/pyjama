@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sionna.channel.tr38901 import Antenna, AntennaArray, CDL, UMi, UMa, RMa
 from sionna.channel import gen_single_sector_topology
-from visualization_utils import axis_add_custom_ticks
+from .visualization_utils import axis_add_custom_ticks
 from matplotlib.ticker import FormatStrFormatter, FixedFormatter, FixedLocator, MultipleLocator
 
 
@@ -208,7 +208,7 @@ def presentation(scenario="umi", carrier_frequency=3.5e9, sampling_time=3.255e-8
     # plt.savefig(f"{name}.png")
     plt.show()
 
-presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=2000, num_bins=200)
+# presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=2000, num_bins=200)
 # presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=100, num_bins=100)
 
 # for scenario in ["umi", "uma", "rma"]:
