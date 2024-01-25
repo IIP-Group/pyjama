@@ -45,7 +45,7 @@ from .jammer import OFDMJammer, TimeDomainOFDMJammer
 from .mitigation import POS, IAN, MASH
 from .pilots import OneHotWithSilencePilotPattern, OneHotPilotPattern, PilotPatternWithSilence
 from .channel_models import MultiTapRayleighBlockFading
-from .utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power, expected_bitflips
+from .utils import covariance_estimation_from_signals, linear_to_db, db_to_linear, plot_to_image, plot_matrix, matrix_to_image, reduce_mean_power, normalize_power#, expected_bitflips
 
 from tensorflow.python.keras.losses import BinaryCrossentropy, MeanAbsoluteError, MeanSquaredError
 
@@ -510,13 +510,19 @@ def train_model(model,
         train_log_dir = 'logs/tensorboard/' + current_time + '-' + name# + '/train'
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
         
+    # TODO evaluate if expected bitflips is not just L1 loss. We can then write it as below
+    # if loss_fn is None:
+    #     if model._return_symbols:
+    #         # negative L1 loss
+    #         loss_fn = negative_function(MeanAbsoluteError())
+    #     else:
+    #         loss_fn = negative_function(expected_bitflips)
+    #         loss_over_logits = False
     if loss_fn is None:
-        if model._return_symbols:
-            # negative L1 loss
-            loss_fn = negative_function(MeanAbsoluteError())
-        else:
-            loss_fn = negative_function(expected_bitflips)
+        loss_fn = negative_function(MeanAbsoluteError())
+        if not model._return_symbols:
             loss_over_logits = False
+    
 
     for i in range(num_iterations):
         with tf.GradientTape() as tape:

@@ -38,6 +38,7 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
+    "sphinx.ext.intersphinx",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -69,6 +70,13 @@ pygments_style = "default"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 html_css_files = ['css/sionna.css']
+
+intersphinx_mapping = {'sionna': ('https://nvlabs.github.io/sionna', None),
+                       'matplotlib': ('https://matplotlib.org', None),
+                       'tensorflow': (
+                           'https://www.tensorflow.org/api_docs/python',
+                           'https://github.com/GPflow/tensorflow-intersphinx/raw/master/tf2_py_objects.inv'),
+                       }
 
 napoleon_custom_sections = [("Input shape", "params_style"),
                             ("Output shape", "params_style"),
