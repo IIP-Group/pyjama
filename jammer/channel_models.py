@@ -7,15 +7,15 @@ from sionna.channel import gen_single_sector_topology
 import matplotlib.pyplot as plt
 import numpy as np
 
+# TODO should we introduce a parameter for time delay between paths?
 class MultiTapRayleighBlockFading(ChannelModel):
     # pylint: disable=line-too-long
-    r"""RayleighBlockFading(num_rx, num_rx_ant, num_tx, num_tx_ant, dtype=tf.complex64)
-
+    r"""
     Generate channel impulse responses corresponding to a Rayleigh block
     fading channel model.
 
-    The channel impulse responses generated are formed of M paths with
-    :math:`m \div sampling_frequency, 0 \leq m \leq M-1` delays
+    The channel impulse responses generated are formed of M paths with delays of
+    :math:`\tau_m = \frac{m}{\mathtt{sampling\_frequency}}, 0 \leq m \leq M-1`,
     and a normally distributed fading coefficient.
     All time steps of a batch example share the same channel coefficient
     (block fading).

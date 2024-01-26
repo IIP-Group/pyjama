@@ -7,8 +7,8 @@ from sionna.ofdm import PilotPattern, KroneckerPilotPattern
 # TODO this is not a very efficient implementation. Had to use python lists because numpy arrays can not temporarily have different shapes.
 # could e.g. work on flattened pilot array
 class PilotPatternWithSilence(PilotPattern):
-    """Takes a PilotPattern and adds silence at specified OFDM symbol positions.
-    Can only silence all streams and subcarriers at once.
+    """
+    Takes a PilotPattern and adds silence for all transmitters, streams and subcarriers at specified OFDM symbol positions.
     The passed pilot pattern may not have a pilot at any of the silence positions.
     Does not support training at the moment (silent symbols must be frozen for this).
 
@@ -20,7 +20,8 @@ class PilotPatternWithSilence(PilotPattern):
     pilot_pattern : PilotPattern
         Pilot pattern to be used as basis.
         
-    silent_ofdm_symbol_indices : list of indices (int)
+    silent_ofdm_symbol_indices : list of int
+        OFDM symbol indices at which silence should be added.
     """
     def __init__(self, pilot_pattern, silent_ofdm_symbol_indices):
         self._internal_pilot_pattern = pilot_pattern
@@ -60,7 +61,7 @@ class PilotPatternWithSilence(PilotPattern):
     
 
 class OneHotPilotPattern(PilotPattern):
-    """Creates one-hot pilot pattern. Per stream one OFDM symbol.
+    """Creates one-hot pilot pattern. Each stream sends a pilot on all subcarriers during one OFDM symbol time.
 
     Parameters
     ----------
@@ -118,7 +119,12 @@ class OneHotPilotPattern(PilotPattern):
     
 class OneHotWithSilencePilotPattern(PilotPattern):
     """Creates one-hot pilot pattern. Per stream one OFDM symbol.
-    After the pilots, silence is transmitted.
+
+    After the pilots, silence is transmitted for ``num_silence_symbols`` OFDM symbols.
+    This is a slightly more efficient but less flexible implementation of
+
+    >>> p = OneHotPilotPattern(0, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers)
+    >>> p = PilotPatternWithSilence(p, range(num_tx * num_streams_per_tx, num_tx * num_streams_per_tx + num_silence_symbols))
 
     Parameters
     ----------
@@ -182,8 +188,5 @@ class OneHotWithSilencePilotPattern(PilotPattern):
 
         super().__init__(mask, pilots, trainable=False, normalize=normalize,
                          dtype=dtype)
-
-# pp = OneHotWithSilencePilotPattern(3, 2, 14, 7, 2)
-# pp.show(show_pilot_ind=True)
 
 # %%
