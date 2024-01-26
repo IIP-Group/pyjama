@@ -1,4 +1,8 @@
-"""Mitigation via Subspace Hiding (MASH)"""
+"""
+Mitigation via Subspace Hiding (MASH)
+
+This module does not work yet: Native MASH fails for frequency selective channels. Implementation will be reconsidered.
+"""
 #%%
 import tensorflow as tf
 # tf.config.run_functions_eagerly(True)
@@ -8,7 +12,21 @@ from sionna.utils import flatten_last_dims
 from jammer.pilots import PilotPatternWithSilence
 
 class HaarApproximation:
-    """Approximates a Haar matrix `A` as F@diag(E_1)@F@diag(E_2)... where F FFT and E_i vectors with values -1 or 1."""
+    """
+    Approximates multiplication with a Haar matrix `A` as :math:`F * diag(E_1) * F * diag(E_2)...` (``num_iterations`` times),
+    where :math:`F` is a n-point DFT matrix and :math:`E_i` are vectors with values -1 or 1.
+    
+    Parameters
+    ----------
+    n : int
+        Size (i.e. rows/cols) of the Haar matrix.
+    num_iterations : int, optional
+        Number of times :math:`F * diag(E_i)` is multiplied.
+        Defaults to 3.
+    dtype : tf.Dtype, optional
+        Datatype of the Haar matrix.
+        Defaults to ``tf.complex64``.
+    """
     def __init__(self, n, num_iterations=3, dtype=tf.complex64):
         self._n = n
         self._norm_factor = tf.sqrt(tf.constant(1. / n, dtype=dtype))
@@ -22,7 +40,22 @@ class HaarApproximation:
         self._f_h = tf.linalg.adjoint(self._f)
 
     def multiply_from_right(self, x, adjoint=False):
-        """Returns x @ A or x @ A^H."""
+        """
+        Multiplies input x with the Haar matrix ``A`` from the right.
+        
+        Input
+        -----
+        x : [..., n]
+            Input vector.
+        adjoint : bool, optional
+            If True, multiplies with :math:`A^H` instead of :math:`A`.
+        
+        Output
+        ------
+            : [..., n], dtype
+                Result of the multiplication.
+        """
+        # TODO if we use this implementation, we precompute the entire matrix. Should we offer both options?
         if adjoint:
             for i in range(self._num_iterations-1, -1, -1):
                 d = tf.linalg.diag(self._diag_values[i])
@@ -50,7 +83,35 @@ class HaarApproximation:
         # return tf.linalg.adjoint(x)
 
 class Mash(tf.keras.layers.Layer):
-    """Intended to be used after RG-Mapper."""
+    """
+    Hides data and pilots in secret subspace. See [Marti2023]_ for details.
+
+    Vecorizes the resource grid and multiplies it with a Haar matrix :math:`C` from the right.
+    Instead of splitting the Haar matrix :math:`C` into :math:`C_\parallel` and :math:`C_\perp`,
+    use silent pilot resource elements. This is an equivalent formulation. Jammer mitigation can then be done
+    as usual, using any mitigation algorithm on the silent pilot symbols after demashing.
+
+    Intended to be used after RG-Mapper.
+    
+    Parameters
+    ----------
+    resource_grid : ResourceGrid
+        Resource grid, also containing symbols for jammer estimation.
+        An instance of :class:`sionna.ofdm.ResourceGrid`.
+    renew_secret : bool, optional
+        If True, the secret (i.e. the Haar matrix) is renewed for each call.
+
+    Input
+    -----
+    x : [batch_size, num_tx, num_streams_per_tx, num_ofdm_symbols, fft_size], tf.complex
+        The whole resource grid, including data, pilots and jammer estimation symbols.
+        
+    Output
+    ------
+    : [batch_size, num_tx, num_streams_per_tx, num_ofdm_symbols, fft_size], x.dtype
+        The resource grid, where all data and pilots are hidden in the secret subspace.
+    
+    """
     def __init__(self, resource_grid, renew_secret=True, **kwargs):
         super().__init__(**kwargs)
         self._rg = resource_grid
@@ -59,8 +120,6 @@ class Mash(tf.keras.layers.Layer):
         self.C = None
 
     def call(self, inputs):
-        """Input:
-        [batch_size, num_tx, num_streams_per_tx, num_ofdm_symbols, fft_size], tf.complex: The whole RG."""
         # remove guard and DC bands -> [batch_size, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers]
         x = tf.gather(inputs, self._sc_ind, axis=-1)
         # flatten RG
@@ -86,13 +145,33 @@ class Mash(tf.keras.layers.Layer):
         
 
 class DeMash(tf.keras.layers.Layer):
+    """
+    Reverse operation of :class:`Mash`.
+    
+    Multiplies the data and pilots with the adjoint of the Haar matrix :math:`C` from the right.
+    
+    Intended to be used after the channel and before demapping from the resource grid.
+
+    Parameters
+    ----------
+    mash : Mash
+        The corresponding :class:`Mash` layer.
+    
+    Input
+    -----
+    y : [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex
+        The received resource grid.
+
+    Output
+    ------
+    : [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], y.dtype
+        The resource grid, where MASH is reversed.
+    """
     def __init__(self, mash, **kwargs):
         super().__init__(**kwargs)
         self._mash = mash
 
     def call(self, inputs):
-        """Input:
-        [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex: The whole RG."""
         # remove guard and DC bands -> [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, num_effective_subcarriers]
         y = tf.gather(inputs, self._mash._sc_ind, axis=-1)
         guard_0_ind = tf.range(0, self._mash._rg.num_guard_carriers[0])
@@ -121,7 +200,8 @@ class DeMash(tf.keras.layers.Layer):
 
         
 
-def test():
+def _test():
+    """ Test code for MASH: Mash and DeMash, Mash, Channel, Demash. With small RG."""
     import matplotlib.pyplot as plt
     num_ofdm_symbols = 8
     fft_size = 20
@@ -224,7 +304,7 @@ def create_ofdm_channel(rg, num_tx, num_tx_ant, num_bs_ant=18, carrier_frequency
                                normalize_channel=True, return_channel=True)
     return ofdm_channel
 
-test()
+# test()
 # h = HaarApproximation(3)
 # x = tf.eye(3, dtype=tf.complex64)
 # x = h.multiply_from_right(x)
