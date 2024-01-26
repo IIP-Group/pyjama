@@ -6,18 +6,50 @@ import sionna
 from ..utils import reduce_matrix_rank
 
 class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
+    """
+    Mitigates jammer interference by projecting onto the orthogonal subspace of the jammer subspace.
+    Jammer subspace has to be set before calling the layer. This can be done by either calling `set_jammer_frequency_response` or `set_jammer_covariance`.
+
+    This layer should be called on the received signal and, if the unmapped channel frequency response is used, on it before equalization.
+
+    Parameters
+    ----------
+    dimensionality: int
+        Rank of the jammer subspace which is "subtracted".
+        If None, the maximum dimensionality is assumed (i.e. the rank of the jammer covariance matrix).
+    dtype: tf.Dtype
+        Defines the datatype for internal calculations and the output dtype.
+        Defaults to `tf.complex64`.
+
+    Input
+    -----
+    y: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size], tf.complex (frequency response) or\
+       ([batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex) (signal)
+
+        Input. Might be e.g. signal (including jammer interference), or channel frequency response (to be mapped to subspace).
+
+    Output
+    ------
+        y_proj: Same shape as ``y``, dtype
+            y projected onto the orthogonal subspace.
+    """
+
     def __init__(self, dimensionality=None, dtype=tf.complex64, **kwargs):
-        """dimensionality: int. Dimensionality of the orthogonal subspace (which is "subtracted"). If None, the maximum dimensionality is assumed."""
         self._dimensionality = dimensionality
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         
-    def set_jammer(self, j):
+    def set_jammer_frequency_response(self, j):
         """
-        j: ([batch_size, num_rx, num_rx_ant, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], tf.complex)
-            Jammer channel responses
+        Given the jammer channel frequency response j,
+        precompute the projection matrix which maps the signal onto the orthogonal subspace of the jammer subspace.
+
+        Input
+        -----
+        j : [batch_size, num_rx, num_rx_ant, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], tf.complex
+            Jammer channel frequency response
         """
         jammer_shape = tf.shape(j)
-        # rearange dimensions of j to [..., num_rx, num_jammer * num_jammer_ant]. As tf.reshape is very cheap, we can use it multiple timmes
+        # rearange dimensions of j to [..., num_rx, num_jammer * num_jammer_ant].
         j = tf.transpose(j, [0, 1, 5, 6, 2, 3, 4])
         j = sionna.utils.flatten_last_dims(j, 2)
 
@@ -30,7 +62,10 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
 
     def set_jammer_covariance(self, jammer_covariance):
         """
-        jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]
+        Input
+        -----
+        jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex
+            Covariance matrix of jammer signal.
         """
         num_rx_ant = tf.shape(jammer_covariance)[-1]
         jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
@@ -40,17 +75,6 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
 
 
     def call(self, inputs):
-        """
-        Project onto orthogonal subspace of jammer subspace, given the jammer channel responses j
-
-        inputs: y
-        y: ([batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size], tf.complex) (frequency response) or
-           ([batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex) (signal)
-
-            Input. Might be e.g. signal (with jammer interference), or channel frequency response.
-
-        Output: y_proj: same shape as y
-        """
 
         y = inputs
         input_shape = tf.shape(y)

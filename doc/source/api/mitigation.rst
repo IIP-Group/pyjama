@@ -8,6 +8,7 @@ Every algorithm is integrated into the simulation code.
 Projection onto Orthogonal Subspace (POS)
 -----------------------------------------
 .. automodule:: jammer.mitigation.POS
+   :exclude-members: call
    :members:
 
 LMMSE treating Interference as Noise (IAN)
