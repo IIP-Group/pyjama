@@ -388,7 +388,7 @@ class Model(tf.keras.Model):
             jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
         if self._jammer_mitigation == "pos":
             if self._return_jammer_csi:
-                self._pos.set_jammer(j)
+                self._pos.set_jammer_frequency_response(j)
             else:
                 self._pos.set_jammer_covariance(jammer_covariance)
             # we transform y before channel estimation to get correct no_eff automically

@@ -14,23 +14,23 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
 
     Parameters
     ----------
-    dimensionality: int
+    dimensionality : int
         Rank of the jammer subspace which is "subtracted".
         If None, the maximum dimensionality is assumed (i.e. the rank of the jammer covariance matrix).
-    dtype: tf.Dtype
+    dtype : tf.Dtype
         Defines the datatype for internal calculations and the output dtype.
         Defaults to `tf.complex64`.
 
     Input
     -----
-    y: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size], tf.complex (frequency response) or\
+    y : [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size], tf.complex (frequency response) or\
        ([batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex) (signal)
 
         Input. Might be e.g. signal (including jammer interference), or channel frequency response (to be mapped to subspace).
 
     Output
     ------
-        y_proj: Same shape as ``y``, dtype
+        y_proj : Same shape as ``y``, dtype
             y projected onto the orthogonal subspace.
     """
 
@@ -64,7 +64,7 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
         """
         Input
         -----
-        jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex
+        jammer_covariance : [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex
             Covariance matrix of jammer signal.
         """
         num_rx_ant = tf.shape(jammer_covariance)[-1]
