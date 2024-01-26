@@ -1,3 +1,26 @@
+"""
+This module provides classes for simulating one or multiple jammers.
+They are meant to be used to simulate jammers in the context of OFDM-based communication.
+
+The main way of functioning is the following:
+
+|  1. Build a communication pipeline between "regular" UEs and BSs.
+|  2. Instantiate an additional channel model between the jammers and the BSs.
+|  3. Instantiate a jammer, using the channel created in step 2.
+|  4. Add the jammer to the communication pipeline, right after the channel between the UEs and the BSs like so:
+>>> y = channel([x, no])
+>>> y_jammed = jammer([y, rho])
+
+
+The module consists of two main classes: :class:`OFDMJammer` and :class:`TimeDomainOFDMJammer`.
+The former is to be used for simulations solely in the frequency domain, while the latter is to be used for simulations in the time domain.
+
+`TimeDomainOFDMJammer` can hence be used to jammers which violate the OFDM assumptions, i.e. not sending a cyclic prefix. The simulation is much slower, however.
+
+`OFDMJammer` currently has much more functionality implemented, and can i.e. be used to simulate learning/smart jammers.
+
+"""
+
 import numpy as np
 import sionna
 from sionna.channel.ofdm_channel import OFDMChannel
