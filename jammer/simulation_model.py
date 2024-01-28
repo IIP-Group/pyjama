@@ -322,9 +322,9 @@ class Model(tf.keras.Model):
         if self._perfect_jammer_csi:
             assert self._jammer_present,\
             "If jammer CSI is perfect (i.e. returned by the jammer), we need a jammer which returns it."
-        if not self._perfect_jammer_csi:
+        if self._estimate_jammer_covariance:
             assert self._num_silent_pilot_symbols > 0,\
-            "If jammer csi is not perfect, we need silent pilots to estimate the jammer CSI."
+            "We need silent pilots to estimate the jammer CSI."
         assert self._num_silent_pilot_symbols < self._num_ofdm_symbols,\
         "The number of silent pilots must be smaller than the number of OFDM symbols."
         assert self._domain in ["freq", "time"],\

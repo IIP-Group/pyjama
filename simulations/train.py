@@ -230,29 +230,53 @@ sim.BATCH_SIZE = 2
 #             ebno_db=0.0)
 
 
+# Iteration loss, 1&4 UEs
+# num_uts = [1, 4]
+# exponentials = [False, True]
+# num_iters = [8, 12, 16, 20]
+# alphas = np.arange(0.1, 1.0, 0.2, dtype=np.float32)
+# parameters = [(w, x, y, z) for w in num_uts for x in exponentials for y in num_iters for z in alphas]
+# num_ut, exponential, num_iter, alpha = parameters[parameter_num]
+
+# model_parameters["num_ut"] = num_ut
+# model_parameters["decoder_parameters"] = {
+#     "num_iter": num_iter,
+#     "cn_type": "minsum"
+# }
+# model_parameters["return_decoder_iterations"] = True
+# model_parameters["coderate"] = 0.5
+# model = Model(**model_parameters)
+# loss = IterationLoss(alpha=alpha, exponential_alpha_scaling=exponential)
+# train_model(model,
+#             loss_fn=negative_function(loss),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/coded/symbol/iteration_loss_2/ue_{num_ut}_alpha_{alpha:.1}_exp_{exponential}_{num_iter}_iter.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=5000,
+#             ebno_db=0.0,
+#             validate_ber_tensorboard=True)
+
+
+# Unmitigated
+model_parameters["jammer_mitigation"] = None
+model_parameters["num_silent_pilot_symbols"] = 0
 num_uts = [1, 4]
-exponentials = [False, True]
-num_iters = [8, 12, 16, 20]
-alphas = np.arange(0.1, 1.0, 0.2, dtype=np.float32)
-parameters = [(w, x, y, z) for w in num_uts for x in exponentials for y in num_iters for z in alphas]
-num_ut, exponential, num_iter, alpha = parameters[parameter_num]
+jammer_powers_db = [-5, 0, 5, 10]
+parameters = [(x, y) for x in num_uts for y in jammer_powers_db]
+num_ut, jammer_power_db = parameters[parameter_num]
 
 model_parameters["num_ut"] = num_ut
-model_parameters["decoder_parameters"] = {
-    "num_iter": num_iter,
-    "cn_type": "minsum"
-}
-model_parameters["return_decoder_iterations"] = True
-model_parameters["coderate"] = 0.5
+model_parameters["jammer_power"] = db_to_linear(jammer_power_db)
 model = Model(**model_parameters)
-loss = IterationLoss(alpha=alpha, exponential_alpha_scaling=exponential)
 train_model(model,
-            loss_fn=negative_function(loss),
+            loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/coded/symbol/iteration_loss_2/ue_{num_ut}_alpha_{alpha:.1}_exp_{exponential}_{num_iter}_iter.pickle",
+            weights_filename=f"weights/unmitigated/symbol/ue_{num_ut}_pow_{jammer_power_db}dB.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
-            num_iterations=5000,
+            num_iterations=3000,
             ebno_db=0.0,
-            validate_ber_tensorboard=True)
+            validate_ber_tensorboard=False)
