@@ -260,23 +260,41 @@ sim.BATCH_SIZE = 2
 
 
 # Unmitigated
+# model_parameters["jammer_mitigation"] = None
+# model_parameters["num_silent_pilot_symbols"] = 0
+# num_uts = [1, 4]
+# jammer_powers_db = [-5, 0, 5, 10]
+# parameters = [(x, y) for x in num_uts for y in jammer_powers_db]
+# num_ut, jammer_power_db = parameters[parameter_num]
+
+# model_parameters["num_ut"] = num_ut
+# model_parameters["jammer_power"] = db_to_linear(jammer_power_db)
+# model = Model(**model_parameters)
+# train_model(model,
+#             loss_fn=negative_function(MeanAbsoluteError()),
+#             loss_over_logits=False,
+#             weights_filename=f"weights/unmitigated/symbol/ue_{num_ut}_pow_{jammer_power_db}dB.pickle",
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=3000,
+#             ebno_db=0.0,
+#             validate_ber_tensorboard=True)
+
+# Unmitigated, tensorflow barrage validation to find dB difference of trained and barrage
+sim.BATCH_SIZE = 8
 model_parameters["jammer_mitigation"] = None
 model_parameters["num_silent_pilot_symbols"] = 0
 num_uts = [1, 4]
-jammer_powers_db = [-5, 0, 5, 10]
+# jammer_powers_db = [-5, 0, 5, 10]
+jammer_powers_db = np.arange(-5, 20, 0.25)
 parameters = [(x, y) for x in num_uts for y in jammer_powers_db]
 num_ut, jammer_power_db = parameters[parameter_num]
 
 model_parameters["num_ut"] = num_ut
 model_parameters["jammer_power"] = db_to_linear(jammer_power_db)
 model = Model(**model_parameters)
-train_model(model,
-            loss_fn=negative_function(MeanAbsoluteError()),
-            loss_over_logits=False,
-            weights_filename=f"weights/unmitigated/symbol/ue_{num_ut}_pow_{jammer_power_db}dB.pickle",
-            log_tensorboard=True,
-            log_weight_images=True,
-            show_final_weights=False,
-            num_iterations=3000,
-            ebno_db=0.0,
-            validate_ber_tensorboard=False)
+import datetime
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+name = f"barrage_ue_{num_ut}_pow_{jammer_power_db}dB"
+tensorboard_validate_model(model, 'logs/tensorboard/' + current_time + '-' + name)
