@@ -32,6 +32,21 @@ import copy
 from .utils import sample_function, NonNegMaxMeanSquareNorm, MaxMeanSquareNorm
 
 class OFDMJammer(tf.keras.layers.Layer):
+    """
+    Used to simulate a jammer in the frequency domain only (i.e. sending a cyclic prefix). The jammer signal is generated through the given (Jammer-BS) channel model.
+
+    It can be trained, and support several other functionalities, which are described in the following.
+    
+    ### Jamming types
+    ### Sparse jamming
+    ### Jamming power & jamming pattern
+    ### Different sampling methods
+    ### Training
+    #### Training constraint
+    ##### "Integrated" constraint
+    #### "Shaped" training
+    
+    """
     def __init__(self,
                  channel_model,
                  rg,
@@ -114,7 +129,7 @@ class OFDMJammer(tf.keras.layers.Layer):
 
         # jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
         jammer_input_shape = tf.concat([[input_shape[0]], [self._num_tx, self._num_tx_ant], input_shape[-2:]], axis=0)
-        x_jammer = self.sample(jammer_input_shape)
+        x_jammer = self._sample(jammer_input_shape)
 
         # TODO check interaction with rho
         # weights have mean(|w|^2) <= 1
@@ -140,7 +155,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         else:
             return y_combined
     
-    def sample(self, shape):
+    def _sample(self, shape):
         if self._dtype_as_dtype.is_complex:
             return self._sample_function(shape, self._dtype_as_dtype)
         else:
