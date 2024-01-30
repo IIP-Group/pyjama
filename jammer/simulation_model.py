@@ -63,11 +63,108 @@ ber_plots = PlotBER()
 
 # sionna.config.xla_compat=True
 class Model(tf.keras.Model):
-    """Simulate OFDM MIMO transmissions over a 3GPP 38.901 model.
     """
+    Model to simulate OFDM MIMO transmissions, mainly over a 3GPP 38.901 model.
+    It supports different simulations in frequency and time domain, as well as simulation of communication with jammer(s) present.
+    Several jammer mitigation algorithms are implemented as well.
+    
+    In all these simulations, trainable elements like jammers, receivers etc. are supported (only jammers are implemented so far).
 
+    Parameters
+    ----------
+    scenario : str, optional
+        The 3GPP 38.901 scenario to simulate. The default is "umi". Must be one of ["umi", "uma", "rma", "rayleigh", "multitap_rayleigh"].
+    carrier_frequency : float, optional
+        The carrier frequency in Hz. The default is 3.5e9.
+    fft_size : int, optional
+        The number of OFDM subcarriers. The default is 128.
+    subcarrier_spacing : float, optional
+        The subcarrier spacing in Hz. The default is 30e3.
+    num_ofdm_symbols : int, optional
+        The number of OFDM symbols per resource grid. The default is 14.
+    cyclic_prefix_length : int, optional
+        The length of the cyclic prefix in samples. The default is 20.
+    num_bs_ant : int, optional
+        The number antennas on the basestation. The default is 18.
+    num_ut : int, optional
+        The number of User Terminals (UTs) simulated. The default is 4.
+    num_ut_ant : int, optional
+        The number of antennas on each UT. The default is 1.
+    num_bits_per_symbol : int, optional
+        The number of bits per constellation symbol. The default is 2 (QPSK).
+    coderate : float, optional
+        The coderate of the LDPC code. The default is None, which means no coding.
+    decoder_parameters : dict, optional
+        Additional parameters for the LDPC decoder. By default, the encoder will be set, and hard_out will be set to False (i.e. soft output).
+    domain : str, optional
+        The domain in which the simulation takes place. The default is "freq". Must be one of ["freq", "time"].
+    los : bool or None, optional
+        If not None, all UTs are forced to be in line-of-sight (LOS) with the basestation or not.
+    indoor_probability : float, optional
+        Probability of a UT being indoors. The default is 0.8.
+    perfect_csi : bool, optional
+        If True, the channel is assumed to be perfectly known at the receiver. The default is False.
+    perfect_jammer_csi : bool, optional
+        If True, the jammer-BS channel is assumed to be perfectly known at the receiver (for mitigation). The default is False.
+    num_silent_pilot_symbols : int, optional
+        The number of pilot symbols where no UT tranmits (can be used for jammer channel estimation). The default is 0.
+    jammer_present : bool, optional
+        If True, a jammer/jammers are present in the simulation. The default is False.
+    jammer_power : :class:`tf.Tensor` broadcastable to [batch_size, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], float; or float, optional
+        Power of the jamming signal (of each jammer antenna). See :class:`~jammer.jammer.OFDMJammer` for details. The default is 1.0.
+    jammer_parameters : dict, optional
+        Additional parameters for the jammer, which is an instance of :class:`~jammer.jammer.OFDMJammer` or :class:`~jammer.jammer.TimeDomainOFDMJammer`.
+        The default is {"num_tx": 1, "num_tx_ant": 1, "normalize_channel": True}.
+    jammer_mitigation : str or None, optional
+        The jammer mitigation algorithm to use. The default is None, i.e. the jammer will not be mitigated.
+        If it is a string, it must be one of ["pos", "ian"]. See :doc:`mitigation` for details.
+    jammer_mitigation_dimensionality : int or None, optional
+        The dimensionality of the jammer mitigation. For each dimension, the largest remaining eigenvalue of the jammer covariance matrix is removed,
+        at the cost of ~1 degree of freedom (depending on the mitigation strategy).
+        If None, the dimensionality will be set to the rank of the jammer covariance matrix.
+        I.e. the total number of jammer antennas transmitting (when perfect_jammer_csi is True) or
+        the maximum of the number of jammer antennas transmitting in the silent pilot symbols and num_silent_pilot_symbols (when perfect_jammer_csi is False).
+        The default is None.
+    mash : bool, optional
+        If True, :class:`~jammer.mash.Mash` is used to mash the signal before transmission and demash it after reception. By nature of the algorithm,
+        this only works well for frequency flat channels. The default is False.
+    return_jammer_signals : bool, optional
+        If True, the received jammer signals during the silent pilot symbols are return additionally. The default is False.
+    return_symbols : bool, optional
+        If True, the estimated symbols are returned instead of the estimated bit-LLRs. The default is False.
+    return_decoder_iterations : bool, optional
+        If True, instead of the final LLRs, the LLRs after each iteration of the LDPC decoder are returned. The default is False.
+    
+    Input
+    -----
+    batch_size : int
+        The number of resource grids to simulate.
+    ebno_db : float
+        The SNR (Eb/N0) of the signal sent by the UTs in dB.
+    training : bool, optional
+        If True, the model is in training mode. If False, the model is in inference mode. The default is None, which means inference mode.
+        Currently this only matters for the LDPC decoder, which returns intermediate results during training and the only the final result during inference.
+    
+    Output
+    ------
+    (b, llr) or (x, x_hat), or (b, llr, jammer_signals) or (x, x_hat, jammer_signals) :
+        Either the transmitted bits and the estimated bit-LLRs, or the transmitted symbols and the estimated symbols (depending on ``return_symbols``).
+        If ``return_jammer_signals`` is True, the jammer signals during the silent pilot symbols are returned as well.
+    b : [batch_size, num_tx * num_streams_per_tx * k], tf.float32
+        The transmitted bits.
+    llr : [batch_size, num_tx * num_streams_per_tx * k] or [batch_size, num_tx * num_streams_per_tx * k * num_decoder_iterations], tf.float32
+        The estimated bit-LLRs. If ``return_decoder_iterations`` is True, the LLRs after each iteration of the LDPC decoder are returned.
+    x : [batch_size, num_tx * num_streams_per_tx * num_data_symbols], tf.complex64
+        The transmitted symbols.
+    x_hat : [batch_size, num_tx * num_streams_per_tx * num_data_symbols], tf.complex64
+        The estimated symbols.
+    jammer_signals : [batch_size, num_rx, num_rx_ant, num_silent_pilot_symbols, fft_size], tf.complex64
+        The jammer signals during the silent pilot symbols.
+    
+    """
     # TODO the dict-arguments could also be replaced by **kwargs. Deliberate.
     # see https://rhettinger.wordpress.com/2011/05/26/super-considered-super/ for reference.
+    # TODO jammer should have a separate los and indoor_probability parameter
     def __init__(self,
                  scenario="umi",
                  carrier_frequency=3.5e9,
@@ -241,7 +338,7 @@ class Model(tf.keras.Model):
         
         self._check_settings()
       
-    def new_ut_topology(self, batch_size):
+    def _new_ut_topology(self, batch_size):
         """Set new user topology"""
         if self._scenario in ["umi", "uma", "rma"]:
             topology = gen_single_sector_topology(batch_size,
@@ -252,7 +349,7 @@ class Model(tf.keras.Model):
                                                   indoor_probability=self._indoor_probability)
             self._channel_model.set_topology(*topology, los=self._los)
 
-    def new_jammer_topology(self, batch_size):
+    def _new_jammer_topology(self, batch_size):
         """Set new jammer topology"""
         if self._jammer_present and self._scenario in ["umi", "uma", "rma"]:
             topology = gen_single_sector_topology(batch_size,
@@ -337,8 +434,8 @@ class Model(tf.keras.Model):
     def call(self, batch_size, ebno_db, training=None):
         # for good statistics, we simulate a new topology for each batch.
         # TODO: add parameter to keep topology constant for model lifetime
-        self.new_ut_topology(batch_size)
-        self.new_jammer_topology(batch_size)
+        self._new_ut_topology(batch_size)
+        self._new_jammer_topology(batch_size)
         # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._effective_coderate, resource_grid=None)
         no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
         b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx, self._k])
@@ -429,7 +526,8 @@ class Model(tf.keras.Model):
         return result
 
 class ReturnIntermediateLDPC5GDecoder(LDPC5GDecoder):
-    """ A wrapper around LDPC5GDecoder which returns llrs after each iteration.
+    """ TODO
+    A wrapper around LDPC5GDecoder which returns llrs after each iteration.
     This can be useful if gradients through a normal LDPC5GDecoder are not good enough.
     Returns: [..., num_iters]
     """
@@ -450,7 +548,19 @@ class ReturnIntermediateLDPC5GDecoder(LDPC5GDecoder):
 
 
 def relative_singular_values(jammer_signals):
-    """Input: jammer_signals: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]"""
+    """
+    Returns the normalized sigular values of the jammer signals.
+
+    Input
+    -----
+    jammer_signals: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
+        received jammer signals during silent pilot symbols
+    
+    Output
+    ------
+    : [num_rx * num_rx_ant], float
+        Singular values, sorted in descending order. Normalize to sum of eigenvalues = 1.
+    """
     j = tf.transpose(jammer_signals, [0, 4, 1, 2, 3])
     # [batch_size, fft_size, num_rx*rx_ant, num_ofdm_symbols]
     j = sionna.utils.flatten_dims(j, 2, 2)
@@ -461,11 +571,27 @@ def relative_singular_values(jammer_signals):
     return tf.reduce_mean(sigma, axis=(0, 1))
 
 def bar_plot(values):
+    """
+    Display a bar plot of the values.
+
+    Input
+    -----
+    values : list
+
+    """
     plt.bar(np.arange(len(values)), values)
     plt.show()
 
 
 def simulate_single(ebno_db):
+    """
+    Simulates a single call to the model and prints the BER.
+
+    Input
+    -----
+    ebno_db : float
+        The SNR (Eb/N0) of the signal sent by the UTs in dB.
+    """
     model = Model(**model_parameters)
     b, llr = model(BATCH_SIZE, ebno_db)
     b_hat = sionna.utils.hard_decisions(llr)
@@ -477,6 +603,18 @@ def simulate(legend):
     simulate_model(model, legend)
 
 def simulate_model(model, legend, add_bler=False):
+    """
+    Simulates the model on SNRs given by ``ebno_dbs`` and plots the BER.
+
+    Input
+    -----
+    model : :class:`~jammer.model.Model`
+        The model to simulate.
+    legend : str
+        The legend to use in the plot.
+    add_bler : bool, optional
+        If True, the BLER will be calculated and added to the plot. The default is False.
+    """
     ber_plots.simulate(model,
                     ebno_dbs=ebno_dbs,
                     batch_size=BATCH_SIZE,
@@ -496,7 +634,8 @@ def train_model(model,
                 validate_ber_tensorboard=False,
                 log_weight_images=False,
                 show_final_weights=False):
-    """If model._return_symbols is True, we train on symbol error, otherwise on bit error.
+    """ TODO
+    If model._return_symbols is True, we train on symbol error, otherwise on bit error.
     if loss_fn is None, we use the "default" loss function.
     If model._return_symbols is False and loss_over_logits is False, a sigmoid is applied to the logits before calculating the loss.
     Otherwise, loss_over_logits is ignored."""
@@ -575,6 +714,16 @@ def tensorboard_validate_model(model, log_dir):
 
 
 def load_weights(model, weights_filename="weights.pickle"):
+    """
+    Loads the weights from a file into the model.
+    
+    Input
+    -----
+    model : :class:`~jammer.model.Model`
+        The model to load the weights into.
+    weights_filename : str, optional
+        The name of the file containing the weights. The default is "weights.pickle".
+    """
     # run model once to initialize weights
     # model(BATCH_SIZE, 10.0)
     model(1, 10.0)
@@ -594,6 +743,19 @@ def mean_L1_loss(model, ebno_db, num_iterations):
     return mean_loss.result()
 
 def negative_function(fn):
+    """
+        Given a callable with numerical output, returns a callable with the same output, but with the sign flipped.
+
+        Input
+        -----
+        fn : callable
+            A callable with numerical output.
+            
+        Output
+        ------
+        : callable
+            A callable with the same output as ``fn``, but with the sign flipped.
+    """
     def negative_fn(*args, **kwargs):
         return -fn(*args, **kwargs)
     return negative_fn

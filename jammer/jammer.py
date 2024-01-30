@@ -304,6 +304,32 @@ class OFDMJammer(tf.keras.layers.Layer):
 
 
 class TimeDomainOFDMJammer(tf.keras.layers.Layer):
+    """
+    This class is meant ot simulate jammers in the time domain channel. It is much slower than :class:`OFDMJammer`, but can be used to simulate jammers which violate the OFDM assumptions, i.e. not sending a cyclic prefix.
+    It thus functions similarily to :class:`OFDMJammer`, with the following differences:
+    
+    - Some functionality is not supported, such as learning jammer weights. This might be implemented in the future.
+    - The input signal is assumed to be in the time domain. The output can be chosen to be in the time domain or frequency domain using the parameter `return_domain`.
+    - Cyclic prefix will or will not be sent depending on the parameter `send_cyclic_prefix`.
+
+    Parameters
+    ----------
+    channel_model: ChannelModel
+        Instance of :class:`sionna.channel.ChannelModel`.Channel between jammer(s) and BS(s).
+    rg: ResourceGrid
+        Instance of :class:`sionna.ofdm.ResourceGrid`. Resource grid of the OFDM system.
+    num_tx: int
+        Number of jammers.
+    num_tx_ant: int
+        Number of antennas of each jammer.
+    send_cyclic_prefix: bool
+        If true, the jammer adheres to the OFDM assumptions and sends a cyclic prefix. If false, the jammer sends randomly sampled symbols during this time.
+    normalize_channel: bool
+        Whether to normalize the channel. If True, the channel is normalized so that for each link the mean energy of each channel coefficient is 1.0.
+    return_channel: bool
+        If true, 
+    
+    """
     def __init__(self, channel_model, rg, num_tx, num_tx_ant, send_cyclic_prefix=False, normalize_channel=False, return_channel=False, sampler="uniform", return_domain="freq", dtype=tf.complex64, **kwargs):
         """return_in_time_domain: One of ["freq", "time"]. Returns jammed signal in freqency or time domain. If return_channel is true, this might also be a pair of (signal, channel). Broadcast if not a pair in this case."""
         super().__init__(trainable=False, dtype=dtype, **kwargs)
