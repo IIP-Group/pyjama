@@ -165,6 +165,7 @@ class Model(tf.keras.Model):
     # TODO the dict-arguments could also be replaced by **kwargs. Deliberate.
     # see https://rhettinger.wordpress.com/2011/05/26/super-considered-super/ for reference.
     # TODO jammer should have a separate los and indoor_probability parameter
+    # TODO make return_symbols property?
     def __init__(self,
                  scenario="umi",
                  carrier_frequency=3.5e9,
@@ -526,13 +527,75 @@ class Model(tf.keras.Model):
         return result
 
 class ReturnIntermediateLDPC5GDecoder(LDPC5GDecoder):
-    """ TODO
-    A wrapper around LDPC5GDecoder which returns llrs after each iteration.
+    """
+    A wrapper around :class:`sionna.fec.ldpc.decoding.LDPC5GDecoder` which returns the llrs after each iteration.
     This can be useful if gradients through a normal LDPC5GDecoder are not good enough.
-    Returns: [..., num_iters]
+
+    Parameters
+    ----------
+    encoder: LDPC5GEncoder
+        An instance of :class:`~sionna.fec.ldpc.encoding.LDPC5GEncoder`
+        containing the correct code parameters.
+
+    trainable: bool
+        Defaults to False. If True, every outgoing variable node message is
+        scaled with a trainable scalar.
+
+    cn_type: str
+        A string defaults to '"boxplus-phi"'. One of
+        {`"boxplus"`, `"boxplus-phi"`, `"minsum"`} where
+        '"boxplus"' implements the single-parity-check APP decoding rule.
+        '"boxplus-phi"' implements the numerical more stable version of
+        boxplus [Ryan]_.
+        '"minsum"' implements the min-approximation of the CN
+        update rule [Ryan]_.
+
+    hard_out: bool
+        Defaults to True. If True, the decoder provides hard-decided
+        codeword bits instead of soft-values.
+
+    track_exit: bool
+        Defaults to False. If True, the decoder tracks EXIT characteristics.
+        Note that this requires the all-zero CW as input.
+
+    return_infobits: bool
+        Defaults to True. If True, only the `k` info bits (soft or
+        hard-decided) are returned. Otherwise all `n` positions are
+        returned.
+
+    prune_pcm: bool
+        Defaults to True. If True, all punctured degree-1 VNs and
+        connected check nodes are removed from the decoding graph (see
+        [Cammerer]_ for details). Besides numerical differences, this should
+        yield the same decoding result but improved the decoding throughput
+        and reduces the memory footprint.
+
+    num_iter: int
+        Defining the number of decoder iteration (no early stopping used at
+        the moment!).
+
+    output_dtype: tf.DType
+        Defaults to tf.float32. Defines the output datatype of the layer
+        (internal precision remains tf.float32).
+    
+    Input
+    -----
+    llrs_ch: [...,n], tf.float32
+        2+D tensor containing the channel logits/llr values.
+
+    Output
+    ------
+    : [..., n, k], tf.float32
+        3+D Tensor of same shape up until the last dimension as ``inputs``
+        containing, for each decoder iteration, bit-wise soft-estimates
+        (or hard-decided bit-values) of all codeword bits.
+        The output of the final decoder iteration is located at [:, -1].
+        If ``return_infobits`` is True, only the `k`
+        information bits are returned.
     """
     def __init__(self, *args, num_iter=10, **kwargs):
         self._num_internal_iter = num_iter
+        # TODO take care of hard_out, return_infobits (only for last iteration)
         super().__init__(*args, **{**kwargs, "stateful": True, "num_iter": 1})
 
     def build(self, input_shape):
@@ -634,12 +697,36 @@ def train_model(model,
                 validate_ber_tensorboard=False,
                 log_weight_images=False,
                 show_final_weights=False):
-    """ TODO
-    If model._return_symbols is True, we train on symbol error, otherwise on bit error.
-    if loss_fn is None, we use the "default" loss function.
-    If model._return_symbols is False and loss_over_logits is False, a sigmoid is applied to the logits before calculating the loss.
-    Otherwise, loss_over_logits is ignored."""
-    # optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
+    """
+    Trains the model on a single SNR and saves all model weights in a file. Optionally, the loss as well as the weights can be logged to tensorboard.
+    
+    Input
+    -----
+    model : :class:`~jammer.simulation_model.Model`
+        The model to train.
+    loss_fn : callable, optional
+        The loss function to use. It should subclass (or implement the interface of) :class:`tf.keras.losses.Loss`.
+        Depending on ``model._return_symbols`` and ``loss_over_logits``, the loss function is applied to the symbols, bit-LLRs or the bit estimates.
+        If None, an L1-loss is used. The default is None.
+    ebno_db : float, optional
+        The SNR on which to train the model. The default is 0.0.
+    loss_over_logits : bool, optional
+        If True, a sigmoid function is applied to the input of the loss function before calculating the loss.
+        This is only done if ``model._return_symbols`` is False (otherwise, this parameter is ignored).
+        The default is None, which means the input is used as-is.
+    num_iterations : int, optional
+        The number of batches to train the model. The default is 5000.
+    weights_filename : str, optional
+        The name of the file to save the weights in. The default is "weights.pickle".
+    log_tensorboard : bool, optional
+        If True, the loss is logged to tensorboard. The default is False.
+    validate_ber_tensorboard : bool, optional
+        If True, after training, fast BER-plot is logged to tensorboard as a scalar. The default is False.
+    log_weight_images : bool, optional
+        If True, the learned weights are logged to tensorboard as images every 500 iterations. The default is False.
+    show_final_weights : bool, optional
+        If True, the learned weights are plotted after training. The default is False.
+    """
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
@@ -701,7 +788,7 @@ def train_model(model,
 
 
 def tensorboard_validate_model(model, log_dir):
-    """Simple BER validation on tensorboard"""
+    """ TODO Simple BER validation on tensorboard"""
     # setup tensorboard
     train_summary_writer = tf.summary.create_file_writer(log_dir)
     # validate

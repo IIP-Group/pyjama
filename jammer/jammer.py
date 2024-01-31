@@ -323,7 +323,7 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
     num_tx_ant: int
         Number of antennas of each jammer.
     send_cyclic_prefix: bool
-        If true, the jammer adheres to the OFDM assumptions and sends a cyclic prefix. If false, the jammer sends randomly sampled symbols during this time.
+        If true, the jammer adheres to the OFDM assumptions and sends a cyclic prefix. If false, the jammer sends randomly sampled symbols instead.
     normalize_channel: bool
         Whether to normalize the channel. If True, the channel is normalized so that for each link the mean energy of each channel coefficient is 1.0.
     return_channel: bool
