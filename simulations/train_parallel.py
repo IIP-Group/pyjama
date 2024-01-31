@@ -3,7 +3,8 @@ from collections import deque
 from threading import Thread
 import datetime
 
-gpus = [0, 1, 2, 3, 4, 5, 6, 7]
+# gpus = [0, 1, 2, 3, 4, 5, 6, 7]
+gpus = [0, 1, 2, 3]
 parameter_indices_to_run = range(202)
 filename = "train.py"
 

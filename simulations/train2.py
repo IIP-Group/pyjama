@@ -27,11 +27,11 @@ from simulations.experimental_losses import *
 model_parameters = {}
 jammer_parameters = {}
 model_parameters["perfect_csi"] = False
-model_parameters["num_ut"] = 1
+# model_parameters["num_ut"] = 1
 model_parameters["jammer_present"] = True
-model_parameters["jammer_power"] = 1.0
-model_parameters["jammer_mitigation"] = "pos"
-model_parameters["jammer_mitigation_dimensionality"] = 1
+# model_parameters["jammer_power"] = 1.0
+# model_parameters["jammer_mitigation"] = "pos"
+# model_parameters["jammer_mitigation_dimensionality"] = 1
 model_parameters["num_silent_pilot_symbols"] = 4
 jammer_parameters["trainable"] = True
 model_parameters["jammer_parameters"] = jammer_parameters
@@ -39,26 +39,26 @@ model_parameters["jammer_parameters"] = jammer_parameters
 # jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
 jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
-sim.BATCH_SIZE = 16
+sim.BATCH_SIZE = 4
 
-
-exponentials = [False, True]
-alphas = np.arange(0.0, 1.1, 0.1, dtype=np.float32)
-num_iters = [1, 2, 4, 8, 16]
-parameters = [(x, y, z) for x in exponentials for y in alphas for z in num_iters]
-exponential, alpha, num_iter = parameters[parameter_num]
-
-model_parameters["num_ut"] = 1
-model_parameters["decoder_parameters"] = {
-    "num_iter": num_iter,
-    "cn_type": "minsum"
-}
-model_parameters["return_decoder_iterations"] = False
-model_parameters["coderate"] = 0.5
+# massive grid: training with different jammer power and different number of UEs
+num_ut = range(1, 9)
+jammer_power = [db_to_linear(x) for x in np.arange(-2.5, 15.1, 2.5, dtype=np.float32)]
+parameters = [(x, y) for x in num_ut for y in jammer_power]
+n, p = parameters[parameter_num]
+model_parameters["num_ut"] = n
+model_parameters["jammer_power"] = p
+model_parameters["num_ofdm_symbols"] = 14
+model_parameters["fft_size"] = 64
+model_parameters["num_bs_ant"] = 24
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 model = Model(**model_parameters)
-filename = f"weights/coded/symbol/iteration_loss/ue_1_alpha_{alpha}_exp_{exponential}_{num_iter}_iter.pickle"
-tensorboard_name = filename.split("/")[-1].rsplit(".", 1)[0]
-# print(filename)
-# print(tensorboard_name)
-load_weights(model, filename)
-tensorboard_validate_model(model, tensorboard_name)
+train_model(model,
+            loss_fn=negative_function(MeanAbsoluteError()),
+            loss_over_logits=False,
+            weights_filename=f"weights/grid/ue_{n}_power_{linear_to_db(p):.1f}dB.pickle",
+            log_tensorboard=True,
+            log_weight_images=True,
+            show_final_weights=False,
+            num_iterations=2000,
+            ebno_db=5.0)

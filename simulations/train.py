@@ -258,6 +258,26 @@ sim.BATCH_SIZE = 2
 #             ebno_db=0.0,
 #             validate_ber_tensorboard=True)
 
+# Iteration Loss Validation
+# sim.BATCH_SIZE = 16
+# exponentials = [False, True]
+# alphas = np.arange(0.0, 1.1, 0.1, dtype=np.float32)
+# num_iters = [1, 2, 4, 8, 16]
+# parameters = [(x, y, z) for x in exponentials for y in alphas for z in num_iters]
+# exponential, alpha, num_iter = parameters[parameter_num]
+# model_parameters["num_ut"] = 1
+# model_parameters["decoder_parameters"] = {
+#     "num_iter": num_iter,
+#     "cn_type": "minsum"
+# }
+# model_parameters["return_decoder_iterations"] = False
+# model_parameters["coderate"] = 0.5
+# model = Model(**model_parameters)
+# filename = f"weights/coded/symbol/iteration_loss/ue_1_alpha_{alpha}_exp_{exponential}_{num_iter}_iter.pickle"
+# tensorboard_name = filename.split("/")[-1].rsplit(".", 1)[0]
+# load_weights(model, filename)
+# tensorboard_validate_model(model, tensorboard_name)
+
 
 # Unmitigated
 # model_parameters["jammer_mitigation"] = None
@@ -281,20 +301,20 @@ sim.BATCH_SIZE = 2
 #             ebno_db=0.0,
 #             validate_ber_tensorboard=True)
 
-# Unmitigated, tensorflow barrage validation to find dB difference of trained and barrage
-sim.BATCH_SIZE = 8
-model_parameters["jammer_mitigation"] = None
-model_parameters["num_silent_pilot_symbols"] = 0
-num_uts = [1, 4]
-# jammer_powers_db = [-5, 0, 5, 10]
-jammer_powers_db = np.arange(-5, 20, 0.25)
-parameters = [(x, y) for x in num_uts for y in jammer_powers_db]
-num_ut, jammer_power_db = parameters[parameter_num]
+# # Unmitigated, tensorflow barrage validation to find dB difference of trained and barrage
+# sim.BATCH_SIZE = 8
+# model_parameters["jammer_mitigation"] = None
+# model_parameters["num_silent_pilot_symbols"] = 0
+# num_uts = [1, 4]
+# # jammer_powers_db = [-5, 0, 5, 10]
+# jammer_powers_db = np.arange(-5, 20, 0.25)
+# parameters = [(x, y) for x in num_uts for y in jammer_powers_db]
+# num_ut, jammer_power_db = parameters[parameter_num]
 
-model_parameters["num_ut"] = num_ut
-model_parameters["jammer_power"] = db_to_linear(jammer_power_db)
-model = Model(**model_parameters)
-import datetime
-current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-name = f"barrage_ue_{num_ut}_pow_{jammer_power_db}dB"
-tensorboard_validate_model(model, 'logs/tensorboard/' + current_time + '-' + name)
+# model_parameters["num_ut"] = num_ut
+# model_parameters["jammer_power"] = db_to_linear(jammer_power_db)
+# model = Model(**model_parameters)
+# import datetime
+# current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+# name = f"barrage_ue_{num_ut}_pow_{jammer_power_db}dB"
+# tensorboard_validate_model(model, 'logs/tensorboard/' + current_time + '-' + name)
