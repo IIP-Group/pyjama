@@ -4,9 +4,9 @@ from threading import Thread
 import datetime
 
 # gpus = [0, 1, 2, 3, 4, 5, 6, 7]
-gpus = [0, 1, 2, 3]
-parameter_indices_to_run = range(202)
-filename = "train.py"
+gpus = [1, 2, 3, 4, 5, 6, 7]
+parameter_indices_to_run = range(64)
+filename = "train2.py"
 
 # Create a queue for each GPU
 gpu_queues = {gpu: deque() for gpu in gpus}
