@@ -102,6 +102,10 @@ class Model(tf.keras.Model):
         If not None, all UTs are forced to be in line-of-sight (LOS) with the basestation or not.
     indoor_probability : float, optional
         Probability of a UT being indoors. The default is 0.8.
+    min_ut_velocity : None or tf.float
+        Minimum UT velocity [m/s]
+    max_ut_velocity : None or tf.float
+        Maximim UT velocity [m/s]
     perfect_csi : bool, optional
         If True, the channel is assumed to be perfectly known at the receiver. The default is False.
     perfect_jammer_csi : bool, optional
@@ -115,6 +119,10 @@ class Model(tf.keras.Model):
     jammer_parameters : dict, optional
         Additional parameters for the jammer, which is an instance of :class:`~jammer.jammer.OFDMJammer` or :class:`~jammer.jammer.TimeDomainOFDMJammer`.
         The default is {"num_tx": 1, "num_tx_ant": 1, "normalize_channel": True}.
+    min_jammer_velocity : None or tf.float
+        Minimum jammer velocity [m/s]
+    max_jammer_velocity : None or tf.float
+        Maximim jammer velocity [m/s]
     jammer_mitigation : str or None, optional
         The jammer mitigation algorithm to use. The default is None, i.e. the jammer will not be mitigated.
         If it is a string, it must be one of ["pos", "ian"]. See :doc:`mitigation` for details.
@@ -182,6 +190,8 @@ class Model(tf.keras.Model):
                  domain="freq",
                  los=None,
                  indoor_probability=0.8,
+                 min_ut_velocity=None,
+                 max_ut_velocity=None,
                  perfect_csi=False,
                  perfect_jammer_csi=False,
                  num_silent_pilot_symbols=0,
@@ -191,6 +201,8 @@ class Model(tf.keras.Model):
                      "num_tx": 1,
                      "num_tx_ant": 1,
                      "normalize_channel": True},
+                 min_jammer_velocity=None,
+                 max_jammer_velocity=None,
                  jammer_mitigation=None,
                  jammer_mitigation_dimensionality=None,
                  mash=False,
@@ -215,6 +227,10 @@ class Model(tf.keras.Model):
         #TODO should these kinds of parameters go into e.g. a dict for the channel parameters?
         self._los = los
         self._indoor_probability = indoor_probability
+        self._min_ut_velocity = min_ut_velocity
+        self._max_ut_velocity = max_ut_velocity
+        self._min_jammer_velocity = min_jammer_velocity
+        self._max_jammer_velocity = max_jammer_velocity
 
         self._return_jammer_csi = perfect_jammer_csi and jammer_mitigation
         self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_jammer_csi
@@ -345,8 +361,8 @@ class Model(tf.keras.Model):
             topology = gen_single_sector_topology(batch_size,
                                                   self._num_ut,
                                                   self._scenario,
-                                                  min_ut_velocity=0.0,
-                                                  max_ut_velocity=0.0,
+                                                  min_ut_velocity=self._min_ut_velocity,
+                                                  max_ut_velocity=self._max_ut_velocity,
                                                   indoor_probability=self._indoor_probability)
             self._channel_model.set_topology(*topology, los=self._los)
 
@@ -356,8 +372,8 @@ class Model(tf.keras.Model):
             topology = gen_single_sector_topology(batch_size,
                                                   self._num_jammer,
                                                   self._scenario,
-                                                  min_ut_velocity=0.0,
-                                                  max_ut_velocity=0.0,
+                                                  min_ut_velocity=self._min_jammer_velocity,
+                                                  max_ut_velocity=self._max_jammer_velocity,
                                                   indoor_probability=self._indoor_probability)
             self._jammer_channel_model.set_topology(*topology, los=self._los)
 
