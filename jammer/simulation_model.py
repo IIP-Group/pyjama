@@ -190,8 +190,8 @@ class Model(tf.keras.Model):
                  domain="freq",
                  los=None,
                  indoor_probability=0.8,
-                 min_ut_velocity=None,
-                 max_ut_velocity=None,
+                 min_ut_velocity=0.0,
+                 max_ut_velocity=0.0,
                  perfect_csi=False,
                  perfect_jammer_csi=False,
                  num_silent_pilot_symbols=0,
@@ -201,8 +201,8 @@ class Model(tf.keras.Model):
                      "num_tx": 1,
                      "num_tx_ant": 1,
                      "normalize_channel": True},
-                 min_jammer_velocity=None,
-                 max_jammer_velocity=None,
+                 min_jammer_velocity=0.0,
+                 max_jammer_velocity=0.0,
                  jammer_mitigation=None,
                  jammer_mitigation_dimensionality=None,
                  mash=False,
@@ -331,6 +331,7 @@ class Model(tf.keras.Model):
         if self._jammer_present:
             self._num_jammer = jammer_parameters["num_tx"] = jammer_parameters.get("num_tx", 1)
             self._num_jammer_ant = jammer_parameters["num_tx_ant"] = jammer_parameters.get("num_tx_ant", 1)
+            jammer_parameters["normalize_channel"] = jammer_parameters.get("normalize_channel", True)
             self._jammer_channel_model = self._generate_channel(self._scenario, num_tx=self._num_jammer, num_tx_ant=self._num_jammer_ant)
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             if(self._domain == "freq"):
@@ -672,6 +673,12 @@ def simulate_single(ebno_db):
         The SNR (Eb/N0) of the signal sent by the UTs in dB.
     """
     model = Model(**model_parameters)
+    b, llr = model(BATCH_SIZE, ebno_db)
+    b_hat = sionna.utils.hard_decisions(llr)
+    ber = compute_ber(b, b_hat)
+    print(ber)
+
+def simulate_single(model, ebno_db):
     b, llr = model(BATCH_SIZE, ebno_db)
     b_hat = sionna.utils.hard_decisions(llr)
     ber = compute_ber(b, b_hat)

@@ -447,3 +447,26 @@ class IterationLoss(tf.keras.losses.Loss):
         difference = tf.abs(b[..., tf.newaxis] - b_hat_iterations)
         difference *= alpha
         return tf.reduce_mean(tf.reduce_sum(difference, axis=2))
+
+def merge_plotbers(plotbers):
+    """
+    Merges multiple :class:sionna.utils.plotting.PlotBER instances into one.
+    Properties which are unique per instance (like ``title``) are taken from the first instance.
+
+    Input
+    -----
+    plotbers : list of :class:sionna.utils.plotting.PlotBER
+        Instances to merge.
+        
+    Output
+    ------
+    :class:sionna.utils.plotting.PlotBER
+        Merged instance.
+    """
+    p0 = plotbers[0]
+    for p in plotbers[1:]:
+        p0._bers += p._bers
+        p0._snrs += p._snrs
+        p0._legends += p._legends
+        p0._is_bler += p._is_bler
+    return p0
