@@ -49,7 +49,7 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
             Jammer channel frequency response
         """
         jammer_shape = tf.shape(j)
-        # rearange dimensions of j to [..., num_rx, num_jammer * num_jammer_ant].
+        # rearange dimensions of j to [..., num_rx_ant, num_jammer * num_jammer_ant].
         j = tf.transpose(j, [0, 1, 5, 6, 2, 3, 4])
         j = sionna.utils.flatten_last_dims(j, 2)
 
@@ -68,10 +68,15 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
             Covariance matrix of jammer signal.
         """
         num_rx_ant = tf.shape(jammer_covariance)[-1]
-        jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
+        # jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
+        # if self._dimensionality is not None:
+        #     jammer_covariance = reduce_matrix_rank(jammer_covariance, self._dimensionality)
+        # self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - jammer_covariance
+        # TODO when doing it this way, we should use the jammer signals directly (and hence limit the rank reduction to num_jammer_symbols)
+        _, u, _ = tf.linalg.svd(jammer_covariance, compute_uv=True)
         if self._dimensionality is not None:
-            jammer_covariance = reduce_matrix_rank(jammer_covariance, self._dimensionality)
-        self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - jammer_covariance
+            u = u[..., :self._dimensionality]
+        self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - tf.matmul(u, u, adjoint_b=True)
 
 
     def call(self, inputs):
