@@ -169,6 +169,14 @@ class Model(tf.keras.Model):
     jammer_signals : [batch_size, num_rx, num_rx_ant, num_silent_pilot_symbols, fft_size], tf.complex64
         The jammer signals during the silent pilot symbols.
     
+    Note
+    ----
+    This simulation model uses the assumption that the jammer is not included in the noise estimation (only :math:N_0).
+    This is a simplification, as the noise is normally estimated separately from the signal (and hence would include noise caused by the jammer).
+    In consequence, the LLR estimation is over-confident, as the noise is underestimated.
+    This is unproblematic for uncoded training (as only the sign of the LLR matters), but degrades the performance of the LDPC decoder.
+    The stronger the jammer, the more the performance is degraded.
+    
     """
     # TODO the dict-arguments could also be replaced by **kwargs. Deliberate.
     # see https://rhettinger.wordpress.com/2011/05/26/super-considered-super/ for reference.
