@@ -1,4 +1,3 @@
-
 import sys
 gpu_num = int(sys.argv[1]) if len(sys.argv) > 1 else 1
 parameter_num = int(sys.argv[2]) if len(sys.argv) > 2 else 0
@@ -46,3 +45,29 @@ b, llr = model(BATCH_SIZE, 20.)
 b_hat = sionna.utils.hard_decisions(llr)
 ber = compute_ber(b, b_hat)
 print(ber)
+
+
+
+# model_parameters["jammer_present"] = True
+# model_parameters["perfect_csi"] = True
+# model_parameters["perfect_jammer_csi"] = False
+# model_parameters["jammer_mitigation"] = "pos"
+# jammer_parameters["num_tx"] = 2
+# model_parameters["jammer_power"] = 1
+# for i in range(4):
+#     model_parameters["jammer_mitigation_dimensionality"] = i
+#     simulate(f"{i} dimension reduction")
+# ber_plots.title = "Jammer Mitigation, POS; 2 Jammers"
+# ber_plots()
+
+
+
+simulate("LMMSE without Jammer")
+
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "pos"
+simulate("LMMSE with Jammer, POS")
+
+model_parameters["jammer_present"] = True
+model_parameters["jammer_mitigation"] = "ian"
+simulate("LMMSE with Jammer, IAN")
