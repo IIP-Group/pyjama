@@ -215,6 +215,7 @@ class OFDMJammer(tf.keras.layers.Layer):
         """First argument: unjammed signal. y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
         Second argument: rho: broadcastable to [batch_size, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]. Variances of jammer input signal (before channel)."""
         y_unjammed, rho = inputs
+        rho = tf.cast(rho, self._dtype)
         input_shape = tf.shape(y_unjammed)
 
         # jammer_input_shape = [input_shape[0], self._num_tx, self._num_tx_ant, input_shape[-2], input_shape[-1]]
