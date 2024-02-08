@@ -29,6 +29,7 @@ from jammer.mitigation.POS import OrthogonalSubspaceProjector
 from jammer.utils import covariance_estimation_from_signals
 
 # Jammer simulation over Rayleigh block fading channel with CSI estimation
+
 # Normal OFDM init
 batch_size = 64
 num_ofdm_symbols = 14
@@ -40,7 +41,7 @@ num_bs_ant = 18
 
 no = ebnodb2no(10., 2, 1)
 rg = ResourceGrid(num_ofdm_symbols, fft_size, 30e3, num_ut, num_ut_ant,
-                  pilot_pattern="kronecker", pilot_ofdm_symbol_indices=(4,))
+                  pilot_pattern='kronecker', pilot_ofdm_symbol_indices=(4,))
 rx_tx_association = np.zeros([1, num_ut])
 rx_tx_association[0, :] = 1
 stream_management = StreamManagement(rx_tx_association, num_ut_ant)
@@ -61,7 +62,7 @@ pos = OrthogonalSubspaceProjector()
 
 # Simulation
 b = BinarySource()([batch_size, num_ut, num_ut_ant, rg.num_data_symbols * 2])
-x = Mapper("qam", 2)(b)
+x = Mapper('qam', 2)(b)
 x_rg = ResourceGridMapper(rg)(x)
 y = ofdm_channel((x_rg, no))
 
@@ -69,6 +70,7 @@ y_jammed = jammer((y, jammer_power))
 
 jammer_signals = tf.gather(y_jammed, silent_symbols, axis=3)
 pos.set_jammer_signals(jammer_signals)
+
 y_mitigated = pos(y_jammed)
 
 h_hat, err_var = LSChannelEstimator(rg)([y_mitigated, no])
