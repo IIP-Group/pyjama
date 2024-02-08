@@ -66,6 +66,9 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
         -----
         jammer_covariance : [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex
             Covariance matrix of jammer signal.
+
+        .. deprecated:: 0.1.0
+            Use `set_jammer_signals` instead.
         """
         num_rx_ant = tf.shape(jammer_covariance)[-1]
         # jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
@@ -78,6 +81,24 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
             u = u[..., :self._dimensionality]
         self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - tf.matmul(u, u, adjoint_b=True)
 
+    def set_jammer_signals(self, jammer_signals):
+        """
+        Input
+        -----
+        jammer_signals : [batch_size, num_rx, num_rx_ant, num_symbols, fft_size], tf.complex
+            Received symbols containing only jammer interference.
+        """
+        # -> [..., num_rx_ant, num_symbols]
+        num_rx_ant = tf.shape(jammer_signals)[2]
+        jammer_signals = tf.transpose(jammer_signals, [0, 1, 4, 2, 3])
+        _, u, _ = tf.linalg.svd(jammer_signals, compute_uv=True)
+        if self._dimensionality is not None:
+            u = u[..., :self._dimensionality]
+        proj = tf.eye(num_rx_ant, dtype=self.dtype) - tf.matmul(u, u, adjoint_b=True)
+        # add dimension for ofdm symbols
+        # [batch_size, num_rx, 1, fft_size, num_rx_ant, num_rx_ant]
+        self._proj = tf.expand_dims(proj, axis=2)
+
 
     def call(self, inputs):
 
@@ -86,7 +107,8 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
 
         # we can handle both y input types like the same by inserting dimensions for num_tx and num_tx_ant
         y = sionna.utils.expand_to_rank(y, 7, axis=3)
-        # rearange dimensions of y to [..., num_rx, num_tx * num_tx_ant]
+        # rearange dimensions of y to [..., num_rx_ant, num_tx * num_tx_ant]
+        # e.g. (batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_tx * num_tx_ant)
         y = tf.transpose(y, [0, 1, 5, 6, 2, 3, 4])
         before_flatten_shape = tf.shape(y)
         y = sionna.utils.flatten_last_dims(y, 2)

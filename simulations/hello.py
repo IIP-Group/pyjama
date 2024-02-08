@@ -1,20 +1,36 @@
 #%%
+import os
+# import drjit
+gpu_num = 3 # Use "" to use the CPU
+os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import sionna
 import tensorflow as tf
-tf.config.run_functions_eagerly(True)
 import numpy as np
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+tf.get_logger().setLevel('ERROR')
+# tf.config.run_functions_eagerly(True)
+
 from sionna.channel import OFDMChannel, RayleighBlockFading
 from sionna.mimo import StreamManagement
-from sionna.ofdm import ResourceGrid, ResourceGridMapper, KroneckerPilotPattern, LSChannelEstimator
+from sionna.ofdm import ResourceGrid, ResourceGridMapper, KroneckerPilotPattern, LSChannelEstimator, LMMSEEqualizer
 from sionna.mapping import Mapper, Demapper
 from sionna.utils import ebnodb2no, BinarySource, compute_ber
 from jammer.pilots import PilotPatternWithSilence
 from jammer.jammer import OFDMJammer
 from jammer.mitigation.IAN import IanLMMSEEqualizer
+from jammer.mitigation.POS import OrthogonalSubspaceProjector
 from jammer.utils import covariance_estimation_from_signals
 
 # Jammer simulation over Rayleigh block fading channel with CSI estimation
 # Normal OFDM init
-batch_size = 512
+batch_size = 64
 num_ofdm_symbols = 14
 fft_size = 1024
 num_ut = 4
@@ -41,8 +57,7 @@ silent_symbols = np.arange(4)
 rg.pilot_pattern = PilotPatternWithSilence(rg.pilot_pattern, silent_symbols)
 jammer_bs_channel = RayleighBlockFading(num_bs, num_bs_ant, num_jammer, num_jammer_ant)
 jammer = OFDMJammer(jammer_bs_channel, rg, num_jammer, num_jammer_ant)
-equalizer = IanLMMSEEqualizer(rg, stream_management)
-
+pos = OrthogonalSubspaceProjector()
 
 # Simulation
 b = BinarySource()([batch_size, num_ut, num_ut_ant, rg.num_data_symbols * 2])
@@ -51,14 +66,15 @@ x_rg = ResourceGridMapper(rg)(x)
 y = ofdm_channel((x_rg, no))
 
 y_jammed = jammer((y, jammer_power))
-jammer_signals = tf.gather(y, silent_symbols, axis=3)
-jammer_covariance = covariance_estimation_from_signals(jammer_signals, num_ofdm_symbols)
-equalizer.set_jammer_covariance(jammer_covariance)
 
-h_hat, err_var = LSChannelEstimator(rg)([y, no])
-x_hat, no_eff = equalizer([y, h_hat, err_var, no])
+jammer_signals = tf.gather(y_jammed, silent_symbols, axis=3)
+pos.set_jammer_signals(jammer_signals)
+y_mitigated = pos(y_jammed)
+
+h_hat, err_var = LSChannelEstimator(rg)([y_mitigated, no])
+x_hat, no_eff = LMMSEEqualizer(rg, stream_management)([y_mitigated, h_hat, err_var, no])
 b_hat = Demapper('app', 'qam', 2, hard_out=True)([x_hat, no_eff])
 
-# ber = compute_ber(b, b_hat)
-# print(ber)
+ber = compute_ber(b, b_hat)
+print(ber)
 
