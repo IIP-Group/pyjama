@@ -208,6 +208,41 @@ def presentation(scenario="umi", carrier_frequency=3.5e9, sampling_time=3.255e-8
     # plt.savefig(f"{name}.png")
     plt.show()
 
+def visualize_channel_filter_taps(scenario="umi",
+                                  carrier_frequency=3.5e9,
+                                  bandwidth=2.e7,
+                                  indoor_probability=0.8,
+                                  los=None,
+                                  resample_topology=True,
+                                  num_cir_samples=2000):
+
+    l_min, l_max = sionna.channel.time_lag_discrete_time_channel(bandwidth)
+    channel = setup_3gpp_channel(scenario=scenario, carrier_frequency=carrier_frequency)
+    topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
+    channel.set_topology(*topology, los=los)
+
+    hms = []
+    for i in range(num_cir_samples):
+        if i % 20 == 0:
+            print(f"Sample: {i}", end='\r')
+        cir = channel(1, bandwidth)
+        hm = sionna.channel.cir_to_time_channel(bandwidth, *cir, l_min, l_max, normalize=True)
+        hms.append(hm[0,0,0,0,0,0])
+        if resample_topology:
+            topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
+            channel.set_topology(*topology, los=los)
+
+    hm_avg = np.mean(np.square(np.abs(hms)), axis=0)
+    plt.figure(figsize=(10, 7.5))
+    plt.title("UMi @ 20MHz: Avg. Energy of Discrete Time Channel Taps")
+    plt.xlabel("$\ell$ (time lag)")
+    plt.ylabel(r"$|\bar{h}_{0,\ell}|^2$")
+    plt.stem(range(l_min, l_max+1), hm_avg)
+    plt.semilogy()
+    plt.show()
+
+    
+
 # presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=2000, num_bins=200)
 # presentation('umi', indoor_probability=0.8, los=False, resample_topology=True, num_cir_samples=100, num_bins=100)
 
