@@ -379,6 +379,7 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         x_jammer_time = tf.sqrt(rho) * x_jammer_time
         y_time = y_time + self._channel_time([x_jammer_time, h_time])
 
+        # TODO is there an error here? Est. CSI Jammer Mitigation works better than perfect CSI Jammer Mitigation
         if self._return_channel:
             y_ret = y_time if self._return_domain[0] == "time" else self._demodulator(y_time)
             # h_ret = h_time if self._return_in_time_domain[1] else ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=self._normalize_channel)
