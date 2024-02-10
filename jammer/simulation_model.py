@@ -719,6 +719,7 @@ def simulate_model(model, legend, add_bler=False):
                     show_fig=False)
     
 def train_model(model,
+                learning_rate=0.001,
                 loss_fn=None,
                 ebno_db=0.0,
                 loss_over_logits=None,
@@ -758,7 +759,7 @@ def train_model(model,
     show_final_weights : bool, optional
         If True, the learned weights are plotted after training. The default is False.
     """
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
     # TODO could take average to make it less jittery. Worth it?
     # mean_loss = tf.keras.metrics.Mean(name='train_loss')
     name = weights_filename.split("/")[-1].rsplit(".", 1)[0]
