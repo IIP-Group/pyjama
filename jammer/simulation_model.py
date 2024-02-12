@@ -106,6 +106,8 @@ class Model(tf.keras.Model):
         Minimum UT velocity [m/s]
     max_ut_velocity : None or tf.float
         Maximim UT velocity [m/s]
+    resample_topology : bool, optional
+        If True, the topology is resampled for each batch. The default is True.
     perfect_csi : bool, optional
         If True, the channel is assumed to be perfectly known at the receiver. The default is False.
     perfect_jammer_csi : bool, optional
@@ -200,6 +202,7 @@ class Model(tf.keras.Model):
                  indoor_probability=0.8,
                  min_ut_velocity=0.0,
                  max_ut_velocity=0.0,
+                 resample_topology=True,
                  perfect_csi=False,
                  perfect_jammer_csi=False,
                  num_silent_pilot_symbols=0,
@@ -237,6 +240,7 @@ class Model(tf.keras.Model):
         self._indoor_probability = indoor_probability
         self._min_ut_velocity = min_ut_velocity
         self._max_ut_velocity = max_ut_velocity
+        self._resample_topology = resample_topology
         self._min_jammer_velocity = min_jammer_velocity
         self._max_jammer_velocity = max_jammer_velocity
 
@@ -455,13 +459,18 @@ class Model(tf.keras.Model):
         assert self._coderate is None or self._coderate <= 1.0 and self._coderate >= 0,\
         "coderate must be in [0, 1] or None"
 
+    def build(self, input_shape):
+        if not self._resample_topology:
+            self._new_ut_topology(input_shape[0])
+            self._new_jammer_topology(input_shape[0])
+
     # batch size = number of resource grids (=symbols * subcarriers) per stream
     @tf.function(jit_compile=False)
     def call(self, batch_size, ebno_db, training=None):
         # for good statistics, we simulate a new topology for each batch.
-        # TODO: add parameter to keep topology constant for model lifetime
-        self._new_ut_topology(batch_size)
-        self._new_jammer_topology(batch_size)
+        if self._resample_topology:
+            self._new_ut_topology(batch_size)
+            self._new_jammer_topology(batch_size)
         # no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._effective_coderate, resource_grid=None)
         no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=1.0, resource_grid=None)
         b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx, self._k])
