@@ -21,7 +21,7 @@ from jammer.simulation_model import *
 from jammer.utils import *
 
 # let's say we want to train a jammer in a coded UMi channel with 4UEs (1 Antenna each).
-# The jammer is mitigated by a IAN LMMSE equalizer
+# The jammer is mitigated by a POS algorithm.
 # The jammer has 2 antennas, and a power of 10dB/Antenna compared to a UE
 # The jammer is estimated during the first 4 OFDM symbols.
 
@@ -32,7 +32,7 @@ model = Model(
     jammer_present = True,
     perfect_csi=False,
     perfect_jammer_csi=False,
-    jammer_mitigation = "ian",
+    jammer_mitigation = "pos",
     jammer_power = db_to_linear(10),
     jammer_parameters = {
         "num_tx_ant": 2,
