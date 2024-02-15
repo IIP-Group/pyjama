@@ -245,7 +245,7 @@ class Model(tf.keras.Model):
         self._max_jammer_velocity = max_jammer_velocity
 
         self._return_jammer_csi = perfect_jammer_csi and jammer_mitigation
-        self._estimate_jammer_covariance = jammer_mitigation in ["pos", "ian"] and not perfect_jammer_csi
+        self._estimate_jammer = jammer_mitigation and not perfect_jammer_csi
         
 
         # Internally set parameters
@@ -449,7 +449,7 @@ class Model(tf.keras.Model):
         if self._perfect_jammer_csi:
             assert self._jammer_present,\
             "If jammer CSI is perfect (i.e. returned by the jammer), we need a jammer which returns it."
-        if self._estimate_jammer_covariance:
+        if self._estimate_jammer:
             assert self._num_silent_pilot_symbols > 0,\
             "We need silent pilots to estimate the jammer CSI."
         assert self._num_silent_pilot_symbols < self._num_ofdm_symbols,\
@@ -513,16 +513,13 @@ class Model(tf.keras.Model):
             y = self._demodulator(y)
         if self._mash:
             y = self._demasher(y)
-        if self._estimate_jammer_covariance:
-            # TODO: one of the next 2 lines is slow. Benchmark and optimize. Might be tf.gather. Should we only allow connected slices?
+        if self._estimate_jammer:
             jammer_signals = tf.gather(y, self._silent_pilot_symbol_indices, axis=3)
-            # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
-            jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
         if self._jammer_mitigation == "pos":
             if self._return_jammer_csi:
                 self._pos.set_jammer_frequency_response(j)
             else:
-                self._pos.set_jammer_covariance(jammer_covariance)
+                self._pos.set_jammer_signals(jammer_signals)
             # we transform y before channel estimation to get correct no_eff automically
             # but hence we have to transform h with perfect_csi=True, but not false
             # we could alternatively transform y and h after channel estimation, but then we have to transform no_eff
@@ -532,6 +529,8 @@ class Model(tf.keras.Model):
                 # attention: this jammer variance might have to have a different shape than the one used for the jammer
                 self._lmmse_equ.set_jammer(j, self._jammer_power)
             else:
+                # [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]
+                jammer_covariance = covariance_estimation_from_signals(jammer_signals, self._num_ofdm_symbols)
                 self._lmmse_equ.set_jammer_covariance(jammer_covariance)
         if self._perfect_csi:
             h_hat = self._remove_nulled_subcarriers(h)
