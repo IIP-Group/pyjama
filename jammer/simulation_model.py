@@ -84,6 +84,8 @@ class Model(tf.keras.Model):
         The number of OFDM symbols per resource grid. The default is 14.
     cyclic_prefix_length : int, optional
         The length of the cyclic prefix in samples. The default is 20.
+    maximum_delay_spread : float, optional
+        The maximum delay spread in seconds. This parameter is only relevant for time domain simulations.  The default is 3e-6.
     num_bs_ant : int, optional
         The number antennas on the basestation. The default is 18.
     num_ut : int, optional
@@ -191,6 +193,7 @@ class Model(tf.keras.Model):
                  subcarrier_spacing=30e3,
                  num_ofdm_symbols=14,
                  cyclic_prefix_length=20,
+                 maximum_delay_spread=3e-6,
                  num_bs_ant=18,
                  num_ut=4,
                  num_ut_ant=1,
@@ -253,7 +256,9 @@ class Model(tf.keras.Model):
         self._fft_size = fft_size
         self._subcarrier_spacing = subcarrier_spacing
         self._num_ofdm_symbols = num_ofdm_symbols
+        # TODO shoud I make the default CP-length NR-compliant?
         self._cyclic_prefix_length = cyclic_prefix_length
+        self._maximum_delay_spread = maximum_delay_spread
         # self._pilot_ofdm_symbol_indices = [2, 11]
         self._num_bs_ant = num_bs_ant
         self._num_ut = num_ut
@@ -308,7 +313,7 @@ class Model(tf.keras.Model):
                                          normalize_channel=True, return_channel=True)
         if self._domain == "time":
             # TODO only for 802.11n
-            self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
+            self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth, self._maximum_delay_spread)
             # self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth, maximum_delay_spread=2.0e-6)
             self._l_tot = self._l_max - self._l_min + 1
             self._time_channel = ApplyTimeChannel(self._rg.num_time_samples,
@@ -355,7 +360,9 @@ class Model(tf.keras.Model):
                 else:
                     return_domain = "time"
                 self._jammer = TimeDomainOFDMJammer(self._jammer_channel_model,
-                                                    self._rg, return_channel=self._return_jammer_csi,
+                                                    self._rg,
+                                                    maximum_delay_spread=self._maximum_delay_spread,
+                                                    return_channel=self._return_jammer_csi,
                                                     return_domain=return_domain,
                                                     **jammer_parameters)
         
