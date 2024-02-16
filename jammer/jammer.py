@@ -331,7 +331,7 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         If true, 
     
     """
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, send_cyclic_prefix=False, normalize_channel=False, return_channel=False, sampler="uniform", return_domain="freq", dtype=tf.complex64, **kwargs):
+    def __init__(self, channel_model, rg, num_tx, num_tx_ant, send_cyclic_prefix=False, maximum_delay_spread=3e-6, normalize_channel=False, return_channel=False, sampler="uniform", return_domain="freq", dtype=tf.complex64, **kwargs):
         """return_in_time_domain: One of ["freq", "time"]. Returns jammed signal in freqency or time domain. If return_channel is true, this might also be a pair of (signal, channel). Broadcast if not a pair in this case."""
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         self._channel_model = channel_model
@@ -349,7 +349,7 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         self._sampler = sample_function(sampler, self._dtype_as_dtype)
 
         # TODO only for 802.11n
-        self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth)
+        self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth, maximum_delay_spread)
         # self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth, maximum_delay_spread=2.0e-6)
         self._l_tot = self._l_max - self._l_min + 1
         self._channel_time = ApplyTimeChannel(self._rg.num_time_samples,
