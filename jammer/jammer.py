@@ -331,7 +331,19 @@ class TimeDomainOFDMJammer(tf.keras.layers.Layer):
         If true, 
     
     """
-    def __init__(self, channel_model, rg, num_tx, num_tx_ant, send_cyclic_prefix=False, maximum_delay_spread=3e-6, normalize_channel=False, return_channel=False, sampler="uniform", return_domain="freq", dtype=tf.complex64, **kwargs):
+    def __init__(self,
+                 channel_model,
+                 rg,
+                 num_tx,
+                 num_tx_ant,
+                 send_cyclic_prefix=False,
+                 maximum_delay_spread=3e-6,
+                 normalize_channel=False,
+                 return_channel=False,
+                 sampler="uniform",
+                 return_domain="freq",
+                 dtype=tf.complex64,
+                 **kwargs):
         """return_in_time_domain: One of ["freq", "time"]. Returns jammed signal in freqency or time domain. If return_channel is true, this might also be a pair of (signal, channel). Broadcast if not a pair in this case."""
         super().__init__(trainable=False, dtype=dtype, **kwargs)
         self._channel_model = channel_model
