@@ -5,7 +5,6 @@ This module does not work yet: Native MASH fails for frequency selective channel
 """
 #%%
 import tensorflow as tf
-# tf.config.run_functions_eagerly(True)
 import numpy as np
 import sionna
 from sionna.utils import flatten_last_dims

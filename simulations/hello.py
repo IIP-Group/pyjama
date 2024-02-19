@@ -15,7 +15,6 @@ if gpus:
     except RuntimeError as e:
         print(e)
 tf.get_logger().setLevel('ERROR')
-# tf.config.run_functions_eagerly(True)
 
 from sionna.channel import OFDMChannel, RayleighBlockFading
 from sionna.mimo import StreamManagement
