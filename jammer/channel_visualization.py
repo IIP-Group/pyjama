@@ -1,17 +1,5 @@
-# %%
-import os
-gpu_num = 0 # Use "" to use the CPU
-os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_num}"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sionna
 import tensorflow as tf
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
 import matplotlib.pyplot as plt
 import numpy as np
 from sionna.channel.tr38901 import Antenna, AntennaArray, CDL, UMi, UMa, RMa
@@ -234,7 +222,9 @@ def visualize_channel_filter_taps(scenario="umi",
 
     hm_avg = np.mean(np.square(np.abs(hms)), axis=0)
     plt.figure(figsize=(10, 7.5))
-    plt.title("UMi @ 20MHz: Avg. Energy of Discrete Time Channel Taps")
+    bw_mhz = bandwidth / 1e6
+    plt.title(f"{scenario} @ {bw_mhz}MHz, indoor: {indoor_probability}, los: {los}")
+    # plt.title("UMi @ 20MHz: Avg. Energy of Discrete Time Channel Taps")
     plt.xlabel("$\ell$ (time lag)")
     plt.ylabel(r"$|\bar{h}_{0,\ell}|^2$")
     plt.stem(range(l_min, l_max+1), hm_avg)
