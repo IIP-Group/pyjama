@@ -196,13 +196,13 @@ def presentation(scenario="umi", carrier_frequency=3.5e9, sampling_time=3.255e-8
     # plt.savefig(f"{name}.png")
     plt.show()
 
-def visualize_channel_filter_taps(scenario="umi",
-                                  carrier_frequency=3.5e9,
-                                  bandwidth=2.e7,
-                                  indoor_probability=0.8,
-                                  los=None,
-                                  resample_topology=True,
-                                  num_cir_samples=2000):
+def avg_channel_filter_taps(scenario="umi",
+                            carrier_frequency=3.5e9,
+                            bandwidth=2.e7,
+                            indoor_probability=0.8,
+                            los=None,
+                            resample_topology=True,
+                            num_cir_samples=2000):
 
     l_min, l_max = sionna.channel.time_lag_discrete_time_channel(bandwidth)
     channel = setup_3gpp_channel(scenario=scenario, carrier_frequency=carrier_frequency)
@@ -220,7 +220,24 @@ def visualize_channel_filter_taps(scenario="umi",
             topology = new_topology(scenario=scenario, indoor_probability=indoor_probability)
             channel.set_topology(*topology, los=los)
 
-    hm_avg = np.mean(np.square(np.abs(hms)), axis=0)
+    hm_power = np.square(np.abs(hms))
+    hm_avg = np.mean(hm_power, axis=0)
+    hm_std = np.std(hm_power, axis=0)
+
+    return hm_avg, hm_std
+
+
+def visualize_channel_filter_taps(scenario="umi",
+                                  carrier_frequency=3.5e9,
+                                  bandwidth=2.e7,
+                                  indoor_probability=0.8,
+                                  los=None,
+                                  resample_topology=True,
+                                  num_cir_samples=2000):
+
+    l_min, l_max = sionna.channel.time_lag_discrete_time_channel(bandwidth)
+    hm_avg, _ = avg_channel_filter_taps(scenario, carrier_frequency, bandwidth, indoor_probability, los, resample_topology, num_cir_samples)
+
     plt.figure(figsize=(10, 7.5))
     bw_mhz = bandwidth / 1e6
     plt.title(f"{scenario} @ {bw_mhz}MHz, indoor: {indoor_probability}, los: {los}")
