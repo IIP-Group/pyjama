@@ -103,6 +103,8 @@ class Model(tf.keras.Model):
         If True, the jammer-BS channel is assumed to be perfectly known at the receiver (for mitigation). The default is False.
     num_silent_pilot_symbols : int, optional
         The number of pilot symbols where no UT tranmits (can be used for jammer channel estimation). The default is 0.
+    channel_parameters : dict, optional
+        Additional parameters for the channel model. The default is {}.
     jammer_present : bool, optional
         If True, a jammer/jammers are present in the simulation. The default is False.
     jammer_power : :class:`tf.Tensor` broadcastable to [batch_size, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], float; or float, optional
@@ -196,6 +198,7 @@ class Model(tf.keras.Model):
                  perfect_csi=False,
                  perfect_jammer_csi=False,
                  num_silent_pilot_symbols=0,
+                 channel_parameters={},
                  jammer_present=False,
                  jammer_power=1.0,
                  jammer_parameters={
@@ -233,6 +236,7 @@ class Model(tf.keras.Model):
         self._resample_topology = resample_topology
         self._min_jammer_velocity = min_jammer_velocity
         self._max_jammer_velocity = max_jammer_velocity
+        self._channel_parameters = channel_parameters
 
         self._return_jammer_csi = perfect_jammer_csi and jammer_mitigation
         self._estimate_jammer = jammer_mitigation and not perfect_jammer_csi
@@ -279,7 +283,7 @@ class Model(tf.keras.Model):
         self._sm = StreamManagement(self._rx_tx_association, self._num_streams_per_tx)
 
         # instantiate ut-bs-channel
-        self._channel_model = self._generate_channel(self._scenario, num_tx=self._num_ut, num_tx_ant=self._num_ut_ant)
+        self._channel_model = self._generate_channel(self._scenario, num_tx=self._num_ut, num_tx_ant=self._num_ut_ant, **self._channel_parameters)
 
         # Instantiate other building blocks
         self._binary_source = BinarySource()
@@ -336,7 +340,7 @@ class Model(tf.keras.Model):
             self._num_jammer = jammer_parameters["num_tx"] = jammer_parameters.get("num_tx", 1)
             self._num_jammer_ant = jammer_parameters["num_tx_ant"] = jammer_parameters.get("num_tx_ant", 1)
             jammer_parameters["normalize_channel"] = jammer_parameters.get("normalize_channel", True)
-            self._jammer_channel_model = self._generate_channel(self._scenario, num_tx=self._num_jammer, num_tx_ant=self._num_jammer_ant)
+            self._jammer_channel_model = self._generate_channel(self._scenario, num_tx=self._num_jammer, num_tx_ant=self._num_jammer_ant, **self._channel_parameters)
             # self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters["num_tx"], jammer_parameters["num_tx_ant"])
             if(self._domain == "freq"):
                 self._jammer = OFDMJammer(self._jammer_channel_model, self._rg, return_channel=self._return_jammer_csi, **jammer_parameters)
