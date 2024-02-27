@@ -360,16 +360,35 @@ sim.BATCH_SIZE = 2
 
 
 # NonNegMaxMeanSquareNorm vs MaxMeanSquareNorm
+# num_ues = np.arange(1, 5, dtype=np.int32)
+# nonnegs = [True, False]
+# parameters = [(x, y) for x in num_ues for y in nonnegs]
+# num_ue = parameters[parameter_num][0]
+# nonneg = parameters[parameter_num][1]
+
+# model_parameters["num_ut"] = num_ue
+# jammer_parameters["training_constraint"] = NonNegMaxMeanSquareNorm(1.0) if nonneg else MaxMeanSquareNorm(1.0)
+
+# filename = f"weights/nonneg_vs_neg/ue_{num_ue}_nonneg_{nonneg}.pickle"
+# model = Model(**model_parameters)
+# train_model(model,
+#             learning_rate=0.005,
+#             weights_filename=filename,
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=5000,
+#             ebno_db=0.0,
+#             validate_ber_tensorboard=True)
+
+# symbol weights for comparison
 num_ues = np.arange(1, 5, dtype=np.int32)
-nonnegs = [True, False]
-parameters = [(x, y) for x in num_ues for y in nonnegs]
-num_ue = parameters[parameter_num][0]
-nonneg = parameters[parameter_num][1]
+num_ue = num_ues[parameter_num]
 
 model_parameters["num_ut"] = num_ue
-jammer_parameters["training_constraint"] = NonNegMaxMeanSquareNorm(1.0) if nonneg else MaxMeanSquareNorm(1.0)
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
-filename = f"weights/nonneg_vs_neg/ue_{num_ue}_nonneg_{nonneg}.pickle"
+filename = f"weights/nonneg_vs_neg/ue_{num_ue}_symbol.pickle"
 model = Model(**model_parameters)
 train_model(model,
             learning_rate=0.001,
