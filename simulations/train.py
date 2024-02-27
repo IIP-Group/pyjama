@@ -321,39 +321,62 @@ sim.BATCH_SIZE = 2
 
 # Train Uncoded and Coded Resource Grid for Visualization Purposes
 # 1 & 4 UEs, trained on coded channel information bits
-jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
-# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
-num_ut = 1
-num_iter = 4
-cn_type = "minsum"
-model_parameters["num_ut"] = num_ut
-model_parameters["decoder_parameters"] = {
-    "num_iter": num_iter,
-    "cn_type": cn_type,
-}
-model_parameters["jammer_mitigation"] = None
-model_parameters["num_silent_pilot_symbols"] = 0
-if parameter_num == 0:
-    model_parameters["coderate"] = None
-    loss = MeanAbsoluteError()
-    filename = f"weights/presentation/ue_{num_ut}_uncoded.pickle"
-else:
-    model_parameters["return_decoder_iterations"] = True
-    model_parameters["coderate"] = 0.5
-    loss = IterationLoss(alpha=0.5, exponential_alpha_scaling=False)
-    filename = f"weights/presentation/ue_{num_ut}_coded.pickle"
+# jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+# # jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+# num_ut = 1
+# num_iter = 4
+# cn_type = "minsum"
+# model_parameters["num_ut"] = num_ut
+# model_parameters["decoder_parameters"] = {
+#     "num_iter": num_iter,
+#     "cn_type": cn_type,
+# }
+# model_parameters["jammer_mitigation"] = None
+# model_parameters["num_silent_pilot_symbols"] = 0
+# if parameter_num == 0:
+#     model_parameters["coderate"] = None
+#     loss = MeanAbsoluteError()
+#     filename = f"weights/presentation/ue_{num_ut}_uncoded.pickle"
+# else:
+#     model_parameters["return_decoder_iterations"] = True
+#     model_parameters["coderate"] = 0.5
+#     loss = IterationLoss(alpha=0.5, exponential_alpha_scaling=False)
+#     filename = f"weights/presentation/ue_{num_ut}_coded.pickle"
 
+# model = Model(**model_parameters)
+# if parameter_num == 1:
+#     model._decoder.llr_max = 1000
+# train_model(model,
+#             learning_rate=0.001,
+#             loss_fn=negative_function(loss),
+#             loss_over_logits=False,
+#             weights_filename=filename,
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=20000,
+#             ebno_db=0.0,
+#             validate_ber_tensorboard=True)
+
+
+# NonNegMaxMeanSquareNorm vs MaxMeanSquareNorm
+num_ues = np.arange(1, 5, dtype=np.int32)
+nonnegs = [True, False]
+parameters = [(x, y) for x in num_ues for y in nonnegs]
+num_ue = parameters[parameter_num][0]
+nonneg = parameters[parameter_num][1]
+
+model_parameters["num_ut"] = num_ue
+jammer_parameters["training_constraint"] = NonNegMaxMeanSquareNorm(1.0) if nonneg else MaxMeanSquareNorm(1.0)
+
+filename = f"weights/nonneg_vs_neg/ue_{num_ue}_nonneg_{nonneg}.pickle"
 model = Model(**model_parameters)
-if parameter_num == 1:
-    model._decoder.llr_max = 1000
 train_model(model,
             learning_rate=0.001,
-            loss_fn=negative_function(loss),
-            loss_over_logits=False,
             weights_filename=filename,
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
-            num_iterations=20000,
+            num_iterations=5000,
             ebno_db=0.0,
             validate_ber_tensorboard=True)
