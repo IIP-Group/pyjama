@@ -16,8 +16,8 @@ if gpus:
         print(e)
 tf.get_logger().setLevel('ERROR')
 
-from jammer.simulation_model import *
-from jammer.utils import *
+from jammer.simulation_model import Model
+from jammer.utils import IterationLoss, db_to_linear, negative_function
 
 # let's say we want to train a jammer in a coded UMi channel with 4UEs (1 Antenna each).
 # The jammer is mitigated by a POS algorithm.

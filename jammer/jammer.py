@@ -118,6 +118,8 @@ class OFDMJammer(tf.keras.layers.Layer):
         Constraint to be applied to the trainable weights.
         If None, no constraint is applied.
         The callable should take a tensor as argument and return a tensor of the same shape.
+    constraint_integrated: bool
+        If True, the constraint is integrated into the network. If False, the constraint is applied after each optimization step.
     dtype: tf.complex
         Data type of the jammer symbols. Defaults to tf.complex64.
 
