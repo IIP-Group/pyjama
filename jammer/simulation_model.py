@@ -74,7 +74,7 @@ class Model(tf.keras.Model):
     maximum_delay_spread : float, optional
         The maximum delay spread in seconds. This parameter is only relevant for time domain simulations.  The default is 3e-6.
     num_bs_ant : int, optional
-        The number antennas on the basestation. The default is 18.
+        The number antennas on the basestation. The default is 16.
     num_ut : int, optional
         The number of User Terminals (UTs) simulated. The default is 4.
     num_ut_ant : int, optional
