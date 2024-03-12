@@ -382,20 +382,20 @@ sim.BATCH_SIZE = 2
 #             validate_ber_tensorboard=True)
 
 # symbol weights for comparison
-num_ues = np.arange(1, 5, dtype=np.int32)
-num_ue = num_ues[parameter_num]
+# num_ues = np.arange(1, 5, dtype=np.int32)
+# num_ue = num_ues[parameter_num]
 
-model_parameters["num_ut"] = num_ue
-jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+# model_parameters["num_ut"] = num_ue
+# jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 
-filename = f"weights/nonneg_vs_neg/ue_{num_ue}_symbol.pickle"
-model = Model(**model_parameters)
-train_model(model,
-            learning_rate=0.001,
-            weights_filename=filename,
-            log_tensorboard=True,
-            log_weight_images=True,
-            show_final_weights=False,
-            num_iterations=5000,
-            ebno_db=0.0,
-            validate_ber_tensorboard=True)
+# filename = f"weights/nonneg_vs_neg/ue_{num_ue}_symbol.pickle"
+# model = Model(**model_parameters)
+# train_model(model,
+#             learning_rate=0.001,
+#             weights_filename=filename,
+#             log_tensorboard=True,
+#             log_weight_images=True,
+#             show_final_weights=False,
+#             num_iterations=5000,
+#             ebno_db=0.0,
+#             validate_ber_tensorboard=True)
