@@ -702,7 +702,7 @@ def simulate(legend):
     model = Model(**model_parameters)
     simulate_model(model, legend)
 
-def simulate_model(model, legend, add_bler=False):
+def simulate_model(model, legend, add_bler=False, verbose=True):
     """
     Simulates the model on SNRs given by ``ebno_dbs`` and plots the BER.
 
@@ -722,7 +722,8 @@ def simulate_model(model, legend, add_bler=False):
                     soft_estimates=True,
                     max_mc_iter=MAX_MC_ITER,
                     add_bler=add_bler,
-                    show_fig=False)
+                    show_fig=False,
+                    verbose=verbose)
     
 def train_model(model,
                 learning_rate=0.001,

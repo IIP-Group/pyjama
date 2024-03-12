@@ -44,20 +44,23 @@ if parameter_num == 0:
     decoder_parameters["cn_type"] = "minsum"
     decoder_parameters["num_iter"] = 20
 
+    print("No jammer")
     model = Model(**model_parameters)
     model._decoder.llr_max = 1000
-    simulate_model(model, f"No jammer", add_bler=True)
+    simulate_model(model, f"No jammer", add_bler=True, verbose=False)
 
+    print("Unmitigated jammer")
     model_parameters["jammer_present"] = True
     model = Model(**model_parameters)
     model._decoder.llr_max = 1000
-    simulate_model(model, "Unmitigated jammer", add_bler=True)
+    simulate_model(model, "Unmitigated jammer", add_bler=True, verbose=False)
 
+    print("Jammer, POS, 1D Nulling")
     d = 4
     model_parameters["jammer_mitigation"] = "pos"
     model_parameters["jammer_mitigation_dimensionality"] = d
     model = Model(**model_parameters)
-    simulate_model(model, f"Jammer, POS, {d}D Nulling", add_bler=True)
+    simulate_model(model, f"Jammer, POS, {d}D Nulling", add_bler=True, verbose=False)
 
     ber_plots.title = "Different Decoder Parameters: 4UE, 0.5 coderate, 0dB Jammer"
     # ber_plots(show_ber=False)
@@ -75,8 +78,9 @@ elif parameter_num == 1:
     model_parameters["jammer_present"] = True
     model_parameters["jammer_power"] = db_to_linear(10.)
 
+    print("Jammer, unmigitated, 0km/h")
     model = Model(**model_parameters)
-    simulate_model(model, "Jammer, unmigitated, 0km/h")
+    simulate_model(model, "Jammer, unmigitated, 0km/h", verbose=False)
 
     model_parameters["jammer_mitigation"] = "pos"
     model_parameters["jammer_mitigation_dimensionality"] = 1
@@ -89,7 +93,7 @@ elif parameter_num == 1:
         # model_parameters["min_jammer_velocity"] = meter_per_second
         # model_parameters["max_jammer_velocity"] = meter_per_second
         model = Model(**model_parameters)
-        simulate_model(model, f"Jammer, POS, {kmh} km/h")
+        simulate_model(model, f"Jammer, POS, {kmh} km/h", verbose=False)
 
     ber_plots.title = "UE velocity: Est. CSI, 1 UE, 1x1 Jammer (10dB)"
     # ber_plots()
@@ -106,8 +110,9 @@ elif parameter_num == 2:
     model_parameters["jammer_present"] = True
     model_parameters["jammer_power"] = db_to_linear(10.)
 
+    print("Jammer, unmigitated, 0km/h")
     model = Model(**model_parameters)
-    simulate_model(model, "Jammer, unmigitated, 0km/h")
+    simulate_model(model, "Jammer, unmigitated, 0km/h", verbose=False)
 
     model_parameters["jammer_mitigation"] = "pos"
     model_parameters["jammer_mitigation_dimensionality"] = 1
@@ -120,7 +125,7 @@ elif parameter_num == 2:
         model_parameters["min_jammer_velocity"] = meter_per_second
         model_parameters["max_jammer_velocity"] = meter_per_second
         model = Model(**model_parameters)
-        simulate_model(model, f"Jammer, POS, {kmh} km/h")
+        simulate_model(model, f"Jammer, POS, {kmh} km/h", verbose=False)
 
     ber_plots.title = "Jammer velocity: Est. CSI, 1 UE, 1x1 Jammer (10dB)"
     # ber_plots()
