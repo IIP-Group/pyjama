@@ -399,3 +399,38 @@ sim.BATCH_SIZE = 2
 #             num_iterations=5000,
 #             ebno_db=0.0,
 #             validate_ber_tensorboard=True)
+
+
+
+
+# Coded RG training
+jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+num_ut = 4
+num_iter = 4
+cn_type = "minsum"
+model_parameters["num_ut"] = num_ut
+model_parameters["decoder_parameters"] = {
+    "num_iter": num_iter,
+    "cn_type": cn_type,
+}
+model_parameters["return_decoder_iterations"] = True
+model_parameters["coderate"] = 0.5
+model_parameters["jammer_mitigation"] = None
+model_parameters["num_silent_pilot_symbols"] = 0
+
+loss = IterationLoss(alpha=0.5, exponential_alpha_scaling=False)
+filename = f"weights/paper/ue_{num_ut}_coded.pickle"
+model = Model(**model_parameters)
+if parameter_num == 1:
+    model._decoder.llr_max = 1000
+train_model(model,
+            learning_rate=0.001,
+            loss_fn=negative_function(loss),
+            loss_over_logits=False,
+            weights_filename=filename,
+            log_tensorboard=True,
+            log_weight_images=True,
+            show_final_weights=False,
+            num_iterations=50000,
+            ebno_db=0.0,
+            validate_ber_tensorboard=True)

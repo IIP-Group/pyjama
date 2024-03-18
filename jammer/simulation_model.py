@@ -643,7 +643,7 @@ class ReturnIntermediateLDPC5GDecoder(LDPC5GDecoder):
 
 def relative_singular_values(jammer_signals):
     """
-    Returns the normalized sigular values of the jammer signals.
+    Returns the normalized singular values of the jammer signals.
 
     Input
     -----
@@ -663,6 +663,26 @@ def relative_singular_values(jammer_signals):
     # normalize to sum of eigenvalues = 1
     sigma = sigma / trace[:, :, None]
     return tf.reduce_mean(sigma, axis=(0, 1))
+
+def singular_values(jammer_signals):
+    """
+    Returns the unnormalized (and not averaged) singular values of the jammer signals.
+
+    Input
+    -----
+    jammer_signals: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]
+        received jammer signals during silent pilot symbols
+    
+    Output
+    ------
+    : [batch_size, fft_size, num_rx * num_rx_ant], float
+        Singular values, sorted in descending order. Normalize to sum of eigenvalues = 1.
+    """
+    j = tf.transpose(jammer_signals, [0, 4, 1, 2, 3])
+    # [batch_size, fft_size, num_rx*rx_ant, num_ofdm_symbols]
+    j = sionna.utils.flatten_dims(j, 2, 2)
+    sigma = tf.linalg.svd(j, compute_uv=False)
+    return sigma
 
 def bar_plot(values):
     """
