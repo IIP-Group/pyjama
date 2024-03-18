@@ -183,7 +183,7 @@ class Model(tf.keras.Model):
                  num_ofdm_symbols=14,
                  cyclic_prefix_length=20,
                  maximum_delay_spread=3e-6,
-                 num_bs_ant=18,
+                 num_bs_ant=16,
                  num_ut=4,
                  num_ut_ant=1,
                  num_bits_per_symbol=2,

@@ -15,7 +15,7 @@ def plotber_pickle_to_csv(pickle_path, save_path="./csv/", save_ber=True, save_b
     save_data(sim_title, data, path=save_path)
 
 
-def plotber_to_dict(plotber, save_ber=True, save_bler=False):
+def plotber_to_dict(plotber, save_ber=True, save_bler=False, make_strings_compliant=True):
     snrs = plotber._snrs
     bers = plotber._bers
     legends = plotber._legends
@@ -34,20 +34,29 @@ def plotber_to_dict(plotber, save_ber=True, save_bler=False):
             legends = list(compress(legends, np.invert(is_bler)))
             is_bler = list(compress(is_bler, np.invert(is_bler)))
 
+    if make_strings_compliant:
+        legends = [make_string_compliant(legend) for legend in legends]
     result = {}
     # make sure all SNRs are the same, otherwise warn the user, and export all SNRs
     if all(np.allclose(x, snrs[0]) for x in snrs):
-        result["snr_db"] = snrs[0]
+        result["SNR"] = snrs[0]
     else:
         print("Not all SNRs are the same, exporting all SNRs")
         for i, snr in enumerate(snrs):
-            result["snr_db " + legends[i]] = snr
+            result["SNR " + legends[i]] = snr
 
     for i, ber in enumerate(bers):
         result[legends[i]] = ber
         
     return result
             
+def make_string_compliant(s):
+    return s.replace("&", "").\
+        replace(".", "_").\
+        replace(" ", "_").\
+        replace("(","_").\
+        replace(")","_").\
+        replace(",","")
 
 def save_data(sim_title, plot_data, sim_params=None, path="./csv/"):
     try:
@@ -60,7 +69,7 @@ def save_data(sim_title, plot_data, sim_params=None, path="./csv/"):
                                .replace(",","_"))
         file = open(path + filename + ".csv", "w")
         df = pd.DataFrame.from_dict(plot_data)
-        df.to_csv(file, lineterminator='\n')
+        df.to_csv(file, lineterminator='\n', index=False)
         file.close()
 
         with open(path + filename + ".pickle", 'wb') as f:
@@ -74,6 +83,3 @@ def save_data(sim_title, plot_data, sim_params=None, path="./csv/"):
 
     except Exception as e:
         print(e)
-
-
-plotber_pickle_to_csv('bers/report/frequency/perf_vs_est_csi.pickle')

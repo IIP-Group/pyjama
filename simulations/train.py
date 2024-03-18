@@ -419,7 +419,7 @@ model_parameters["jammer_mitigation"] = None
 model_parameters["num_silent_pilot_symbols"] = 0
 
 loss = IterationLoss(alpha=0.5, exponential_alpha_scaling=False)
-filename = f"weights/paper/ue_{num_ut}_coded.pickle"
+filename = f"weights/paper/ue_{num_ut}_coded_3e5_training.pickle"
 model = Model(**model_parameters)
 if parameter_num == 1:
     model._decoder.llr_max = 1000
@@ -431,6 +431,6 @@ train_model(model,
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
-            num_iterations=50000,
+            num_iterations=300000,
             ebno_db=0.0,
             validate_ber_tensorboard=True)
