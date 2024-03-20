@@ -70,7 +70,7 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 #         pickle.dump(ber_plots, f)
 #     sim.MAX_MC_ITER = 1500
 
-# elif parameter_num == 1:
+# if parameter_num == 1:
 #     ber_plots.reset()
 #     model_parameters = {}
 #     jammer_parameters = {}
@@ -78,7 +78,7 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 
 #     model_parameters["num_silent_pilot_symbols"] = 4
 #     model_parameters["jammer_present"] = True
-#     model_parameters["jammer_power"] = db_to_linear(10.)
+#     model_parameters["jammer_power"] = db_to_linear(20.)
 
 #     print("Jammer, unmigitated, 0km/h")
 #     model = Model(**model_parameters)
@@ -86,7 +86,7 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 
 #     model_parameters["jammer_mitigation"] = "pos"
 #     model_parameters["jammer_mitigation_dimensionality"] = 1
-#     kmhs = [0, 20, 30, 40, 50, 60, 80, 100, 120]
+#     kmhs = [0, 30, 80, 120]
 #     for kmh in kmhs:
 #         print("UE velocity: ", kmh)
 #         meter_per_second = kmh / 3.6
@@ -97,12 +97,12 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 #         model = Model(**model_parameters)
 #         simulate_model(model, f"Jammer, POS, {kmh} km/h", verbose=False)
 
-#     ber_plots.title = "UE velocity: Est. CSI, 1 UE, 1x1 Jammer (10dB)"
+#     ber_plots.title = "UE velocity: Est. CSI, 1 UE, 1x1 Jammer (20dB)"
 #     # ber_plots()
 #     with open("bers/paper/frequency/ut_velocity_mitigation.pickle", "wb") as f:
 #         pickle.dump(ber_plots, f)
 
-# elif parameter_num == 2:
+# if parameter_num == 2:
 #     ber_plots.reset()
 #     model_parameters = {}
 #     jammer_parameters = {}
@@ -110,7 +110,7 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 
 #     model_parameters["num_silent_pilot_symbols"] = 4
 #     model_parameters["jammer_present"] = True
-#     model_parameters["jammer_power"] = db_to_linear(10.)
+#     model_parameters["jammer_power"] = db_to_linear(20.)
 
 #     print("Jammer, unmigitated, 0km/h")
 #     model = Model(**model_parameters)
@@ -118,7 +118,7 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 
 #     model_parameters["jammer_mitigation"] = "pos"
 #     model_parameters["jammer_mitigation_dimensionality"] = 1
-#     kmhs = [0, 20, 30, 40, 50, 60, 80, 100, 120]
+#     kmhs = [0, 30, 80, 120]
 #     for kmh in kmhs:
 #         print("Jammer velocity: ", kmh)
 #         meter_per_second = kmh / 3.6
@@ -129,7 +129,7 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 #         model = Model(**model_parameters)
 #         simulate_model(model, f"Jammer, POS, {kmh} km/h", verbose=False)
 
-#     ber_plots.title = "Jammer velocity: Est. CSI, 1 UE, 1x1 Jammer (10dB)"
+#     ber_plots.title = "Jammer velocity: Est. CSI, 1 UE, 1x1 Jammer (20dB)"
 #     # ber_plots()
 #     with open("bers/paper/frequency/jammer_velocity_mitigation.pickle", "wb") as f:
 #         pickle.dump(ber_plots, f)
@@ -212,22 +212,26 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 # model_parameters["jammer_parameters"] = jammer_parameters
 
 # ber_plots.reset()
-# jammer_powers_db = [-5, 10]
-# equivalent_jammer_powers = [-2.5, 30.0]
+# jammer_powers_db = [-5, 0, 10]
+# equivalent_jammer_powers = [-2.5, 1.5, 30.0]
 # for jammer_power_db, equivalent in zip(jammer_powers_db, equivalent_jammer_powers):
+#     print(f"Jammer power: {jammer_power_db}dB")
+#     print("Barrage")
 #     # barrage simulation
 #     model = Model(**model_parameters, num_ut=4, jammer_power=db_to_linear(equivalent))
-#     simulate_model(model, f"Barrage, {equivalent}dB")
+#     simulate_model(model, f"Barrage, {equivalent}dB", verbose=False)
+#     print("Learned symbol weights")
 #     # learned symbol weights
 #     jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
 #     model = Model(**model_parameters, num_ut=4, jammer_power=db_to_linear(jammer_power_db))
 #     load_weights(model, f"weights/unmitigated/symbol/ue_4_pow_{jammer_power_db}dB.pickle")
-#     simulate_model(model, f"Learned, symbol, {jammer_power_db}dB")
+#     simulate_model(model, f"Learned, symbol, {jammer_power_db}dB", verbose=False)
+#     print("Learned RG weights")
 #     # learned rg weights
 #     jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
 #     model = Model(**model_parameters, num_ut=4, jammer_power=db_to_linear(jammer_power_db))
 #     load_weights(model, f"weights/paper/unmitigated_rg_ue_4_pow_{jammer_power_db}dB.pickle")
-#     simulate_model(model, f"Learned, RG, {jammer_power_db}dB")
+#     simulate_model(model, f"Learned, RG, {jammer_power_db}dB", verbose=False)
 
 # ber_plots()
 # with open("bers/paper/learning/learning_gains_ber.pickle", "wb") as f:
@@ -236,35 +240,35 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 
 
 # coded: learned vs uniform
-sim.MAX_MC_ITER = 3000
-ber_plots.reset()
-# common parameters
-model_parameters = {}
-jammer_parameters = {}
-decoder_parameters={}
-model_parameters["num_ut"] = 4
-model_parameters["jammer_present"] = True
-model_parameters["coderate"] = 0.5
-jammer_parameters["trainable"] = False
-jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
-decoder_parameters["num_iter"] = 20
-model_parameters["jammer_parameters"] = jammer_parameters
-model_parameters["decoder_parameters"] = decoder_parameters
+# sim.MAX_MC_ITER = 3000
+# ber_plots.reset()
+# # common parameters
+# model_parameters = {}
+# jammer_parameters = {}
+# decoder_parameters={}
+# model_parameters["num_ut"] = 4
+# model_parameters["jammer_present"] = True
+# model_parameters["coderate"] = 0.5
+# jammer_parameters["trainable"] = False
+# jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+# decoder_parameters["num_iter"] = 20
+# model_parameters["jammer_parameters"] = jammer_parameters
+# model_parameters["decoder_parameters"] = decoder_parameters
 
-# Uniform jammer with Minsum
-decoder_parameters["cn_type"] = "minsum"
-model = Model(**model_parameters)
-model._decoder.llr_max = 1000
-simulate_model(model, "Uniform Jammer, Minsum", add_bler=True)
+# # Uniform jammer with Minsum
+# decoder_parameters["cn_type"] = "minsum"
+# model = Model(**model_parameters)
+# model._decoder.llr_max = 1000
+# simulate_model(model, "Uniform Jammer, Minsum", add_bler=True)
 
-# Trained jammer
-model = Model(**model_parameters)
-model._decoder.llr_max = 1000
-load_weights(model, f"weights/paper/ue_4_coded.pickle")
-simulate_model(model, "Trained Jammer, Minsum", add_bler=True)
+# # Trained jammer
+# model = Model(**model_parameters)
+# model._decoder.llr_max = 1000
+# load_weights(model, f"weights/paper/ue_4_coded.pickle")
+# simulate_model(model, "Trained Jammer, Minsum", add_bler=True)
 
-ber_plots.title = "Trained Jammer vs. Uniform Jammer"
-# ber_plots(show_ber=False)
-# TODO save the plot
-with open("bers/paper/coded_bler.pickle", 'wb') as f:
-    bers = pickle.dump(ber_plots, f)
+# ber_plots.title = "Trained Jammer vs. Uniform Jammer"
+# # ber_plots(show_ber=False)
+# # TODO save the plot
+# with open("bers/paper/coded_bler.pickle", 'wb') as f:
+#     bers = pickle.dump(ber_plots, f)

@@ -3,8 +3,8 @@ from collections import deque
 from threading import Thread
 import datetime
 
-gpus = [1, 2, 3, 4]
-parameter_indices_to_run = range(4)
+gpus = [2, 3]
+parameter_indices_to_run = [1,2]#range(4)
 filename = "train_paper.py"
 
 # Create a queue for each GPU
