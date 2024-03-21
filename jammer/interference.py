@@ -8,7 +8,7 @@ class CovarianceEstimator(tf.keras.layers.Layer):
     Parameters
     ----------
     pilot_pattern : PilotPattern
-        An instance of :class:`~sionna.ofdm.PilotPattern`
+        An instance of :class:`~sionna.ofdm.PilotPattern`.
 
     Input
     -----

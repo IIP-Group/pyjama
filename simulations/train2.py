@@ -98,38 +98,85 @@ import pickle
 
     
 
-ber_plots.reset()
+# ber_plots.reset()
+# model_parameters = {}
+# jammer_parameters = {}
+# model_parameters["jammer_parameters"] = jammer_parameters
+# model_parameters["num_ut"] = 1
+# model_parameters["perfect_csi"] = False
+# model_parameters["perfect_jammer_csi"] = False
+# model_parameters["num_silent_pilot_symbols"] = 4
+# jammer_parameters["num_tx_ant"] = 2
+# sim.BATCH_SIZE = 256
+# sim.MAX_MC_ITER = 1000
+# sim.ebno_dbs = np.linspace(-5., 15., 21)
+
+# # if parameter_num == 0:
+# #     model = Model(**model_parameters)
+# #     simulate_model(model, "No Jammer")
+
+# # if parameter_num == 1:
+# #     model_parameters["jammer_present"] = True
+# #     model_parameters["jammer_power"] = db_to_linear(5.)
+# #     model = Model(**model_parameters)
+# #     simulate_model(model, "Jammer, unmigitated")
+
+# if parameter_num == 2:
+#     model_parameters["jammer_present"] = True
+#     model_parameters["jammer_power"] = db_to_linear(15.)
+#     model_parameters["jammer_mitigation"] = "pos"
+#     model_parameters["jammer_mitigation_dimensionality"] = 2
+#     model = Model(**model_parameters)
+#     simulate_model(model, "Jammer, POS")
+
+# ber_plots.title = "Simple Jammer Mitigation: Est. CSI, 1 UE, 1x2 Jammer (5dB/Ant)"
+# ber_plots(ylim=(1e-5, 1))
+# with open("bers/simple_pos.pickle", 'rb') as f:
+#     bers = pickle.dump(ber_plots, f)
+
+
+
+# because sombody killed it: learning gains ber
+sim.EBN0_DB_MIN = -10
+sim.EBN0_DB_MAX = 15
+sim.NUM_SNR_POINTS = 26
+# sim.BATCH_SIZE = 512
+# sim.MAX_MC_ITER = 1500
+sim.BATCH_SIZE = 512
+sim.MAX_MC_ITER = 1000
+sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
+
+# Learning gain BER
+# symbol weights (old) vs. rg weights
 model_parameters = {}
 jammer_parameters = {}
-model_parameters["jammer_parameters"] = jammer_parameters
-model_parameters["num_ut"] = 1
 model_parameters["perfect_csi"] = False
-model_parameters["perfect_jammer_csi"] = False
-model_parameters["num_silent_pilot_symbols"] = 4
-jammer_parameters["num_tx_ant"] = 2
-sim.BATCH_SIZE = 256
-sim.MAX_MC_ITER = 1000
-sim.ebno_dbs = np.linspace(-5., 15., 21)
+model_parameters["jammer_present"] = True
+jammer_parameters["trainable"] = True
+model_parameters["jammer_parameters"] = jammer_parameters
 
-# if parameter_num == 0:
-#     model = Model(**model_parameters)
-#     simulate_model(model, "No Jammer")
+ber_plots.reset()
+jammer_powers_db = [-5, 0, 10]
+equivalent_jammer_powers = [-2.5, 1.5, 30.0]
+for jammer_power_db, equivalent in zip(jammer_powers_db, equivalent_jammer_powers):
+    print(f"Jammer power: {jammer_power_db}dB")
+    print("Barrage")
+    # barrage simulation
+    model = Model(**model_parameters, num_ut=4, jammer_power=db_to_linear(equivalent))
+    simulate_model(model, f"Barrage, {equivalent}dB", verbose=False)
+    print("Learned symbol weights")
+    # learned symbol weights
+    jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+    model = Model(**model_parameters, num_ut=4, jammer_power=db_to_linear(jammer_power_db))
+    load_weights(model, f"weights/unmitigated/symbol/ue_4_pow_{jammer_power_db}dB.pickle")
+    simulate_model(model, f"Learned, symbol, {jammer_power_db}dB", verbose=False)
+    print("Learned RG weights")
+    # learned rg weights
+    jammer_parameters["trainable_mask"] = tf.ones([14, 128], dtype=tf.bool)
+    model = Model(**model_parameters, num_ut=4, jammer_power=db_to_linear(jammer_power_db))
+    load_weights(model, f"weights/paper/unmitigated_rg_ue_4_pow_{jammer_power_db}dB.pickle")
+    simulate_model(model, f"Learned, RG, {jammer_power_db}dB", verbose=False)
 
-# if parameter_num == 1:
-#     model_parameters["jammer_present"] = True
-#     model_parameters["jammer_power"] = db_to_linear(5.)
-#     model = Model(**model_parameters)
-#     simulate_model(model, "Jammer, unmigitated")
-
-if parameter_num == 2:
-    model_parameters["jammer_present"] = True
-    model_parameters["jammer_power"] = db_to_linear(15.)
-    model_parameters["jammer_mitigation"] = "pos"
-    model_parameters["jammer_mitigation_dimensionality"] = 2
-    model = Model(**model_parameters)
-    simulate_model(model, "Jammer, POS")
-
-ber_plots.title = "Simple Jammer Mitigation: Est. CSI, 1 UE, 1x2 Jammer (5dB/Ant)"
-ber_plots(ylim=(1e-5, 1))
-with open("bers/simple_pos.pickle", 'rb') as f:
-    bers = pickle.dump(ber_plots, f)
+ber_plots()
+with open("bers/paper/learning/learning_gains_ber.pickle", "wb") as f:
+    pickle.dump(ber_plots, f)

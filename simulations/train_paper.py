@@ -272,3 +272,34 @@ sim.ebno_dbs = np.linspace(sim.EBN0_DB_MIN, sim.EBN0_DB_MAX, sim.NUM_SNR_POINTS)
 # # TODO save the plot
 # with open("bers/paper/coded_bler.pickle", 'wb') as f:
 #     bers = pickle.dump(ber_plots, f)
+
+
+
+# # grid retraining
+# common parameters
+model_parameters = {}
+jammer_parameters = {}
+model_parameters["jammer_parameters"] = jammer_parameters
+model_parameters["jammer_present"] = True
+jammer_parameters["trainable"] = True
+jammer_parameters["trainable_mask"] = tf.ones([14, 1], dtype=tf.bool)
+sim.BATCH_SIZE = 2
+# massive grid: training with different jammer power and different number of UEs
+runs = [1, 2]
+num_ut = range(1, 9)
+jammer_powers_db = np.arange(-5, 15.1, 5, dtype=np.float32)
+parameters = [(r, x, y) for r in runs for x in num_ut for y in jammer_powers_db]
+r, n, p = parameters[parameter_num]
+model_parameters["num_ut"] = n
+model_parameters["jammer_power"] = db_to_linear(p)
+model = Model(**model_parameters)
+ebno_db = 5.0 if p > 2.5 else 0.
+train_model(model,
+            loss_fn=negative_function(MeanAbsoluteError()),
+            loss_over_logits=False,
+            weights_filename=f"weights/paper/grid_long/{r}/ue_{n}_power_{p:.1f}dB.pickle",
+            log_tensorboard=True,
+            log_weight_images=True,
+            show_final_weights=False,
+            num_iterations=20000,
+            ebno_db=ebno_db)
