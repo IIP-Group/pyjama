@@ -4,7 +4,7 @@ from threading import Thread
 import datetime
 
 gpus = [2, 3, 4, 5]
-parameter_indices_to_run = range(80)
+parameter_indices_to_run = [65, 70, 75] #range(80)
 filename = "train_paper.py"
 
 # Create a queue for each GPU

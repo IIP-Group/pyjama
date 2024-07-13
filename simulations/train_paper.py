@@ -297,7 +297,7 @@ ebno_db = 5.0 if p > 2.5 else 0.
 train_model(model,
             loss_fn=negative_function(MeanAbsoluteError()),
             loss_over_logits=False,
-            weights_filename=f"weights/paper/grid_long/{r}/ue_{n}_power_{p:.1f}dB.pickle",
+            weights_filename=f"weights/paper/grid_exp/{r}/ue_{n}_power_{p:.1f}dB.pickle",
             log_tensorboard=True,
             log_weight_images=True,
             show_final_weights=False,
