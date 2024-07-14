@@ -271,9 +271,10 @@ class OFDMJammer(tf.keras.layers.Layer):
             num_nonzero_subcarriers = tf.cast(tf.round(self._density_subcarriers * tf.cast(num_subcarriers, tf.float32)), tf.int32)
 
             # create sparse masks
-            symbol_mask = tf.concat([tf.ones([num_nonzero_symbols]), tf.zeros([num_symbols - num_nonzero_symbols])], axis=0)
+            symbol_mask = tf.concat([tf.ones([num_nonzero_symbols], dtype=self._dtype), tf.zeros([num_symbols - num_nonzero_symbols], dtype=self._dtype)], axis=0)
             symbol_mask = tf.random.shuffle(symbol_mask)
-            subcarrier_mask = tf.concat([tf.ones([num_nonzero_subcarriers]), tf.zeros([num_subcarriers - num_nonzero_subcarriers])], axis=0)
+            subcarrier_mask = tf.concat([tf.ones([num_nonzero_subcarriers], dtype=self._dtype),
+                                         tf.zeros([num_subcarriers - num_nonzero_subcarriers], dtype=self._dtype)], axis=0)
             subcarrier_mask = tf.random.shuffle(subcarrier_mask)
 
             sparsity_mask = tf.cast(tf.matmul(symbol_mask[...,tf.newaxis], subcarrier_mask[...,tf.newaxis], transpose_b=True), data.dtype)
