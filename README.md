@@ -35,7 +35,7 @@ in the root folder.
 
 Afterwards, test the installation by running
 ```
-python -c 'import pyjama; print pyjama.__version__'
+python -c 'import pyjama; print(pyjama.__version__)'
 ```
 
 ## Licence and Citation

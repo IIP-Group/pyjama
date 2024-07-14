@@ -15,4 +15,4 @@ logs/
 *.pickle
 *.out
 .mat
-doc/build
+docs/build
