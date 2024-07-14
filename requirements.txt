@@ -1,0 +1,3 @@
+sionna >= 15.1.0
+pickle
+numpy
