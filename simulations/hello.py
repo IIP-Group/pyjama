@@ -21,11 +21,11 @@ from sionna.mimo import StreamManagement
 from sionna.ofdm import ResourceGrid, ResourceGridMapper, KroneckerPilotPattern, LSChannelEstimator, LMMSEEqualizer
 from sionna.mapping import Mapper, Demapper
 from sionna.utils import ebnodb2no, BinarySource, compute_ber
-from jammer.pilots import PilotPatternWithSilence
-from jammer.jammer import OFDMJammer
-from jammer.mitigation.IAN import IanLMMSEEqualizer
-from jammer.mitigation.POS import OrthogonalSubspaceProjector
-from jammer.utils import covariance_estimation_from_signals
+from pyjama.pilots import PilotPatternWithSilence
+from pyjama.jammer import OFDMJammer
+from pyjama.mitigation.IAN import IanLMMSEEqualizer
+from pyjama.mitigation.POS import OrthogonalSubspaceProjector
+from pyjama.utils import covariance_estimation_from_signals
 
 # Jammer simulation over Rayleigh block fading channel with CSI estimation
 

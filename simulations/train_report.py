@@ -18,9 +18,9 @@ tf.get_logger().setLevel('ERROR')
 # tf.config.run_functions_eagerly(True)
 from tensorflow.python.keras.losses import MeanAbsoluteError, MeanSquaredError, BinaryCrossentropy
 
-from jammer.simulation_model import *
-from jammer.utils import *
-import jammer.simulation_model as sim
+from pyjama.simulation_model import *
+from pyjama.utils import *
+import pyjama.simulation_model as sim
 from simulations.experimental_losses import *
 
 sim.BATCH_SIZE = 128

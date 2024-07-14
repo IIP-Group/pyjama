@@ -17,9 +17,9 @@ if gpus:
 tf.get_logger().setLevel('ERROR')
 from tensorflow.python.keras.losses import MeanAbsoluteError, MeanSquaredError, BinaryCrossentropy
 
-from jammer.simulation_model import *
-from jammer.utils import *
-import jammer.simulation_model as sim
+from pyjama.simulation_model import *
+from pyjama.utils import *
+import pyjama.simulation_model as sim
 
 model_parameters = {}
 jammer_parameters = {}
