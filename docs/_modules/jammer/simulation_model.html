@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jammer.simulation_model &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/pyjama.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/jammer.html">Jammer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>jammer.simulation_model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for jammer.simulation_model</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sionna</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">from</span> <span class="nn">sionna.mimo</span> <span class="kn">import</span> <span class="n">StreamManagement</span>
+
+<span class="kn">from</span> <span class="nn">sionna.ofdm</span> <span class="kn">import</span> <span class="n">ResourceGrid</span><span class="p">,</span> <span class="n">ResourceGridMapper</span><span class="p">,</span> <span class="n">LSChannelEstimator</span><span class="p">,</span> <span class="n">LMMSEEqualizer</span>
+<span class="kn">from</span> <span class="nn">sionna.ofdm</span> <span class="kn">import</span> <span class="n">OFDMModulator</span><span class="p">,</span> <span class="n">OFDMDemodulator</span><span class="p">,</span> <span class="n">ZFPrecoder</span><span class="p">,</span> <span class="n">RemoveNulledSubcarriers</span>
+
+<span class="kn">from</span> <span class="nn">sionna.channel.tr38901</span> <span class="kn">import</span> <span class="n">Antenna</span><span class="p">,</span> <span class="n">AntennaArray</span><span class="p">,</span> <span class="n">CDL</span><span class="p">,</span> <span class="n">UMi</span><span class="p">,</span> <span class="n">UMa</span><span class="p">,</span> <span class="n">RMa</span>
+<span class="kn">from</span> <span class="nn">sionna.channel</span> <span class="kn">import</span> <span class="n">gen_single_sector_topology</span>
+<span class="kn">from</span> <span class="nn">sionna.channel</span> <span class="kn">import</span> <span class="n">cir_to_ofdm_channel</span><span class="p">,</span> <span class="n">cir_to_time_channel</span><span class="p">,</span> <span class="n">time_lag_discrete_time_channel</span>
+<span class="kn">from</span> <span class="nn">sionna.channel</span> <span class="kn">import</span> <span class="n">ApplyOFDMChannel</span><span class="p">,</span> <span class="n">ApplyTimeChannel</span><span class="p">,</span> <span class="n">OFDMChannel</span><span class="p">,</span> <span class="n">RayleighBlockFading</span>
+
+<span class="kn">from</span> <span class="nn">sionna.fec.ldpc.encoding</span> <span class="kn">import</span> <span class="n">LDPC5GEncoder</span>
+<span class="kn">from</span> <span class="nn">sionna.fec.ldpc.decoding</span> <span class="kn">import</span> <span class="n">LDPC5GDecoder</span>
+
+<span class="kn">from</span> <span class="nn">sionna.mapping</span> <span class="kn">import</span> <span class="n">Mapper</span><span class="p">,</span> <span class="n">Demapper</span>
+
+<span class="kn">from</span> <span class="nn">sionna.utils</span> <span class="kn">import</span> <span class="n">BinarySource</span><span class="p">,</span> <span class="n">ebnodb2no</span><span class="p">,</span> <span class="n">sim_ber</span><span class="p">,</span> <span class="n">plot_ber</span><span class="p">,</span> <span class="n">QAMSource</span><span class="p">,</span> <span class="n">PlotBER</span>
+<span class="kn">from</span> <span class="nn">sionna.utils.metrics</span> <span class="kn">import</span> <span class="n">compute_ber</span>
+
+<span class="kn">from</span> <span class="nn">.jammer</span> <span class="kn">import</span> <span class="n">OFDMJammer</span><span class="p">,</span> <span class="n">TimeDomainOFDMJammer</span>
+<span class="kn">from</span> <span class="nn">.mitigation</span> <span class="kn">import</span> <span class="n">POS</span><span class="p">,</span> <span class="n">IAN</span>
+<span class="kn">from</span> <span class="nn">.pilots</span> <span class="kn">import</span> <span class="n">OneHotWithSilencePilotPattern</span><span class="p">,</span> <span class="n">OneHotPilotPattern</span><span class="p">,</span> <span class="n">PilotPatternWithSilence</span>
+<span class="kn">from</span> <span class="nn">.channel_models</span> <span class="kn">import</span> <span class="n">MultiTapRayleighBlockFading</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">covariance_estimation_from_signals</span><span class="p">,</span> <span class="n">linear_to_db</span><span class="p">,</span> <span class="n">db_to_linear</span><span class="p">,</span> <span class="n">plot_to_image</span><span class="p">,</span> <span class="n">plot_matrix</span><span class="p">,</span> <span class="n">matrix_to_image</span><span class="p">,</span> <span class="n">reduce_mean_power</span><span class="p">,</span> <span class="n">normalize_power</span><span class="c1">#, expected_bitflips</span>
+
+<span class="kn">from</span> <span class="nn">tensorflow.python.keras.losses</span> <span class="kn">import</span> <span class="n">BinaryCrossentropy</span><span class="p">,</span> <span class="n">MeanAbsoluteError</span><span class="p">,</span> <span class="n">MeanSquaredError</span>
+
+<span class="c1"># TODO find a better way than global variables</span>
+<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">MAX_MC_ITER</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">EBN0_DB_MIN</span> <span class="o">=</span> <span class="o">-</span><span class="mf">5.0</span>
+<span class="n">EBN0_DB_MAX</span> <span class="o">=</span> <span class="mf">15.0</span>
+<span class="n">NUM_SNR_POINTS</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">ebno_dbs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">EBN0_DB_MIN</span><span class="p">,</span> <span class="n">EBN0_DB_MAX</span><span class="p">,</span> <span class="n">NUM_SNR_POINTS</span><span class="p">)</span>
+<span class="c1"># TODO let the plot ylim always be 1.0</span>
+<span class="n">ber_plots</span> <span class="o">=</span> <span class="n">PlotBER</span><span class="p">()</span>
+
+
+
+<span class="c1"># sionna.config.xla_compat=True</span>
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Model to simulate OFDM MIMO transmissions, mainly over a 3GPP 38.901 model.</span>
+<span class="sd">    It supports different simulations in frequency and time domain, as well as simulation of communication with jammer(s) present.</span>
+<span class="sd">    Several jammer mitigation algorithms are implemented as well.</span>
+<span class="sd">    </span>
+<span class="sd">    In all these simulations, trainable elements like jammers, receivers etc. are supported (only jammers are implemented so far).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    scenario : str, optional</span>
+<span class="sd">        The 3GPP 38.901 scenario to simulate. The default is &quot;umi&quot;. Must be one of [&quot;umi&quot;, &quot;uma&quot;, &quot;rma&quot;, &quot;rayleigh&quot;, &quot;multitap_rayleigh&quot;].</span>
+<span class="sd">    carrier_frequency : float, optional</span>
+<span class="sd">        The carrier frequency in Hz. The default is 3.5e9.</span>
+<span class="sd">    fft_size : int, optional</span>
+<span class="sd">        The number of OFDM subcarriers. The default is 128.</span>
+<span class="sd">    subcarrier_spacing : float, optional</span>
+<span class="sd">        The subcarrier spacing in Hz. The default is 30e3.</span>
+<span class="sd">    num_ofdm_symbols : int, optional</span>
+<span class="sd">        The number of OFDM symbols per resource grid. The default is 14.</span>
+<span class="sd">    cyclic_prefix_length : int, optional</span>
+<span class="sd">        The length of the cyclic prefix in samples. The default is 20.</span>
+<span class="sd">    maximum_delay_spread : float, optional</span>
+<span class="sd">        The maximum delay spread in seconds. This parameter is only relevant for time domain simulations.  The default is 3e-6.</span>
+<span class="sd">    num_bs_ant : int, optional</span>
+<span class="sd">        The number antennas on the basestation. The default is 16.</span>
+<span class="sd">    num_ut : int, optional</span>
+<span class="sd">        The number of User Terminals (UTs) simulated. The default is 4.</span>
+<span class="sd">    num_ut_ant : int, optional</span>
+<span class="sd">        The number of antennas on each UT. The default is 1.</span>
+<span class="sd">    num_bits_per_symbol : int, optional</span>
+<span class="sd">        The number of bits per constellation symbol. The default is 2 (QPSK).</span>
+<span class="sd">    coderate : float, optional</span>
+<span class="sd">        The coderate of the LDPC code. The default is None, which means no coding.</span>
+<span class="sd">    decoder_parameters : dict, optional</span>
+<span class="sd">        Additional parameters for the LDPC decoder. By default, the encoder will be set, and hard_out will be set to False (i.e. soft output).</span>
+<span class="sd">    domain : str, optional</span>
+<span class="sd">        The domain in which the simulation takes place. The default is &quot;freq&quot;. Must be one of [&quot;freq&quot;, &quot;time&quot;].</span>
+<span class="sd">    los : bool or None, optional</span>
+<span class="sd">        If not None, all UTs are forced to be in line-of-sight (LOS) with the basestation or not.</span>
+<span class="sd">    indoor_probability : float, optional</span>
+<span class="sd">        Probability of a UT being indoors. The default is 0.8.</span>
+<span class="sd">    min_ut_velocity : None or tf.float</span>
+<span class="sd">        Minimum UT velocity [m/s]</span>
+<span class="sd">    max_ut_velocity : None or tf.float</span>
+<span class="sd">        Maximim UT velocity [m/s]</span>
+<span class="sd">    resample_topology : bool, optional</span>
+<span class="sd">        If True, the topology is resampled for each batch. The default is True.</span>
+<span class="sd">    perfect_csi : bool, optional</span>
+<span class="sd">        If True, the channel is assumed to be perfectly known at the receiver. The default is False.</span>
+<span class="sd">    perfect_jammer_csi : bool, optional</span>
+<span class="sd">        If True, the jammer-BS channel is assumed to be perfectly known at the receiver (for mitigation). The default is False.</span>
+<span class="sd">    num_silent_pilot_symbols : int, optional</span>
+<span class="sd">        The number of pilot symbols where no UT tranmits (can be used for jammer channel estimation). The default is 0.</span>
+<span class="sd">    channel_parameters : dict, optional</span>
+<span class="sd">        Additional parameters for the channel model. The default is {}.</span>
+<span class="sd">    jammer_present : bool, optional</span>
+<span class="sd">        If True, a jammer/jammers are present in the simulation. The default is False.</span>
+<span class="sd">    jammer_power : :class:`tf.Tensor` broadcastable to [batch_size, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], float; or float, optional</span>
+<span class="sd">        Power of the jamming signal (of each jammer antenna). See :class:`~jammer.jammer.OFDMJammer` for details. The default is 1.0.</span>
+<span class="sd">    jammer_parameters : dict, optional</span>
+<span class="sd">        Additional parameters for the jammer, which is an instance of :class:`~jammer.jammer.OFDMJammer` or :class:`~jammer.jammer.TimeDomainOFDMJammer`.</span>
+<span class="sd">        The default is {&quot;num_tx&quot;: 1, &quot;num_tx_ant&quot;: 1, &quot;normalize_channel&quot;: True}.</span>
+<span class="sd">    min_jammer_velocity : None or tf.float</span>
+<span class="sd">        Minimum jammer velocity [m/s]</span>
+<span class="sd">    max_jammer_velocity : None or tf.float</span>
+<span class="sd">        Maximim jammer velocity [m/s]</span>
+<span class="sd">    jammer_mitigation : str or None, optional</span>
+<span class="sd">        The jammer mitigation algorithm to use. The default is None, i.e. the jammer will not be mitigated.</span>
+<span class="sd">        If it is a string, it must be one of [&quot;pos&quot;, &quot;ian&quot;]. See :doc:`mitigation` for details.</span>
+<span class="sd">    jammer_mitigation_dimensionality : int or None, optional</span>
+<span class="sd">        The dimensionality of the jammer mitigation. For each dimension, the largest remaining eigenvalue of the jammer covariance matrix is removed,</span>
+<span class="sd">        at the cost of ~1 degree of freedom (depending on the mitigation strategy).</span>
+<span class="sd">        If None, the dimensionality will be set to the rank of the jammer covariance matrix.</span>
+<span class="sd">        I.e. the total number of jammer antennas transmitting (when perfect_jammer_csi is True) or</span>
+<span class="sd">        the maximum of the number of jammer antennas transmitting in the silent pilot symbols and num_silent_pilot_symbols (when perfect_jammer_csi is False).</span>
+<span class="sd">        The default is None.</span>
+<span class="sd">    return_jammer_signals : bool, optional</span>
+<span class="sd">        If True, the received jammer signals during the silent pilot symbols are return additionally. The default is False.</span>
+<span class="sd">    return_symbols : bool, optional</span>
+<span class="sd">        If True, the estimated symbols are returned instead of the estimated bit-LLRs. The default is False.</span>
+<span class="sd">    return_decoder_iterations : bool, optional</span>
+<span class="sd">        If True, instead of the final LLRs, the LLRs after each iteration of the LDPC decoder are returned. The default is False.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    batch_size : int</span>
+<span class="sd">        The number of resource grids to simulate.</span>
+<span class="sd">    ebno_db : float</span>
+<span class="sd">        The SNR (Eb/N0) of the signal sent by the UTs in dB.</span>
+<span class="sd">    training : bool, optional</span>
+<span class="sd">        If True, the model is in training mode. If False, the model is in inference mode. The default is None, which means inference mode.</span>
+<span class="sd">        Currently this only matters for the LDPC decoder, which returns intermediate results during training and the only the final result during inference.</span>
+<span class="sd">    </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    (b, llr) or (x, x_hat), or (b, llr, jammer_signals) or (x, x_hat, jammer_signals) :</span>
+<span class="sd">        Either the transmitted bits and the estimated bit-LLRs, or the transmitted symbols and the estimated symbols (depending on ``return_symbols``).</span>
+<span class="sd">        If ``return_jammer_signals`` is True, the jammer signals during the silent pilot symbols are returned as well.</span>
+<span class="sd">    b : [batch_size, num_tx * num_streams_per_tx * k], tf.float32</span>
+<span class="sd">        The transmitted bits.</span>
+<span class="sd">    llr : [batch_size, num_tx * num_streams_per_tx * k] or [batch_size, num_tx * num_streams_per_tx * k * num_decoder_iterations], tf.float32</span>
+<span class="sd">        The estimated bit-LLRs. If ``return_decoder_iterations`` is True, the LLRs after each iteration of the LDPC decoder are returned.</span>
+<span class="sd">    x : [batch_size, num_tx * num_streams_per_tx * num_data_symbols], tf.complex64</span>
+<span class="sd">        The transmitted symbols.</span>
+<span class="sd">    x_hat : [batch_size, num_tx * num_streams_per_tx * num_data_symbols], tf.complex64</span>
+<span class="sd">        The estimated symbols.</span>
+<span class="sd">    jammer_signals : [batch_size, num_rx, num_rx_ant, num_silent_pilot_symbols, fft_size], tf.complex64</span>
+<span class="sd">        The jammer signals during the silent pilot symbols.</span>
+<span class="sd">    </span>
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    This simulation model uses the assumption that the jammer is not included in the noise estimation (only :math:N_0).</span>
+<span class="sd">    This is a simplification, as the noise is normally estimated separately from the signal (and hence would include noise caused by the jammer).</span>
+<span class="sd">    In consequence, the LLR estimation is over-confident, as the noise is underestimated.</span>
+<span class="sd">    This is unproblematic for uncoded training (as only the sign of the LLR matters), but degrades the performance of the LDPC decoder.</span>
+<span class="sd">    The stronger the jammer, the more the performance is degraded.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO the dict-arguments could also be replaced by **kwargs. Deliberate.</span>
+    <span class="c1"># see https://rhettinger.wordpress.com/2011/05/26/super-considered-super/ for reference.</span>
+    <span class="c1"># TODO jammer should have a separate los and indoor_probability parameter</span>
+    <span class="c1"># TODO make return_symbols property?</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">scenario</span><span class="o">=</span><span class="s2">&quot;umi&quot;</span><span class="p">,</span>
+                 <span class="n">carrier_frequency</span><span class="o">=</span><span class="mf">3.5e9</span><span class="p">,</span>
+                 <span class="n">fft_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                 <span class="n">subcarrier_spacing</span><span class="o">=</span><span class="mf">30e3</span><span class="p">,</span>
+                 <span class="n">num_ofdm_symbols</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
+                 <span class="n">cyclic_prefix_length</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                 <span class="n">maximum_delay_spread</span><span class="o">=</span><span class="mf">3e-6</span><span class="p">,</span>
+                 <span class="n">num_bs_ant</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+                 <span class="n">num_ut</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">num_ut_ant</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">num_bits_per_symbol</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                 <span class="n">coderate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">decoder_parameters</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;freq&quot;</span><span class="p">,</span>
+                 <span class="n">los</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">indoor_probability</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+                 <span class="n">min_ut_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">max_ut_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">resample_topology</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">perfect_csi</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">perfect_jammer_csi</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">num_silent_pilot_symbols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">channel_parameters</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="n">jammer_present</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">jammer_power</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">jammer_parameters</span><span class="o">=</span><span class="p">{</span>
+                     <span class="s2">&quot;num_tx&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                     <span class="s2">&quot;num_tx_ant&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                     <span class="s2">&quot;normalize_channel&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+                 <span class="n">min_jammer_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">max_jammer_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">jammer_mitigation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">jammer_mitigation_dimensionality</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">return_jammer_signals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">return_symbols</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">return_decoder_iterations</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span> <span class="o">=</span> <span class="n">scenario</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">=</span> <span class="n">domain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_perfect_csi</span> <span class="o">=</span> <span class="n">perfect_csi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_perfect_jammer_csi</span> <span class="o">=</span> <span class="n">perfect_jammer_csi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_silent_pilot_symbols</span> <span class="o">=</span> <span class="n">num_silent_pilot_symbols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_silent_pilot_symbol_indices</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_silent_pilot_symbols</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_present</span> <span class="o">=</span> <span class="n">jammer_present</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation</span> <span class="o">=</span> <span class="n">jammer_mitigation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation_dimensionality</span> <span class="o">=</span> <span class="n">jammer_mitigation_dimensionality</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_signals</span> <span class="o">=</span> <span class="n">return_jammer_signals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_return_symbols</span> <span class="o">=</span> <span class="n">return_symbols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_return_decoder_iterations</span> <span class="o">=</span> <span class="n">return_decoder_iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_power</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">jammer_power</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+        <span class="c1">#TODO should these kinds of parameters go into e.g. a dict for the channel parameters?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_los</span> <span class="o">=</span> <span class="n">los</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_indoor_probability</span> <span class="o">=</span> <span class="n">indoor_probability</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_ut_velocity</span> <span class="o">=</span> <span class="n">min_ut_velocity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_ut_velocity</span> <span class="o">=</span> <span class="n">max_ut_velocity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resample_topology</span> <span class="o">=</span> <span class="n">resample_topology</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_jammer_velocity</span> <span class="o">=</span> <span class="n">min_jammer_velocity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_jammer_velocity</span> <span class="o">=</span> <span class="n">max_jammer_velocity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_parameters</span> <span class="o">=</span> <span class="n">channel_parameters</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_csi</span> <span class="o">=</span> <span class="n">perfect_jammer_csi</span> <span class="ow">and</span> <span class="n">jammer_mitigation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_jammer</span> <span class="o">=</span> <span class="n">jammer_mitigation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">perfect_jammer_csi</span>
+        
+
+        <span class="c1"># Internally set parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_carrier_frequency</span> <span class="o">=</span> <span class="n">carrier_frequency</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fft_size</span> <span class="o">=</span> <span class="n">fft_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subcarrier_spacing</span> <span class="o">=</span> <span class="n">subcarrier_spacing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_ofdm_symbols</span> <span class="o">=</span> <span class="n">num_ofdm_symbols</span>
+        <span class="c1"># TODO shoud I make the default CP-length NR-compliant?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cyclic_prefix_length</span> <span class="o">=</span> <span class="n">cyclic_prefix_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_delay_spread</span> <span class="o">=</span> <span class="n">maximum_delay_spread</span>
+        <span class="c1"># self._pilot_ofdm_symbol_indices = [2, 11]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_bs_ant</span> <span class="o">=</span> <span class="n">num_bs_ant</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_ut</span> <span class="o">=</span> <span class="n">num_ut</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_ut_ant</span> <span class="o">=</span> <span class="n">num_ut_ant</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_bits_per_symbol</span> <span class="o">=</span> <span class="n">num_bits_per_symbol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_coderate</span> <span class="o">=</span> <span class="n">coderate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_effective_coderate</span> <span class="o">=</span> <span class="n">coderate</span> <span class="k">if</span> <span class="n">coderate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">1.0</span>
+
+        <span class="n">bs_ut_association</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_ut</span><span class="p">])</span>
+        <span class="n">bs_ut_association</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rx_tx_association</span> <span class="o">=</span> <span class="n">bs_ut_association</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_tx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_ut</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_streams_per_tx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_ut_ant</span>
+
+
+        <span class="c1"># Setup an OFDM Resource Grid</span>
+        <span class="n">pilot_pattern</span> <span class="o">=</span> <span class="n">OneHotPilotPattern</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_silent_pilot_symbols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_tx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_streams_per_tx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_ofdm_symbols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fft_size</span><span class="p">)</span>
+        <span class="n">pilot_pattern</span> <span class="o">=</span> <span class="n">PilotPatternWithSilence</span><span class="p">(</span><span class="n">pilot_pattern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_silent_pilot_symbol_indices</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span> <span class="o">=</span> <span class="n">ResourceGrid</span><span class="p">(</span><span class="n">num_ofdm_symbols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_ofdm_symbols</span><span class="p">,</span>
+                                <span class="n">fft_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_size</span><span class="p">,</span>
+                                <span class="n">subcarrier_spacing</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_subcarrier_spacing</span><span class="p">,</span>
+                                <span class="n">num_tx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_tx</span><span class="p">,</span>
+                                <span class="n">num_streams_per_tx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_streams_per_tx</span><span class="p">,</span>
+                                <span class="n">cyclic_prefix_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_cyclic_prefix_length</span><span class="p">,</span>
+                                <span class="n">pilot_pattern</span><span class="o">=</span><span class="n">pilot_pattern</span><span class="p">)</span>
+
+        <span class="c1"># Setup StreamManagement</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sm</span> <span class="o">=</span> <span class="n">StreamManagement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rx_tx_association</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_streams_per_tx</span><span class="p">)</span>
+
+        <span class="c1"># instantiate ut-bs-channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span><span class="p">,</span> <span class="n">num_tx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_ut</span><span class="p">,</span> <span class="n">num_tx_ant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_ut_ant</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_parameters</span><span class="p">)</span>
+
+        <span class="c1"># Instantiate other building blocks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_binary_source</span> <span class="o">=</span> <span class="n">BinarySource</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">num_data_symbols</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_bits_per_symbol</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_k</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effective_coderate</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">coderate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">=</span> <span class="n">LDPC5GEncoder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="n">num_bits_per_symbol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_bits_per_symbol</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_decoder</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">ReturnIntermediateLDPC5GDecoder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span><span class="p">,</span> <span class="n">hard_out</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">decoder_parameters</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_decoder_iterations</span>
+                <span class="k">else</span> <span class="n">LDPC5GDecoder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span><span class="p">,</span> <span class="n">hard_out</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">decoder_parameters</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mapper</span> <span class="o">=</span> <span class="n">Mapper</span><span class="p">(</span><span class="s2">&quot;qam&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_bits_per_symbol</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rg_mapper</span> <span class="o">=</span> <span class="n">ResourceGridMapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">)</span>
+
+        <span class="c1"># TODO normalize_channel should be simulation parameter (not only here, multiple places)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ofdm_channel</span> <span class="o">=</span> <span class="n">OFDMChannel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">,</span> <span class="n">add_awgn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">normalize_channel</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_channel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">==</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span>
+            <span class="c1"># TODO only for 802.11n</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_l_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_l_max</span> <span class="o">=</span> <span class="n">time_lag_discrete_time_channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">bandwidth</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_delay_spread</span><span class="p">)</span>
+            <span class="c1"># self._l_min, self._l_max = time_lag_discrete_time_channel(self._rg.bandwidth, maximum_delay_spread=2.0e-6)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_l_tot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_l_max</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_l_min</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_time_channel</span> <span class="o">=</span> <span class="n">ApplyTimeChannel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">num_time_samples</span><span class="p">,</span>
+                                                  <span class="n">l_tot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_l_tot</span><span class="p">,</span>
+                                                  <span class="n">add_awgn</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_modulator</span> <span class="o">=</span> <span class="n">OFDMModulator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">cyclic_prefix_length</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_demodulator</span> <span class="o">=</span> <span class="n">OFDMDemodulator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_l_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">cyclic_prefix_length</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_nulled_subcarriers</span> <span class="o">=</span> <span class="n">RemoveNulledSubcarriers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ls_est</span> <span class="o">=</span> <span class="n">LSChannelEstimator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">,</span> <span class="n">interpolation_type</span><span class="o">=</span><span class="s2">&quot;nn&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation</span> <span class="o">==</span> <span class="s2">&quot;ian&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lmmse_equ</span> <span class="o">=</span> <span class="n">IAN</span><span class="o">.</span><span class="n">IanLMMSEEqualizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sm</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lmmse_equ</span> <span class="o">=</span> <span class="n">LMMSEEqualizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_demapper</span> <span class="o">=</span> <span class="n">Demapper</span><span class="p">(</span><span class="s2">&quot;app&quot;</span><span class="p">,</span> <span class="s2">&quot;qam&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_bits_per_symbol</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_present</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_num_jammer</span> <span class="o">=</span> <span class="n">jammer_parameters</span><span class="p">[</span><span class="s2">&quot;num_tx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jammer_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_tx&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_num_jammer_ant</span> <span class="o">=</span> <span class="n">jammer_parameters</span><span class="p">[</span><span class="s2">&quot;num_tx_ant&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jammer_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_tx_ant&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">jammer_parameters</span><span class="p">[</span><span class="s2">&quot;normalize_channel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jammer_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;normalize_channel&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_channel_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span><span class="p">,</span> <span class="n">num_tx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_jammer</span><span class="p">,</span> <span class="n">num_tx_ant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_jammer_ant</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_parameters</span><span class="p">)</span>
+            <span class="c1"># self._jammer_channel_model = RayleighBlockFading(1, self._num_bs_ant, jammer_parameters[&quot;num_tx&quot;], jammer_parameters[&quot;num_tx_ant&quot;])</span>
+            <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">==</span> <span class="s2">&quot;freq&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_jammer</span> <span class="o">=</span> <span class="n">OFDMJammer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jammer_channel_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">,</span> <span class="n">return_channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_csi</span><span class="p">,</span> <span class="o">**</span><span class="n">jammer_parameters</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_csi</span><span class="p">:</span>
+                    <span class="c1"># return signal in time domain, jammer freq. response in freq. domain</span>
+                    <span class="n">return_domain</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;freq&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">return_domain</span> <span class="o">=</span> <span class="s2">&quot;time&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_jammer</span> <span class="o">=</span> <span class="n">TimeDomainOFDMJammer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jammer_channel_model</span><span class="p">,</span>
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">,</span>
+                                                    <span class="n">maximum_delay_spread</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_maximum_delay_spread</span><span class="p">,</span>
+                                                    <span class="n">return_channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_csi</span><span class="p">,</span>
+                                                    <span class="n">return_domain</span><span class="o">=</span><span class="n">return_domain</span><span class="p">,</span>
+                                                    <span class="o">**</span><span class="n">jammer_parameters</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation</span> <span class="o">==</span> <span class="s2">&quot;pos&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span> <span class="o">=</span> <span class="n">POS</span><span class="o">.</span><span class="n">OrthogonalSubspaceProjector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation_dimensionality</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_settings</span><span class="p">()</span>
+      
+    <span class="k">def</span> <span class="nf">_new_ut_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set new user topology&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;umi&quot;</span><span class="p">,</span> <span class="s2">&quot;uma&quot;</span><span class="p">,</span> <span class="s2">&quot;rma&quot;</span><span class="p">]:</span>
+            <span class="n">topology</span> <span class="o">=</span> <span class="n">gen_single_sector_topology</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">_num_ut</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span><span class="p">,</span>
+                                                  <span class="n">min_ut_velocity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_ut_velocity</span><span class="p">,</span>
+                                                  <span class="n">max_ut_velocity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_ut_velocity</span><span class="p">,</span>
+                                                  <span class="n">indoor_probability</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_indoor_probability</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel_model</span><span class="o">.</span><span class="n">set_topology</span><span class="p">(</span><span class="o">*</span><span class="n">topology</span><span class="p">,</span> <span class="n">los</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_los</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_new_jammer_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set new jammer topology&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_present</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;umi&quot;</span><span class="p">,</span> <span class="s2">&quot;uma&quot;</span><span class="p">,</span> <span class="s2">&quot;rma&quot;</span><span class="p">]:</span>
+            <span class="n">topology</span> <span class="o">=</span> <span class="n">gen_single_sector_topology</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">_num_jammer</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span><span class="p">,</span>
+                                                  <span class="n">min_ut_velocity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_jammer_velocity</span><span class="p">,</span>
+                                                  <span class="n">max_ut_velocity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_jammer_velocity</span><span class="p">,</span>
+                                                  <span class="n">indoor_probability</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_indoor_probability</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_channel_model</span><span class="o">.</span><span class="n">set_topology</span><span class="p">(</span><span class="o">*</span><span class="n">topology</span><span class="p">,</span> <span class="n">los</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_los</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_generate_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_type</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Supports UMi, UMa, RMa, Rayleigh, MultiTapRayleigh&quot;&quot;&quot;</span>
+        <span class="n">channel_type_to_class</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;umi&quot;</span><span class="p">:</span> <span class="n">UMi</span><span class="p">,</span>
+            <span class="s2">&quot;uma&quot;</span><span class="p">:</span> <span class="n">UMa</span><span class="p">,</span>
+            <span class="s2">&quot;rma&quot;</span><span class="p">:</span> <span class="n">RMa</span><span class="p">,</span>
+            <span class="s2">&quot;rayleigh&quot;</span><span class="p">:</span> <span class="n">RayleighBlockFading</span><span class="p">,</span>
+            <span class="s2">&quot;multitap_rayleigh&quot;</span><span class="p">:</span> <span class="n">MultiTapRayleighBlockFading</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">channel_class</span> <span class="o">=</span> <span class="n">channel_type_to_class</span><span class="p">[</span><span class="n">channel_type</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">channel_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;umi&quot;</span><span class="p">,</span> <span class="s2">&quot;uma&quot;</span><span class="p">,</span> <span class="s2">&quot;rma&quot;</span><span class="p">]:</span>
+            <span class="c1"># only configurable parameters:</span>
+            <span class="n">num_tx_ant</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_tx_ant&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># Configure antenna arrays</span>
+            <span class="n">ut_array</span> <span class="o">=</span> <span class="n">AntennaArray</span><span class="p">(</span>
+                                <span class="n">num_rows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                <span class="n">num_cols</span><span class="o">=</span><span class="n">num_tx_ant</span><span class="p">,</span>
+                                <span class="n">polarization</span><span class="o">=</span><span class="s2">&quot;single&quot;</span><span class="p">,</span>
+                                <span class="n">polarization_type</span><span class="o">=</span><span class="s2">&quot;V&quot;</span><span class="p">,</span>
+                                <span class="n">antenna_pattern</span><span class="o">=</span><span class="s2">&quot;omni&quot;</span><span class="p">,</span>
+                                <span class="n">carrier_frequency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_carrier_frequency</span><span class="p">)</span>
+
+            <span class="n">bs_array</span> <span class="o">=</span> <span class="n">AntennaArray</span><span class="p">(</span><span class="n">num_rows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                <span class="n">num_cols</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_bs_ant</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span>
+                                <span class="n">polarization</span><span class="o">=</span><span class="s2">&quot;dual&quot;</span><span class="p">,</span>
+                                <span class="n">polarization_type</span><span class="o">=</span><span class="s2">&quot;cross&quot;</span><span class="p">,</span>
+                                <span class="n">antenna_pattern</span><span class="o">=</span><span class="s2">&quot;38.901&quot;</span><span class="p">,</span>
+                                <span class="n">carrier_frequency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_carrier_frequency</span><span class="p">)</span>
+
+            <span class="n">channel_parameters</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;carrier_frequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_carrier_frequency</span><span class="p">,</span>
+                <span class="s2">&quot;ut_array&quot;</span><span class="p">:</span> <span class="n">ut_array</span><span class="p">,</span>
+                <span class="s2">&quot;bs_array&quot;</span><span class="p">:</span> <span class="n">bs_array</span><span class="p">,</span>
+                <span class="s2">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;uplink&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;enable_pathloss&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;enable_shadow_fading&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scenario</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;umi&quot;</span><span class="p">,</span> <span class="s2">&quot;uma&quot;</span><span class="p">]:</span>
+                <span class="n">channel_parameters</span><span class="p">[</span><span class="s2">&quot;o2i_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+        <span class="k">elif</span> <span class="n">channel_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rayleigh&quot;</span><span class="p">,</span> <span class="s2">&quot;multitap_rayleigh&quot;</span><span class="p">]:</span>
+            <span class="n">channel_parameters</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;num_tx&quot;</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;num_tx&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;num_tx_ant&quot;</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;num_tx_ant&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;num_rx&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;num_rx_ant&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_bs_ant</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">channel_type</span> <span class="o">==</span> <span class="s2">&quot;multitap_rayleigh&quot;</span><span class="p">:</span>
+                <span class="n">channel_parameters</span><span class="p">[</span><span class="s2">&quot;num_paths&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_paths&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Channel type </span><span class="si">{</span><span class="n">channel_type</span><span class="si">}</span><span class="s2"> not implemented.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">channel_class</span><span class="p">(</span><span class="o">**</span><span class="n">channel_parameters</span><span class="p">)</span>
+            
+
+    <span class="k">def</span> <span class="nf">_check_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_perfect_jammer_csi</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_present</span><span class="p">,</span>\
+            <span class="s2">&quot;If jammer CSI is perfect (i.e. returned by the jammer), we need a jammer which returns it.&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_jammer</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_silent_pilot_symbols</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>\
+            <span class="s2">&quot;We need silent pilots to estimate the jammer CSI.&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_silent_pilot_symbols</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_ofdm_symbols</span><span class="p">,</span>\
+        <span class="s2">&quot;The number of silent pilots must be smaller than the number of OFDM symbols.&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;freq&quot;</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">],</span>\
+        <span class="s2">&quot;domain must be either &#39;freq&#39; or &#39;time&#39;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coderate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coderate</span> <span class="o">&lt;=</span> <span class="mf">1.0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coderate</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span>\
+        <span class="s2">&quot;coderate must be in [0, 1] or None&quot;</span>
+
+<div class="viewcode-block" id="Model.build"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.Model.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resample_topology</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_new_ut_topology</span><span class="p">(</span><span class="n">input_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_new_jammer_topology</span><span class="p">(</span><span class="n">input_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+    <span class="c1"># batch size = number of resource grids (=symbols * subcarriers) per stream</span>
+    <span class="nd">@tf</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">jit_compile</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">ebno_db</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># for good statistics, we simulate a new topology for each batch.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resample_topology</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_new_ut_topology</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_new_jammer_topology</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="c1"># no = ebnodb2no(ebno_db, self._num_bits_per_symbol, coderate=self._effective_coderate, resource_grid=None)</span>
+        <span class="n">no</span> <span class="o">=</span> <span class="n">ebnodb2no</span><span class="p">(</span><span class="n">ebno_db</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_bits_per_symbol</span><span class="p">,</span> <span class="n">coderate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">resource_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binary_source</span><span class="p">([</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_tx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_streams_per_tx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_k</span><span class="p">])</span>
+        <span class="c1"># b = self._binary_source([batch_size, self._num_tx * self._num_streams_per_tx * self._rg.num_data_symbols * self._num_bits_per_symbol])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coderate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">flatten_last_dims</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">b</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mapper</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="c1"># x: [batch_size, num_tx, num_streams_per_tx, num_data_symbols]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_tx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_streams_per_tx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">num_data_symbols</span><span class="p">])</span>
+        <span class="n">x_rg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg_mapper</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">==</span> <span class="s2">&quot;freq&quot;</span><span class="p">:</span>
+            <span class="c1"># y: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]</span>
+            <span class="c1"># h: [batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size]</span>
+            <span class="n">y</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ofdm_channel</span><span class="p">([</span><span class="n">x_rg</span><span class="p">,</span> <span class="n">no</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">a</span><span class="p">,</span> <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_model</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">num_time_samples</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_l_tot</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">bandwidth</span><span class="p">)</span>
+            <span class="n">h_time</span> <span class="o">=</span> <span class="n">cir_to_time_channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="o">.</span><span class="n">bandwidth</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_l_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_l_max</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">x_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modulator</span><span class="p">(</span><span class="n">x_rg</span><span class="p">)</span>
+            <span class="n">y_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_channel</span><span class="p">([</span><span class="n">x_time</span><span class="p">,</span> <span class="n">h_time</span><span class="p">,</span> <span class="n">no</span><span class="p">])</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y_time</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_perfect_csi</span><span class="p">:</span>
+                <span class="c1"># calculate h in frequency domain</span>
+                <span class="c1"># h = ofdm_frequency_response_from_cir(a, tau, self._rg, normalize=True)</span>
+                <span class="c1"># TODO: if this is correct, we can use time_channel only (never need cir)</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">time_to_ofdm_channel</span><span class="p">(</span><span class="n">h_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_l_min</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_present</span><span class="p">:</span>
+            <span class="c1"># at this point, y might be in time or frequency domain.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_csi</span><span class="p">:</span>
+                <span class="n">y</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer</span><span class="p">([</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_power</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer</span><span class="p">([</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_power</span><span class="p">])</span>
+        <span class="c1"># after (potential) jammer, convert signal to freqency domain. Jammer is configured to always return j in freq. domain.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">==</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_demodulator</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_jammer</span><span class="p">:</span>
+            <span class="n">jammer_signals</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_silent_pilot_symbol_indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation</span> <span class="o">==</span> <span class="s2">&quot;pos&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_csi</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span><span class="o">.</span><span class="n">set_jammer_frequency_response</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span><span class="o">.</span><span class="n">set_jammer_signals</span><span class="p">(</span><span class="n">jammer_signals</span><span class="p">)</span>
+            <span class="c1"># we transform y before channel estimation to get correct no_eff automically</span>
+            <span class="c1"># but hence we have to transform h with perfect_csi=True, but not false</span>
+            <span class="c1"># we could alternatively transform y and h after channel estimation, but then we have to transform no_eff</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation</span> <span class="o">==</span> <span class="s2">&quot;ian&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_csi</span><span class="p">:</span>
+                <span class="c1"># attention: this jammer variance might have to have a different shape than the one used for the jammer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_lmmse_equ</span><span class="o">.</span><span class="n">set_jammer</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_power</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># [batch_size, num_rx, num_ofdm_symbols, fft_size, rx_ant, rx_ant]</span>
+                <span class="n">jammer_covariance</span> <span class="o">=</span> <span class="n">covariance_estimation_from_signals</span><span class="p">(</span><span class="n">jammer_signals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_ofdm_symbols</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_lmmse_equ</span><span class="o">.</span><span class="n">set_jammer_covariance</span><span class="p">(</span><span class="n">jammer_covariance</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_perfect_csi</span><span class="p">:</span>
+            <span class="n">h_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_nulled_subcarriers</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_mitigation</span> <span class="o">==</span> <span class="s2">&quot;pos&quot;</span><span class="p">:</span>
+                <span class="n">h_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span><span class="p">(</span><span class="n">h_hat</span><span class="p">)</span>
+            <span class="n">err_var</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">h_hat</span><span class="p">,</span> <span class="n">err_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ls_est</span><span class="p">([</span><span class="n">y</span><span class="p">,</span> <span class="n">no</span><span class="p">])</span>
+        <span class="n">x_hat</span><span class="p">,</span> <span class="n">no_eff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lmmse_equ</span><span class="p">([</span><span class="n">y</span><span class="p">,</span> <span class="n">h_hat</span><span class="p">,</span> <span class="n">err_var</span><span class="p">,</span> <span class="n">no</span><span class="p">])</span>
+        <span class="n">llr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_demapper</span><span class="p">([</span><span class="n">x_hat</span><span class="p">,</span> <span class="n">no_eff</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coderate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">llr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decoder</span><span class="p">(</span><span class="n">llr</span><span class="p">)</span>
+            <span class="c1"># during training, we want to return intermediate decoding results. During inference, we want to return the final result.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_decoder_iterations</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">training</span><span class="p">:</span>
+                <span class="n">llr</span> <span class="o">=</span> <span class="n">llr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_symbols</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">x_hat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x_hat</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">llr</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">llr</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">llr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_jammer_signals</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="p">(</span><span class="n">jammer_signals</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="ReturnIntermediateLDPC5GDecoder"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.ReturnIntermediateLDPC5GDecoder">[docs]</a><span class="k">class</span> <span class="nc">ReturnIntermediateLDPC5GDecoder</span><span class="p">(</span><span class="n">LDPC5GDecoder</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A wrapper around :class:`sionna.fec.ldpc.decoding.LDPC5GDecoder` which returns the llrs after each iteration.</span>
+<span class="sd">    This can be useful if gradients through a normal LDPC5GDecoder are not good enough.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    encoder: LDPC5GEncoder</span>
+<span class="sd">        An instance of :class:`~sionna.fec.ldpc.encoding.LDPC5GEncoder`</span>
+<span class="sd">        containing the correct code parameters.</span>
+
+<span class="sd">    trainable: bool</span>
+<span class="sd">        Defaults to False. If True, every outgoing variable node message is</span>
+<span class="sd">        scaled with a trainable scalar.</span>
+
+<span class="sd">    cn_type: str</span>
+<span class="sd">        A string defaults to &#39;&quot;boxplus-phi&quot;&#39;. One of</span>
+<span class="sd">        {`&quot;boxplus&quot;`, `&quot;boxplus-phi&quot;`, `&quot;minsum&quot;`} where</span>
+<span class="sd">        &#39;&quot;boxplus&quot;&#39; implements the single-parity-check APP decoding rule.</span>
+<span class="sd">        &#39;&quot;boxplus-phi&quot;&#39; implements the numerical more stable version of</span>
+<span class="sd">        boxplus [Ryan]_.</span>
+<span class="sd">        &#39;&quot;minsum&quot;&#39; implements the min-approximation of the CN</span>
+<span class="sd">        update rule [Ryan]_.</span>
+
+<span class="sd">    hard_out: bool</span>
+<span class="sd">        Defaults to True. If True, the decoder provides hard-decided</span>
+<span class="sd">        codeword bits instead of soft-values.</span>
+
+<span class="sd">    track_exit: bool</span>
+<span class="sd">        Defaults to False. If True, the decoder tracks EXIT characteristics.</span>
+<span class="sd">        Note that this requires the all-zero CW as input.</span>
+
+<span class="sd">    return_infobits: bool</span>
+<span class="sd">        Defaults to True. If True, only the `k` info bits (soft or</span>
+<span class="sd">        hard-decided) are returned. Otherwise all `n` positions are</span>
+<span class="sd">        returned.</span>
+
+<span class="sd">    prune_pcm: bool</span>
+<span class="sd">        Defaults to True. If True, all punctured degree-1 VNs and</span>
+<span class="sd">        connected check nodes are removed from the decoding graph (see</span>
+<span class="sd">        [Cammerer]_ for details). Besides numerical differences, this should</span>
+<span class="sd">        yield the same decoding result but improved the decoding throughput</span>
+<span class="sd">        and reduces the memory footprint.</span>
+
+<span class="sd">    num_iter: int</span>
+<span class="sd">        Defining the number of decoder iteration (no early stopping used at</span>
+<span class="sd">        the moment!).</span>
+
+<span class="sd">    output_dtype: tf.DType</span>
+<span class="sd">        Defaults to tf.float32. Defines the output datatype of the layer</span>
+<span class="sd">        (internal precision remains tf.float32).</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    llrs_ch: [...,n], tf.float32</span>
+<span class="sd">        2+D tensor containing the channel logits/llr values.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : [..., n, k], tf.float32</span>
+<span class="sd">        3+D Tensor of same shape up until the last dimension as ``inputs``</span>
+<span class="sd">        containing, for each decoder iteration, bit-wise soft-estimates</span>
+<span class="sd">        (or hard-decided bit-values) of all codeword bits.</span>
+<span class="sd">        The output of the final decoder iteration is located at [:, -1].</span>
+<span class="sd">        If ``return_infobits`` is True, only the `k`</span>
+<span class="sd">        information bits are returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">num_iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_internal_iter</span> <span class="o">=</span> <span class="n">num_iter</span>
+        <span class="c1"># TODO take care of hard_out, return_infobits (only for last iteration)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="s2">&quot;stateful&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;num_iter&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+
+<div class="viewcode-block" id="ReturnIntermediateLDPC5GDecoder.build"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.ReturnIntermediateLDPC5GDecoder.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build</span><span class="p">([</span><span class="n">input_shape</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="ReturnIntermediateLDPC5GDecoder.call"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.ReturnIntermediateLDPC5GDecoder.call">[docs]</a>    <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">llr_ch</span><span class="p">):</span>
+        <span class="n">llr_decs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">msg_vn</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_internal_iter</span><span class="p">):</span>
+            <span class="n">llr_dec</span><span class="p">,</span> <span class="n">msg_vn</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">call</span><span class="p">((</span><span class="n">llr_ch</span><span class="p">,</span> <span class="n">msg_vn</span><span class="p">))</span>
+            <span class="n">llr_decs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">llr_dec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">llr_decs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="relative_singular_values"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.relative_singular_values">[docs]</a><span class="k">def</span> <span class="nf">relative_singular_values</span><span class="p">(</span><span class="n">jammer_signals</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the normalized singular values of the jammer signals.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    jammer_signals: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]</span>
+<span class="sd">        received jammer signals during silent pilot symbols</span>
+<span class="sd">    </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : [num_rx * num_rx_ant], float</span>
+<span class="sd">        Singular values, sorted in descending order. Normalize to sum of eigenvalues = 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">jammer_signals</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="c1"># [batch_size, fft_size, num_rx*rx_ant, num_ofdm_symbols]</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">flatten_dims</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">compute_uv</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">trace</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># normalize to sum of eigenvalues = 1</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">/</span> <span class="n">trace</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="singular_values"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.singular_values">[docs]</a><span class="k">def</span> <span class="nf">singular_values</span><span class="p">(</span><span class="n">jammer_signals</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the unnormalized (and not averaged) singular values of the jammer signals.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    jammer_signals: [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size]</span>
+<span class="sd">        received jammer signals during silent pilot symbols</span>
+<span class="sd">    </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : [batch_size, fft_size, num_rx * num_rx_ant], float</span>
+<span class="sd">        Singular values, sorted in descending order. Normalize to sum of eigenvalues = 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">jammer_signals</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="c1"># [batch_size, fft_size, num_rx*rx_ant, num_ofdm_symbols]</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">flatten_dims</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">compute_uv</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sigma</span></div>
+
+<div class="viewcode-block" id="bar_plot"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.bar_plot">[docs]</a><span class="k">def</span> <span class="nf">bar_plot</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Display a bar plot of the values.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    values : list</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span> <span class="n">values</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<span class="k">def</span> <span class="nf">simulate_single</span><span class="p">(</span><span class="n">ebno_db</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simulates a single call to the model and prints the BER.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    ebno_db : float</span>
+<span class="sd">        The SNR (Eb/N0) of the signal sent by the UTs in dB.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="o">**</span><span class="n">model_parameters</span><span class="p">)</span>
+    <span class="n">b</span><span class="p">,</span> <span class="n">llr</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">ebno_db</span><span class="p">)</span>
+    <span class="n">b_hat</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">hard_decisions</span><span class="p">(</span><span class="n">llr</span><span class="p">)</span>
+    <span class="n">ber</span> <span class="o">=</span> <span class="n">compute_ber</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">b_hat</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ber</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">simulate_single</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ebno_db</span><span class="p">):</span>
+    <span class="n">b</span><span class="p">,</span> <span class="n">llr</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">ebno_db</span><span class="p">)</span>
+    <span class="n">b_hat</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">hard_decisions</span><span class="p">(</span><span class="n">llr</span><span class="p">)</span>
+    <span class="n">ber</span> <span class="o">=</span> <span class="n">compute_ber</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">b_hat</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ber</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="n">legend</span><span class="p">):</span> 
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="o">**</span><span class="n">model_parameters</span><span class="p">)</span>
+    <span class="n">simulate_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">legend</span><span class="p">)</span>
+
+<div class="viewcode-block" id="simulate_model"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.simulate_model">[docs]</a><span class="k">def</span> <span class="nf">simulate_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">legend</span><span class="p">,</span> <span class="n">add_bler</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simulates the model on SNRs given by ``ebno_dbs`` and plots the BER.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    model : :class:`~jammer.model.Model`</span>
+<span class="sd">        The model to simulate.</span>
+<span class="sd">    legend : str</span>
+<span class="sd">        The legend to use in the plot.</span>
+<span class="sd">    add_bler : bool, optional</span>
+<span class="sd">        If True, the BLER will be calculated and added to the plot. The default is False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ber_plots</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+                    <span class="n">ebno_dbs</span><span class="o">=</span><span class="n">ebno_dbs</span><span class="p">,</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
+                    <span class="n">legend</span><span class="o">=</span><span class="n">legend</span><span class="p">,</span>
+                    <span class="n">soft_estimates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">max_mc_iter</span><span class="o">=</span><span class="n">MAX_MC_ITER</span><span class="p">,</span>
+                    <span class="n">add_bler</span><span class="o">=</span><span class="n">add_bler</span><span class="p">,</span>
+                    <span class="n">show_fig</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="train_model"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.train_model">[docs]</a><span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+                <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+                <span class="n">loss_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">ebno_db</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                <span class="n">loss_over_logits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">num_iterations</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+                <span class="n">weights_filename</span><span class="o">=</span><span class="s2">&quot;weights.pickle&quot;</span><span class="p">,</span>
+                <span class="n">log_tensorboard</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">validate_ber_tensorboard</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">log_weight_images</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">show_final_weights</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Trains the model on a single SNR and saves all model weights in a file. Optionally, the loss as well as the weights can be logged to tensorboard.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    model : :class:`~jammer.simulation_model.Model`</span>
+<span class="sd">        The model to train.</span>
+<span class="sd">    loss_fn : callable, optional</span>
+<span class="sd">        The loss function to use. It should subclass (or implement the interface of) :class:`tf.keras.losses.Loss`.</span>
+<span class="sd">        Depending on ``model._return_symbols`` and ``loss_over_logits``, the loss function is applied to the symbols, bit-LLRs or the bit estimates.</span>
+<span class="sd">        If None, an L1-loss is used. The default is None.</span>
+<span class="sd">    ebno_db : float, optional</span>
+<span class="sd">        The SNR on which to train the model. The default is 0.0.</span>
+<span class="sd">    loss_over_logits : bool, optional</span>
+<span class="sd">        If True, a sigmoid function is applied to the input of the loss function before calculating the loss.</span>
+<span class="sd">        This is only done if ``model._return_symbols`` is False (otherwise, this parameter is ignored).</span>
+<span class="sd">        The default is None, which means the input is used as-is.</span>
+<span class="sd">    num_iterations : int, optional</span>
+<span class="sd">        The number of batches to train the model. The default is 5000.</span>
+<span class="sd">    weights_filename : str, optional</span>
+<span class="sd">        The name of the file to save the weights in. The default is &quot;weights.pickle&quot;.</span>
+<span class="sd">    log_tensorboard : bool, optional</span>
+<span class="sd">        If True, the loss is logged to tensorboard. The default is False.</span>
+<span class="sd">    validate_ber_tensorboard : bool, optional</span>
+<span class="sd">        If True, after training, fast BER-plot is logged to tensorboard as a scalar. The default is False.</span>
+<span class="sd">    log_weight_images : bool, optional</span>
+<span class="sd">        If True, the learned weights are logged to tensorboard as images every 500 iterations. The default is False.</span>
+<span class="sd">    show_final_weights : bool, optional</span>
+<span class="sd">        If True, the learned weights are plotted after training. The default is False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">)</span>
+    <span class="c1"># TODO could take average to make it less jittery. Worth it?</span>
+    <span class="c1"># mean_loss = tf.keras.metrics.Mean(name=&#39;train_loss&#39;)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">weights_filename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">current_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">-%H%M%S-</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">log_tensorboard</span><span class="p">:</span>
+        <span class="n">train_log_dir</span> <span class="o">=</span> <span class="s1">&#39;logs/tensorboard/&#39;</span> <span class="o">+</span> <span class="n">current_time</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="c1"># + &#39;/train&#39;</span>
+        <span class="n">train_summary_writer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">create_file_writer</span><span class="p">(</span><span class="n">train_log_dir</span><span class="p">)</span>
+        
+    <span class="c1"># TODO evaluate if expected bitflips is not just L1 loss. We can then write it as below</span>
+    <span class="c1"># if loss_fn is None:</span>
+    <span class="c1">#     if model._return_symbols:</span>
+    <span class="c1">#         # negative L1 loss</span>
+    <span class="c1">#         loss_fn = negative_function(MeanAbsoluteError())</span>
+    <span class="c1">#     else:</span>
+    <span class="c1">#         loss_fn = negative_function(expected_bitflips)</span>
+    <span class="c1">#         loss_over_logits = False</span>
+    <span class="k">if</span> <span class="n">loss_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">negative_function</span><span class="p">(</span><span class="n">MeanAbsoluteError</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="o">.</span><span class="n">_return_symbols</span><span class="p">:</span>
+            <span class="n">loss_over_logits</span> <span class="o">=</span> <span class="kc">False</span>
+    
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iterations</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">GradientTape</span><span class="p">()</span> <span class="k">as</span> <span class="n">tape</span><span class="p">:</span>
+            <span class="n">label</span><span class="p">,</span> <span class="n">predicted</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">ebno_db</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="o">.</span><span class="n">_return_symbols</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">loss_over_logits</span><span class="p">:</span>
+                <span class="n">predicted</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">predicted</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">predicted</span><span class="p">)</span>
+        <span class="c1"># Computing and applying gradients</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">trainable_weights</span>
+        <span class="n">grads</span> <span class="o">=</span> <span class="n">tape</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">apply_gradients</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">grads</span><span class="p">,</span> <span class="n">weights</span><span class="p">))</span>
+        <span class="c1"># log progress to tensorboard and console</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_iterations</span><span class="si">}</span><span class="s2">  Loss: </span><span class="si">{</span><span class="n">loss</span><span class="si">:</span><span class="s2">.2E</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_tensorboard</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">train_summary_writer</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+                    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;loss&#39;</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">500</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">log_weight_images</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">train_summary_writer</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+                <span class="n">image</span> <span class="o">=</span> <span class="n">matrix_to_image</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_jammer</span><span class="o">.</span><span class="n">_weights</span><span class="p">)</span>
+                <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;weights&quot;</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
+    
+    <span class="c1">#BER validation</span>
+    <span class="k">if</span> <span class="n">validate_ber_tensorboard</span><span class="p">:</span>
+        <span class="n">validate_log_dir</span> <span class="o">=</span> <span class="s1">&#39;logs/tensorboard/&#39;</span> <span class="o">+</span> <span class="n">current_time</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="c1"># + &#39;/validate&#39;</span>
+        <span class="n">tensorboard_validate_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">validate_log_dir</span><span class="p">)</span>
+
+    <span class="c1"># Save the weights in a file</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">weights_filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">show_final_weights</span><span class="p">:</span>
+        <span class="n">plot_matrix</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_jammer</span><span class="o">.</span><span class="n">_weights</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">weights_filename</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="tensorboard_validate_model"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.tensorboard_validate_model">[docs]</a><span class="k">def</span> <span class="nf">tensorboard_validate_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">log_dir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; TODO Simple BER validation on tensorboard&quot;&quot;&quot;</span>
+    <span class="c1"># setup tensorboard</span>
+    <span class="n">train_summary_writer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">create_file_writer</span><span class="p">(</span><span class="n">log_dir</span><span class="p">)</span>
+    <span class="c1"># validate</span>
+    <span class="c1"># TODO we should have a different batch size for validation. Hence, this should be a parameter.</span>
+    <span class="n">ber</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sim_ber</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ebno_dbs</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">MAX_MC_ITER</span><span class="p">,</span> <span class="n">soft_estimates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="c1"># ber, _ = sionna.utils.sim_ber(model, ebno_dbs, BATCH_SIZE, MAX_MC_ITER, soft_estimates=True, verbose=False)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ber_value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ber</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">train_summary_writer</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;BER&#39;</span><span class="p">,</span> <span class="n">ber_value</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">i</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_weights"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.load_weights">[docs]</a><span class="k">def</span> <span class="nf">load_weights</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">weights_filename</span><span class="o">=</span><span class="s2">&quot;weights.pickle&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loads the weights from a file into the model.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    model : :class:`~jammer.model.Model`</span>
+<span class="sd">        The model to load the weights into.</span>
+<span class="sd">    weights_filename : str, optional</span>
+<span class="sd">        The name of the file containing the weights. The default is &quot;weights.pickle&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># run model once to initialize weights</span>
+    <span class="c1"># model(BATCH_SIZE, 10.0)</span>
+    <span class="n">model</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">weights_filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">mean_L1_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ebno_db</span><span class="p">,</span> <span class="n">num_iterations</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">_return_symbols</span><span class="p">,</span> <span class="s2">&quot;Model must return symbols to calculate L1 loss.&quot;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">return_symbols</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">mean_loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;train_loss&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iterations</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">x_hat</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">ebno_db</span><span class="p">)</span>
+        <span class="c1"># L1 loss</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x_hat</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">mean_loss</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mean_loss</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+<div class="viewcode-block" id="negative_function"><a class="viewcode-back" href="../../api/simulation_model.html#jammer.simulation_model.negative_function">[docs]</a><span class="k">def</span> <span class="nf">negative_function</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a callable with numerical output, returns a callable with the same output, but with the sign flipped.</span>
+
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        fn : callable</span>
+<span class="sd">            A callable with numerical output.</span>
+<span class="sd">            </span>
+<span class="sd">        Output</span>
+<span class="sd">        ------</span>
+<span class="sd">        : callable</span>
+<span class="sd">            A callable with the same output as ``fn``, but with the sign flipped.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">negative_fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">negative_fn</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>

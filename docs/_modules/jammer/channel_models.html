@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jammer.channel_models &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/pyjama.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/jammer.html">Jammer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>jammer.channel_models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for jammer.channel_models</h1><div class="highlight"><pre>
+<span></span><span class="c1">#%%</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">sionna</span>
+<span class="kn">from</span> <span class="nn">sionna.channel</span> <span class="kn">import</span> <span class="n">ChannelModel</span>
+<span class="kn">from</span> <span class="nn">sionna.channel.tr38901</span> <span class="kn">import</span> <span class="n">Antenna</span><span class="p">,</span> <span class="n">AntennaArray</span><span class="p">,</span> <span class="n">CDL</span><span class="p">,</span> <span class="n">UMi</span><span class="p">,</span> <span class="n">UMa</span><span class="p">,</span> <span class="n">RMa</span>
+<span class="kn">from</span> <span class="nn">sionna.channel</span> <span class="kn">import</span> <span class="n">gen_single_sector_topology</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># TODO should we introduce a parameter for time delay between paths?</span>
+<div class="viewcode-block" id="MultiTapRayleighBlockFading"><a class="viewcode-back" href="../../api/channel_models.html#jammer.channel_models.MultiTapRayleighBlockFading">[docs]</a><span class="k">class</span> <span class="nc">MultiTapRayleighBlockFading</span><span class="p">(</span><span class="n">ChannelModel</span><span class="p">):</span>
+    <span class="c1"># pylint: disable=line-too-long</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate channel impulse responses corresponding to a Rayleigh block</span>
+<span class="sd">    fading channel model.</span>
+
+<span class="sd">    The channel impulse responses generated are formed of M paths with delays of</span>
+<span class="sd">    :math:`\tau_m = \frac{m}{\mathtt{sampling\_frequency}}, 0 \leq m \leq M-1`,</span>
+<span class="sd">    and a normally distributed fading coefficient.</span>
+<span class="sd">    All time steps of a batch example share the same channel coefficient</span>
+<span class="sd">    (block fading).</span>
+
+<span class="sd">    This class can be used in conjunction with the classes that simulate the</span>
+<span class="sd">    channel response in time or frequency domain, i.e.,</span>
+<span class="sd">    :class:`~sionna.channel.OFDMChannel`,</span>
+<span class="sd">    :class:`~sionna.channel.TimeChannel`,</span>
+<span class="sd">    :class:`~sionna.channel.GenerateOFDMChannel`,</span>
+<span class="sd">    :class:`~sionna.channel.ApplyOFDMChannel`,</span>
+<span class="sd">    :class:`~sionna.channel.GenerateTimeChannel`,</span>
+<span class="sd">    :class:`~sionna.channel.ApplyTimeChannel`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    num_rx : int</span>
+<span class="sd">        Number of receivers (:math:`N_R`)</span>
+
+<span class="sd">    num_rx_ant : int</span>
+<span class="sd">        Number of antennas per receiver (:math:`N_{RA}`)</span>
+
+<span class="sd">    num_tx : int</span>
+<span class="sd">        Number of transmitters (:math:`N_T`)</span>
+
+<span class="sd">    num_tx_ant : int</span>
+<span class="sd">        Number of antennas per transmitter (:math:`N_{TA}`)</span>
+
+<span class="sd">    num_paths: int</span>
+<span class="sd">        Number of paths (:math:`M`)</span>
+
+<span class="sd">    dtype : tf.DType</span>
+<span class="sd">        Complex datatype to use for internal processing and output.</span>
+<span class="sd">        Defaults to `tf.complex64`.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    batch_size : int</span>
+<span class="sd">        Batch size</span>
+
+<span class="sd">    num_time_steps : int</span>
+<span class="sd">        Number of time steps</span>
+<span class="sd">        </span>
+<span class="sd">    sampling_frequency : float</span>
+<span class="sd">        Sampling frequency [Hz]</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    -------</span>
+<span class="sd">    a : [batch size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_paths], num_time_steps], tf.complex</span>
+<span class="sd">        Path coefficients</span>
+
+<span class="sd">    tau : [batch size, num_rx, num_tx, num_paths], tf.float</span>
+<span class="sd">        Path delays [s]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>   <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">num_rx</span><span class="p">,</span>
+                    <span class="n">num_rx_ant</span><span class="p">,</span>
+                    <span class="n">num_tx</span><span class="p">,</span>
+                    <span class="n">num_tx_ant</span><span class="p">,</span>
+                    <span class="n">num_paths</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">):</span>
+
+        <span class="k">assert</span> <span class="n">dtype</span><span class="o">.</span><span class="n">is_complex</span><span class="p">,</span> <span class="s2">&quot;&#39;dtype&#39; must be complex type&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span> <span class="o">=</span> <span class="n">dtype</span>
+
+        <span class="c1"># We don&#39;t set these attributes as private so that the user can update</span>
+        <span class="c1"># them</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_tx</span> <span class="o">=</span> <span class="n">num_tx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_tx_ant</span> <span class="o">=</span> <span class="n">num_tx_ant</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_rx</span> <span class="o">=</span> <span class="n">num_rx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_rx_ant</span> <span class="o">=</span> <span class="n">num_rx_ant</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_paths</span> <span class="o">=</span> <span class="n">num_paths</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>  <span class="n">batch_size</span><span class="p">,</span> <span class="n">num_time_steps</span><span class="p">,</span> <span class="n">sampling_frequency</span><span class="p">):</span>
+
+        <span class="c1"># Delays</span>
+        <span class="n">delays</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_paths</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">)</span> <span class="o">/</span> <span class="n">sampling_frequency</span>
+        <span class="n">delays</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:],</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_tx</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Fading coefficients</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">)</span>
+        <span class="n">h_real</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span>   <span class="n">batch_size</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_rx</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_rx_ant</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_tx</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_tx_ant</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_paths</span><span class="p">,</span>
+                                            <span class="mi">1</span><span class="p">],</span> <span class="c1"># Same response over the block</span>
+                                            <span class="n">stddev</span><span class="o">=</span><span class="n">std</span><span class="p">,</span>
+                                            <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">)</span>
+        <span class="n">h_img</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span>    <span class="n">batch_size</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_rx</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_rx_ant</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_tx</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_tx_ant</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_paths</span><span class="p">,</span>
+                                            <span class="mi">1</span><span class="p">],</span> <span class="c1"># Same response over the block</span>
+                                            <span class="n">stddev</span><span class="o">=</span><span class="n">std</span><span class="p">,</span>
+                                            <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex</span><span class="p">(</span><span class="n">h_real</span><span class="p">,</span> <span class="n">h_img</span><span class="p">)</span>
+        <span class="c1"># Tile the response over the block</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">num_time_steps</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">h</span><span class="p">,</span> <span class="n">delays</span></div>
+
+<span class="c1"># %%</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>

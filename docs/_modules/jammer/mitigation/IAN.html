@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jammer.mitigation.IAN &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/pyjama.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/jammer.html">Jammer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/channel_models.html">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/mitigation.html">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/simulation_model.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/utils.html">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>jammer.mitigation.IAN</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for jammer.mitigation.IAN</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;LMMSE treating Interference as Noise (IAN)&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">sionna</span>
+<span class="kn">from</span> <span class="nn">sionna.ofdm</span> <span class="kn">import</span> <span class="n">OFDMEqualizer</span>
+<span class="kn">from</span> <span class="nn">sionna.mimo</span> <span class="kn">import</span> <span class="n">lmmse_equalizer</span>
+<span class="kn">from</span> <span class="nn">sionna.utils</span> <span class="kn">import</span> <span class="n">flatten_last_dims</span><span class="p">,</span> <span class="n">expand_to_rank</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">reduce_matrix_rank</span>
+
+
+<span class="c1"># TODO should we remove jammer variance from estimation of no_eff? Or is it correct to always include it?</span>
+<div class="viewcode-block" id="IanLMMSEEqualizer"><a class="viewcode-back" href="../../../api/mitigation.html#jammer.mitigation.IAN.IanLMMSEEqualizer">[docs]</a><span class="k">class</span> <span class="nc">IanLMMSEEqualizer</span><span class="p">(</span><span class="n">OFDMEqualizer</span><span class="p">):</span>
+    <span class="c1"># &quot;&quot;&quot;Usage: Set jammer_covariance before __call__&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    LMMSE Equalizer mitigating jammer interference by treating it as noise.</span>
+<span class="sd">    To be used instead of `~sionna.ofdm.LMMSEEqualizer` to equalize and supress jammer at the same time.</span>
+<span class="sd">    </span>
+<span class="sd">    One of `set_jammer` or `set_jammer_covariance` must be called before calling this layer.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    resource_grid : ResourceGrid</span>
+<span class="sd">        Instance of :class:`~sionna.ofdm.ResourceGrid`</span>
+
+<span class="sd">    stream_management : StreamManagement</span>
+<span class="sd">        Instance of :class:`~sionna.mimo.StreamManagement`</span>
+
+<span class="sd">    whiten_interference : bool</span>
+<span class="sd">        If `True` (default), the interference is first whitened before equalization.</span>
+<span class="sd">        In this case, an alternative expression for the receive filter is used which</span>
+<span class="sd">        can be numerically more stable.</span>
+
+<span class="sd">    dtype : tf.Dtype</span>
+<span class="sd">        Datatype for internal calculations and the output dtype.</span>
+<span class="sd">        Defaults to `tf.complex64`.</span>
+
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    (y, h_hat, err_var, no) :</span>
+<span class="sd">        Tuple:</span>
+
+<span class="sd">    y : [batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex</span>
+<span class="sd">        Received OFDM resource grid after cyclic prefix removal and FFT</span>
+
+<span class="sd">    h_hat : [batch_size, num_rx, num_rx_ant, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers], tf.complex</span>
+<span class="sd">        Channel estimates for all streams from all transmitters</span>
+
+<span class="sd">    err_var : [Broadcastable to shape of ``h_hat``], tf.float</span>
+<span class="sd">        Variance of the channel estimation error</span>
+
+<span class="sd">    no : [batch_size, num_rx, num_rx_ant] (or only the first n dims), tf.float</span>
+<span class="sd">        Variance of the AWGN</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    x_hat : [batch_size, num_tx, num_streams, num_data_symbols], tf.complex</span>
+<span class="sd">        Estimated symbols with jammer interference removed</span>
+
+<span class="sd">    no_eff : [batch_size, num_tx, num_streams, num_data_symbols], tf.float</span>
+<span class="sd">        Effective noise variance for each estimated symbol (including jammer interference)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">resource_grid</span><span class="p">,</span>
+                 <span class="n">stream_management</span><span class="p">,</span>
+                 <span class="n">whiten_interference</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="c1"># per default, we set the jammer covariance to the zero (broadcastable), i.e. we assume no jammer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jammer_covariance</span> <span class="o">=</span> <span class="mf">0.0</span><span class="n">j</span>
+
+        <span class="k">def</span> <span class="nf">equalizer</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">lmmse_equalizer</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">s</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">jammer_covariance</span><span class="p">,</span> <span class="n">whiten_interference</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">equalizer</span><span class="o">=</span><span class="n">equalizer</span><span class="p">,</span>
+                         <span class="n">resource_grid</span><span class="o">=</span><span class="n">resource_grid</span><span class="p">,</span>
+                         <span class="n">stream_management</span><span class="o">=</span><span class="n">stream_management</span><span class="p">,</span>
+                         <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="IanLMMSEEqualizer.set_jammer"><a class="viewcode-back" href="../../../api/mitigation.html#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer">[docs]</a>    <span class="k">def</span> <span class="nf">set_jammer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">rho</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the jammer covariance matrix from the frequency response of the jammer channel.</span>
+
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        j : [batch_size, num_rx, num_rx_ant, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], tf.complex, frequency response of jammer channel</span>
+<span class="sd">        rho : broadcastable to j.shape.</span>
+<span class="sd">            Jammer power.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># scale j by rho</span>
+        <span class="n">j_dt</span> <span class="o">=</span> <span class="n">j</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rho</span><span class="p">)</span>
+        <span class="c1"># new shape: [batch_size, rx, num_sym, fft_size, rx_ant, tx*tx_ant]</span>
+        <span class="n">j_dt</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">j_dt</span><span class="p">,</span> <span class="n">perm</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+        <span class="n">j_dt</span> <span class="o">=</span> <span class="n">flatten_last_dims</span><span class="p">(</span><span class="n">j_dt</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">j_dt</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">j_dt</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">)</span>
+        
+        <span class="c1"># [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jammer_covariance</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">j_dt</span><span class="p">,</span> <span class="n">j_dt</span><span class="p">,</span> <span class="n">adjoint_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IanLMMSEEqualizer.set_jammer_covariance"><a class="viewcode-back" href="../../../api/mitigation.html#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance">[docs]</a>    <span class="k">def</span> <span class="nf">set_jammer_covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jammer_covariance</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the jammer covariance matrix directly.</span>
+<span class="sd">        </span>
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        jammer_covariance: [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex</span>
+<span class="sd">            Covariance matrix of jammer signal.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jammer_covariance</span> <span class="o">=</span> <span class="n">jammer_covariance</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>

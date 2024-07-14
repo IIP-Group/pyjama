@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jammer Mitigation &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/clipboard.min.js"></script>
+        <script src="../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Simulation" href="simulation_model.html" />
+    <link rel="prev" title="Custom Pilot Patterns" href="pilots.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="pyjama.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="jammer.html">Jammer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="channel_models.html">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="simulation_model.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="pyjama.html">API Documentation</a> &raquo;</li>
+      <li>Jammer Mitigation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="jammer-mitigation">
+<h1>Jammer Mitigation<a class="headerlink" href="#jammer-mitigation" title="Permalink to this heading"></a></h1>
+<p>Several jammer mitigation algorithms are implemented here.
+Usage varies by algorithm, consult the documentation for each.
+Every algorithm is integrated into the simulation code.</p>
+<div class="section" id="module-jammer.mitigation.POS">
+<span id="projection-onto-orthogonal-subspace-pos"></span><h2>Projection onto Orthogonal Subspace (POS)<a class="headerlink" href="#module-jammer.mitigation.POS" title="Permalink to this heading"></a></h2>
+<p>Projection onto Orthogonal Space (orthonal to jammer subspace)</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.mitigation.POS.</span></span><span class="sig-name descname"><span class="pre">OrthogonalSubspaceProjector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector" title="Permalink to this definition"></a></dt>
+<dd><p>Mitigates jammer interference by projecting onto the orthogonal subspace of the jammer subspace.
+Jammer subspace has to be set before calling the layer. This can be done by either calling <cite>set_jammer_frequency_response</cite> or <cite>set_jammer_covariance</cite>.</p>
+<p>This layer should be called on the received signal and, if the unmapped channel frequency response is used, on it before equalization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dimensionality</strong> (<em>int</em>) – Rank of the jammer subspace which is “subtracted”.
+If None, the maximum dimensionality is assumed (i.e. the rank of the jammer covariance matrix).</p></li>
+<li><p><strong>dtype</strong> (<em>tf.Dtype</em>) – Defines the datatype for internal calculations and the output dtype.
+Defaults to <cite>tf.complex64</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Input</dt>
+<dd class="field-even"><p><strong>y</strong> (<em>[batch_size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_ofdm_symbols, fft_size], tf.complex (frequency response) or       ([batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex) (signal)</em>) – Input. Might be e.g. signal (including jammer interference), or channel frequency response (to be mapped to subspace).</p>
+</dd>
+<dt class="field-odd">Output</dt>
+<dd class="field-odd"><p><strong>y_proj</strong> (Same shape as <code class="docutils literal notranslate"><span class="pre">y</span></code>, dtype) – y projected onto the orthogonal subspace.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance">
+<span class="sig-name descname"><span class="pre">set_jammer_covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_covariance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_covariance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>jammer_covariance</strong> (<em>[batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex</em>) – Covariance matrix of jammer signal.</p></li>
+<li><p><strong>.. deprecated:: 0.1.0</strong> – Use <cite>set_jammer_signals</cite> instead.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response">
+<span class="sig-name descname"><span class="pre">set_jammer_frequency_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_frequency_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response" title="Permalink to this definition"></a></dt>
+<dd><p>Given the jammer channel frequency response j,
+precompute the projection matrix which maps the signal onto the orthogonal subspace of the jammer subspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><p><strong>j</strong> (<em>[batch_size, num_rx, num_rx_ant, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], tf.complex</em>) – Jammer channel frequency response</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals">
+<span class="sig-name descname"><span class="pre">set_jammer_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_signals</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><p><strong>jammer_signals</strong> (<em>[batch_size, num_rx, num_rx_ant, num_symbols, fft_size], tf.complex</em>) – Received symbols containing only jammer interference.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-jammer.mitigation.IAN">
+<span id="lmmse-treating-interference-as-noise-ian"></span><h2>LMMSE treating Interference as Noise (IAN)<a class="headerlink" href="#module-jammer.mitigation.IAN" title="Permalink to this heading"></a></h2>
+<p>LMMSE treating Interference as Noise (IAN)</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="jammer.mitigation.IAN.IanLMMSEEqualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.mitigation.IAN.</span></span><span class="sig-name descname"><span class="pre">IanLMMSEEqualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/IAN.html#IanLMMSEEqualizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.IAN.IanLMMSEEqualizer" title="Permalink to this definition"></a></dt>
+<dd><p>LMMSE Equalizer mitigating jammer interference by treating it as noise.
+To be used instead of <cite>~sionna.ofdm.LMMSEEqualizer</cite> to equalize and supress jammer at the same time.</p>
+<p>One of <cite>set_jammer</cite> or <cite>set_jammer_covariance</cite> must be called before calling this layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource_grid</strong> (<em>ResourceGrid</em>) – Instance of <a class="reference external" href="https://nvlabs.github.io/sionna/api/ofdm.html#sionna.ofdm.ResourceGrid" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResourceGrid</span></code></a></p></li>
+<li><p><strong>stream_management</strong> (<em>StreamManagement</em>) – Instance of <a class="reference external" href="https://nvlabs.github.io/sionna/api/mimo.html#sionna.mimo.StreamManagement" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StreamManagement</span></code></a></p></li>
+<li><p><strong>whiten_interference</strong> (<em>bool</em>) – If <cite>True</cite> (default), the interference is first whitened before equalization.
+In this case, an alternative expression for the receive filter is used which
+can be numerically more stable.</p></li>
+<li><p><strong>dtype</strong> (<em>tf.Dtype</em>) – Datatype for internal calculations and the output dtype.
+Defaults to <cite>tf.complex64</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Input</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>(y, h_hat, err_var, no)</strong> – Tuple:</p></li>
+<li><p><strong>y</strong> (<em>[batch_size, num_rx, num_rx_ant, num_ofdm_symbols, fft_size], tf.complex</em>) – Received OFDM resource grid after cyclic prefix removal and FFT</p></li>
+<li><p><strong>h_hat</strong> (<em>[batch_size, num_rx, num_rx_ant, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers], tf.complex</em>) – Channel estimates for all streams from all transmitters</p></li>
+<li><p><strong>err_var</strong> ([Broadcastable to shape of <code class="docutils literal notranslate"><span class="pre">h_hat</span></code>], tf.float) – Variance of the channel estimation error</p></li>
+<li><p><strong>no</strong> (<em>[batch_size, num_rx, num_rx_ant] (or only the first n dims), tf.float</em>) – Variance of the AWGN</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Output</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_hat</strong> (<em>[batch_size, num_tx, num_streams, num_data_symbols], tf.complex</em>) – Estimated symbols with jammer interference removed</p></li>
+<li><p><strong>no_eff</strong> (<em>[batch_size, num_tx, num_streams, num_data_symbols], tf.float</em>) – Effective noise variance for each estimated symbol (including jammer interference)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer">
+<span class="sig-name descname"><span class="pre">set_jammer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/IAN.html#IanLMMSEEqualizer.set_jammer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer" title="Permalink to this definition"></a></dt>
+<dd><p>Set the jammer covariance matrix from the frequency response of the jammer channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>j</strong> (<em>[batch_size, num_rx, num_rx_ant, num_jammer, num_jammer_ant, num_ofdm_symbols, fft_size], tf.complex, frequency response of jammer channel</em>)</p></li>
+<li><p><strong>rho</strong> (<em>broadcastable to j.shape.</em>) – Jammer power.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance">
+<span class="sig-name descname"><span class="pre">set_jammer_covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_covariance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/IAN.html#IanLMMSEEqualizer.set_jammer_covariance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance" title="Permalink to this definition"></a></dt>
+<dd><p>Set the jammer covariance matrix directly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><p><strong>jammer_covariance</strong> (<em>[batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], tf.complex</em>) – Covariance matrix of jammer signal.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="mitigation-via-subspace-hiding-mash">
+<h2>MitigAtion via Subspace Hiding (MASH)<a class="headerlink" href="#mitigation-via-subspace-hiding-mash" title="Permalink to this heading"></a></h2>
+<dl>
+<dt>References:</dt><dd><dl class="citation">
+<dt class="label" id="marti2023"><span class="brackets">Marti2023</span></dt>
+<dd><p><a class="reference external" href="https://arxiv.org/abs/2305.01260">G. Marti and C. Studer, “Universal MIMO Jammer Mitigation via Secret Temporal Subspace Embeddings”</a>,
+arXiv e-prints. 2023</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pilots.html" class="btn btn-neutral float-left" title="Custom Pilot Patterns" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="simulation_model.html" class="btn btn-neutral float-right" title="Simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Channel Models &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/clipboard.min.js"></script>
+        <script src="../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Custom Pilot Patterns" href="pilots.html" />
+    <link rel="prev" title="Jammer Models" href="jammer.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="pyjama.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="jammer.html">Jammer Models</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mitigation.html">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="simulation_model.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="pyjama.html">API Documentation</a> &raquo;</li>
+      <li>Channel Models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="channel-models">
+<h1>Channel Models<a class="headerlink" href="#channel-models" title="Permalink to this heading"></a></h1>
+<p>Additional channel models that were implemented to further explore jammer properties.</p>
+<span class="target" id="module-jammer.channel_models"></span><dl class="py class">
+<dt class="sig sig-object py" id="jammer.channel_models.MultiTapRayleighBlockFading">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.channel_models.</span></span><span class="sig-name descname"><span class="pre">MultiTapRayleighBlockFading</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_rx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rx_ant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tx_ant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.complex64</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/channel_models.html#MultiTapRayleighBlockFading"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.channel_models.MultiTapRayleighBlockFading" title="Permalink to this definition"></a></dt>
+<dd><p>Generate channel impulse responses corresponding to a Rayleigh block
+fading channel model.</p>
+<p>The channel impulse responses generated are formed of M paths with delays of
+<span class="math notranslate nohighlight">\(\tau_m = \frac{m}{\mathtt{sampling\_frequency}}, 0 \leq m \leq M-1\)</span>,
+and a normally distributed fading coefficient.
+All time steps of a batch example share the same channel coefficient
+(block fading).</p>
+<p>This class can be used in conjunction with the classes that simulate the
+channel response in time or frequency domain, i.e.,
+<a class="reference external" href="https://nvlabs.github.io/sionna/api/channel.wireless.html#sionna.channel.OFDMChannel" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">OFDMChannel</span></code></a>,
+<a class="reference external" href="https://nvlabs.github.io/sionna/api/channel.wireless.html#sionna.channel.TimeChannel" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeChannel</span></code></a>,
+<a class="reference external" href="https://nvlabs.github.io/sionna/api/channel.wireless.html#sionna.channel.GenerateOFDMChannel" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerateOFDMChannel</span></code></a>,
+<a class="reference external" href="https://nvlabs.github.io/sionna/api/channel.wireless.html#sionna.channel.ApplyOFDMChannel" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyOFDMChannel</span></code></a>,
+<a class="reference external" href="https://nvlabs.github.io/sionna/api/channel.wireless.html#sionna.channel.GenerateTimeChannel" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerateTimeChannel</span></code></a>,
+<a class="reference external" href="https://nvlabs.github.io/sionna/api/channel.wireless.html#sionna.channel.ApplyTimeChannel" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyTimeChannel</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_rx</strong> (<em>int</em>) – Number of receivers (<span class="math notranslate nohighlight">\(N_R\)</span>)</p></li>
+<li><p><strong>num_rx_ant</strong> (<em>int</em>) – Number of antennas per receiver (<span class="math notranslate nohighlight">\(N_{RA}\)</span>)</p></li>
+<li><p><strong>num_tx</strong> (<em>int</em>) – Number of transmitters (<span class="math notranslate nohighlight">\(N_T\)</span>)</p></li>
+<li><p><strong>num_tx_ant</strong> (<em>int</em>) – Number of antennas per transmitter (<span class="math notranslate nohighlight">\(N_{TA}\)</span>)</p></li>
+<li><p><strong>num_paths</strong> (<em>int</em>) – Number of paths (<span class="math notranslate nohighlight">\(M\)</span>)</p></li>
+<li><p><strong>dtype</strong> (<em>tf.DType</em>) – Complex datatype to use for internal processing and output.
+Defaults to <cite>tf.complex64</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Input</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>batch_size</strong> (<em>int</em>) – Batch size</p></li>
+<li><p><strong>num_time_steps</strong> (<em>int</em>) – Number of time steps</p></li>
+<li><p><strong>sampling_frequency</strong> (<em>float</em>) – Sampling frequency [Hz]</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Output</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<em>[batch size, num_rx, num_rx_ant, num_tx, num_tx_ant, num_paths], num_time_steps], tf.complex</em>) – Path coefficients</p></li>
+<li><p><strong>tau</strong> (<em>[batch size, num_rx, num_tx, num_paths], tf.float</em>) – Path delays [s]</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="jammer.html" class="btn btn-neutral float-left" title="Jammer Models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pilots.html" class="btn btn-neutral float-right" title="Custom Pilot Patterns" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>

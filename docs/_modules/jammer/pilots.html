@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jammer.pilots &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/pyjama.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/jammer.html">Jammer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>jammer.pilots</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for jammer.pilots</h1><div class="highlight"><pre>
+<span></span><span class="c1"># %%</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sionna</span>
+<span class="kn">from</span> <span class="nn">sionna.ofdm</span> <span class="kn">import</span> <span class="n">PilotPattern</span><span class="p">,</span> <span class="n">KroneckerPilotPattern</span>
+
+<span class="c1"># TODO this is not a very efficient implementation. Had to use python lists because numpy arrays can not temporarily have different shapes.</span>
+<span class="c1"># could e.g. work on flattened pilot array</span>
+<div class="viewcode-block" id="PilotPatternWithSilence"><a class="viewcode-back" href="../../api/pilots.html#jammer.pilots.PilotPatternWithSilence">[docs]</a><span class="k">class</span> <span class="nc">PilotPatternWithSilence</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Takes a PilotPattern and adds silence for all transmitters, streams and subcarriers at specified OFDM symbol positions.</span>
+<span class="sd">    The passed pilot pattern may not have a pilot at any of the silence positions.</span>
+<span class="sd">    Does not support training at the moment (silent symbols must be frozen for this).</span>
+
+<span class="sd">    ATTENTION: As this adds pilots with 0 energy, but ebnobd2no expects normalized pilots,</span>
+<span class="sd">    this class only supports unnormalized ebnodb2db (i.e. with resource_grid=None).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pilot_pattern : PilotPattern</span>
+<span class="sd">        Pilot pattern to be used as basis.</span>
+<span class="sd">        </span>
+<span class="sd">    silent_ofdm_symbol_indices : list of int</span>
+<span class="sd">        OFDM symbol indices at which silence should be added.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pilot_pattern</span><span class="p">,</span> <span class="n">silent_ofdm_symbol_indices</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_internal_pilot_pattern</span> <span class="o">=</span> <span class="n">pilot_pattern</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_silent_ofdm_symbol_indices</span> <span class="o">=</span> <span class="n">silent_ofdm_symbol_indices</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">pilot_pattern</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">pilots</span> <span class="o">=</span> <span class="n">pilot_pattern</span><span class="o">.</span><span class="n">pilots</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">num_tx</span><span class="p">,</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> <span class="n">num_ofdm_symbols</span><span class="p">,</span> <span class="n">num_effective_subcarriers</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span>
+        
+        <span class="c1"># TODO check if there are no pilots at the silent positions</span>
+        
+        <span class="c1"># mask ([num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers], bool)</span>
+        <span class="n">mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">silent_ofdm_symbol_indices</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># pilots ([num_tx, num_streams_per_tx, num_pilots], tf.complex)</span>
+        <span class="k">for</span> <span class="n">silent_index</span> <span class="ow">in</span> <span class="n">silent_ofdm_symbol_indices</span><span class="p">:</span>
+            <span class="c1"># [num_tx, num_streams_per_tx]: for each stream, how many pilots are before the silent symbol?</span>
+            <span class="n">num_pilots_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">silent_index</span><span class="p">,</span> <span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_tx</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_streams_per_tx</span><span class="p">):</span>
+                    <span class="n">insert_index</span> <span class="o">=</span> <span class="n">num_pilots_before</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                    <span class="n">pilots</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">insert_index</span><span class="p">:</span><span class="n">insert_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_effective_subcarriers</span>
+                    <span class="c1"># pilots = np.insert(pilots, num_pilots_before[i, j], 0+0j, axis=2)</span>
+                    <span class="c1">#pilots[i, j, num_pilots_before[i, j], :] = 0+0j</span>
+
+        <span class="n">pilots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pilots</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">pilots</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                         <span class="n">dtype</span><span class="o">=</span><span class="n">pilot_pattern</span><span class="o">.</span><span class="n">_dtype</span><span class="p">)</span>
+
+        <span class="c1"># empty pilots are modeled as zero symbols (masks are still 1 at these positions)</span>
+        <span class="c1"># this is compatiple with OFDM channel and ResourceGrid(De)Mapper.</span>
+        <span class="c1"># TODO check if compatible with channel estimators. It is at least with the LS estimator.</span>
+        <span class="c1"># TODO Interpolators are a possible problem. Check all interpolators. NN interpolator is fine.</span>
+        <span class="c1"># TODO: check 5G NR standard for pilot pattern with silence. There, they also use zero symbols.</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">silent_ofdm_symbol_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_silent_ofdm_symbol_indices</span></div>
+    
+
+<div class="viewcode-block" id="OneHotPilotPattern"><a class="viewcode-back" href="../../api/pilots.html#jammer.pilots.OneHotPilotPattern">[docs]</a><span class="k">class</span> <span class="nc">OneHotPilotPattern</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates one-hot pilot pattern. Each stream sends a pilot on all subcarriers during one OFDM symbol time.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    starting_symbol : int</span>
+<span class="sd">        OFDM symbol index at which the pilots start.</span>
+<span class="sd">    num_tx : int</span>
+<span class="sd">        Number of transmitters.</span>
+
+<span class="sd">    num_streams_per_tx : int</span>
+<span class="sd">        Number of streams per transmitter.</span>
+
+<span class="sd">    num_ofdm_symbols : int</span>
+<span class="sd">        Number of OFDM symbols.</span>
+
+<span class="sd">    num_effective_subcarriers : int</span>
+<span class="sd">        Number of effective subcarriers</span>
+<span class="sd">        that are available for the transmission of data and pilots.</span>
+<span class="sd">        Note that this number is generally smaller than the ``fft_size``</span>
+<span class="sd">        due to nulled subcarriers.</span>
+
+<span class="sd">    dtype : tf.Dtype</span>
+<span class="sd">        Defines the datatype for internal calculations and the output</span>
+<span class="sd">        dtype. Defaults to `tf.complex64`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">starting_symbol</span><span class="p">,</span> <span class="n">num_tx</span><span class="p">,</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> <span class="n">num_ofdm_symbols</span><span class="p">,</span> <span class="n">num_effective_subcarriers</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">starting_symbol</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`starting_symbol` must be positive or zero`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_tx</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_tx` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_streams_per_tx</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_streams_per_tx` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_ofdm_symbols</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_ofdm_symbols` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_effective_subcarriers</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_effective_subcarriers` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_ofdm_symbols</span> <span class="o">&gt;</span> <span class="n">starting_symbol</span> <span class="o">+</span> <span class="n">num_tx</span> <span class="o">*</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_ofdm_symbols` must be greater than `starting_symbol + num_tx * num_streams_per_tx`.&quot;</span>
+
+        <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">num_tx</span><span class="p">,</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> <span class="n">num_ofdm_symbols</span><span class="p">,</span>
+                      <span class="n">num_effective_subcarriers</span><span class="p">]</span>
+        <span class="n">num_streams</span> <span class="o">=</span> <span class="n">num_streams_per_tx</span> <span class="o">*</span> <span class="n">num_tx</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">starting_symbol</span><span class="p">:</span><span class="n">starting_symbol</span><span class="o">+</span><span class="n">num_streams</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># we just use symbols 1+0j as pilots, but could also e.g. sample from constellation</span>
+        <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_streams</span>
+        <span class="n">pilots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_tx</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_streams_per_tx</span><span class="p">):</span>
+                <span class="n">pilots</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span> <span class="o">*</span> <span class="n">num_streams_per_tx</span> <span class="o">+</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span>
+        <span class="n">pilots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">pilots</span><span class="p">,</span> <span class="p">[</span><span class="n">num_tx</span><span class="p">,</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">pilots</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="n">normalize</span><span class="p">,</span>
+                         <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
+    
+    
+<div class="viewcode-block" id="OneHotWithSilencePilotPattern"><a class="viewcode-back" href="../../api/pilots.html#jammer.pilots.OneHotWithSilencePilotPattern">[docs]</a><span class="k">class</span> <span class="nc">OneHotWithSilencePilotPattern</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates one-hot pilot pattern. Per stream one OFDM symbol.</span>
+
+<span class="sd">    After the pilots, silence is transmitted for ``num_silence_symbols`` OFDM symbols.</span>
+<span class="sd">    This is a slightly more efficient but less flexible implementation of</span>
+
+<span class="sd">    &gt;&gt;&gt; p = OneHotPilotPattern(0, num_tx, num_streams_per_tx, num_ofdm_symbols, num_effective_subcarriers)</span>
+<span class="sd">    &gt;&gt;&gt; p = PilotPatternWithSilence(p, range(num_tx * num_streams_per_tx, num_tx * num_streams_per_tx + num_silence_symbols))</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_tx : int</span>
+<span class="sd">        Number of transmitters.</span>
+
+<span class="sd">    num_streams_per_tx : int</span>
+<span class="sd">        Number of streams per transmitter.</span>
+
+<span class="sd">    num_ofdm_symbols : int</span>
+<span class="sd">        Number of OFDM symbols.</span>
+
+<span class="sd">    num_effective_subcarriers : int</span>
+<span class="sd">        Number of effective subcarriers</span>
+<span class="sd">        that are available for the transmission of data and pilots.</span>
+<span class="sd">        Note that this number is generally smaller than the ``fft_size``</span>
+<span class="sd">        due to nulled subcarriers.</span>
+
+<span class="sd">    num_silence_symbols : int</span>
+<span class="sd">        Number of silence symbols before the pilots.</span>
+
+<span class="sd">    dtype : tf.Dtype</span>
+<span class="sd">        Defines the datatype for internal calculations and the output</span>
+<span class="sd">        dtype. Defaults to `tf.complex64`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">num_tx</span><span class="p">,</span>
+                 <span class="n">num_streams_per_tx</span><span class="p">,</span>
+                 <span class="n">num_ofdm_symbols</span><span class="p">,</span>
+                 <span class="n">num_effective_subcarriers</span><span class="p">,</span>
+                 <span class="n">num_silence_symbols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">):</span>
+
+        <span class="k">assert</span> <span class="n">num_tx</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_tx` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_streams_per_tx</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_streams_per_tx` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_ofdm_symbols</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_ofdm_symbols` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_effective_subcarriers</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_effective_subcarriers` must be positive`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_silence_symbols</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_silence_symbols` must be positive or zero`.&quot;</span>
+        <span class="k">assert</span> <span class="n">num_ofdm_symbols</span> <span class="o">&gt;</span> <span class="n">num_silence_symbols</span> <span class="o">+</span> <span class="n">num_tx</span> <span class="o">*</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> \
+            <span class="s2">&quot;`num_ofdm_symbols` must be greater than `num_silence_symbols + num_tx * num_streams_per_tx`.&quot;</span>
+
+        <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">num_tx</span><span class="p">,</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> <span class="n">num_ofdm_symbols</span><span class="p">,</span>
+                      <span class="n">num_effective_subcarriers</span><span class="p">]</span>
+        <span class="n">num_streams</span> <span class="o">=</span> <span class="n">num_streams_per_tx</span> <span class="o">*</span> <span class="n">num_tx</span>
+        <span class="n">num_pilots</span> <span class="o">=</span> <span class="n">num_streams</span> <span class="o">+</span> <span class="n">num_silence_symbols</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">num_pilots</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># we just use symbols 1+0j as pilots, but could also e.g. sample from constellation</span>
+        <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_pilots</span>
+        <span class="n">pilots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_tx</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_streams_per_tx</span><span class="p">):</span>
+                <span class="n">pilots</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">num_silence_symbols</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">num_streams_per_tx</span> <span class="o">+</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span>
+        <span class="n">pilots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">pilots</span><span class="p">,</span> <span class="p">[</span><span class="n">num_tx</span><span class="p">,</span> <span class="n">num_streams_per_tx</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">pilots</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="n">normalize</span><span class="p">,</span>
+                         <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
+
+<span class="c1"># %%</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>

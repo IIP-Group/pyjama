@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jammer.utils &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/pyjama.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/jammer.html">Jammer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>jammer.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for jammer.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1">#%%</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sionna</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<div class="viewcode-block" id="sample_function"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.sample_function">[docs]</a><span class="k">def</span> <span class="nf">sample_function</span><span class="p">(</span><span class="n">sampler</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns function which samples from a constellation or a distribution.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">        sampler : str | Constellation | callable</span>
+<span class="sd">            String in `[&quot;uniform&quot;, &quot;gaussian&quot;]`, an instance of :class:`~sionna.mapping.Constellation`, or function with signature ``(shape, dtype) -&gt; tf.Tensor``,</span>
+<span class="sd">            where elementwise :math:`E[|x|^2] = 1`.</span>
+<span class="sd">        dtype : tf.Dtype</span>
+<span class="sd">            Defines the datatype the returned function should return.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">        callable</span>
+<span class="sd">            Function with signature ``(shape, dtype) -&gt; tf.Tensor`` which returns a tensor of shape ``shape`` with dtype ``dtype``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sampler</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">sampler</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
+            <span class="n">sample_function</span> <span class="o">=</span> <span class="n">sample_complex_uniform_disk</span>
+        <span class="k">elif</span> <span class="n">sampler</span> <span class="o">==</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span>
+            <span class="n">sample_function</span> <span class="o">=</span> <span class="n">sample_complex_gaussian</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown sampler </span><span class="si">{</span><span class="n">sampler</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sampler</span><span class="p">,</span> <span class="n">sionna</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">Constellation</span><span class="p">):</span>
+        <span class="n">sample_function</span> <span class="o">=</span> <span class="n">constellation_to_sampler</span><span class="p">(</span><span class="n">sampler</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="n">sampler</span><span class="p">):</span>
+        <span class="n">sample_function</span> <span class="o">=</span> <span class="n">sampler</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown sampler </span><span class="si">{</span><span class="n">sampler</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sample_function</span></div>
+
+
+<div class="viewcode-block" id="sample_complex_uniform_disk"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.sample_complex_uniform_disk">[docs]</a><span class="k">def</span> <span class="nf">sample_complex_uniform_disk</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sample uniform circle on complex plane.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">        shape : list of int</span>
+<span class="sd">            Shape of tensor to return.</span>
+<span class="sd">        dtype : tf.complex</span>
+<span class="sd">            Datatype of tensor to return.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">        : [shape], ``dtype``</span>
+<span class="sd">            Each element is sampled from within a circle with radius :math:`\sqrt{2}`.</span>
+<span class="sd">            This results in element-wise :math:`E[|x|^2] = 1`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Sample theta and R uniform, r = sqrt(2R)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">minval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">))</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">minval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="p">)</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">theta</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="sample_complex_gaussian"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.sample_complex_gaussian">[docs]</a><span class="k">def</span> <span class="nf">sample_complex_gaussian</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sample complex gaussian.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">        shape : list of int</span>
+<span class="sd">            Shape of tensor to return.</span>
+<span class="sd">        dtype : tf.complex</span>
+<span class="sd">            Datatype of tensor to return.</span>
+<span class="sd">        </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">        : [shape], ``dtype``</span>
+<span class="sd">            Each element is sampled from a complex gaussian with variance 1/2.</span>
+<span class="sd">            This results in element-wise :math:`E[|x|^2] = 1`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">stddev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">stddev</span><span class="o">=</span><span class="n">stddev</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">stddev</span><span class="o">=</span><span class="n">stddev</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="constellation_to_sampler"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.constellation_to_sampler">[docs]</a><span class="k">def</span> <span class="nf">constellation_to_sampler</span><span class="p">(</span><span class="n">constellation</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a constellation to a function which samples the constellation.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">        constellation : Constellation</span>
+<span class="sd">            An instance of :class:`~sionna.mapping.Constellation` to sample from.</span>
+<span class="sd">        normalize : bool</span>
+<span class="sd">            If True, normalize the constellation so that the average power of each symbol is 1.</span>
+<span class="sd">            </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">        : callable, ``(shape, dtype) -&gt; tf.Tensor``</span>
+<span class="sd">            Function which samples the constellation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">binary_source</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">BinarySource</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+        <span class="n">_constellation</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">constellation</span><span class="p">)</span>
+        <span class="n">_constellation</span><span class="o">.</span><span class="n">normalize</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_constellation</span> <span class="o">=</span> <span class="n">constellation</span>
+    <span class="n">mapper</span> <span class="o">=</span> <span class="n">sionna</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">Mapper</span><span class="p">(</span><span class="n">constellation</span><span class="o">=</span><span class="n">_constellation</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">sampler</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from a constellation&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">dtype</span> <span class="o">==</span> <span class="n">mapper</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="n">binary_source_shape</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">_constellation</span><span class="o">.</span><span class="n">num_bits_per_symbol</span><span class="p">]</span>
+        <span class="n">bits</span> <span class="o">=</span> <span class="n">binary_source</span><span class="p">(</span><span class="n">binary_source_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mapper</span><span class="p">(</span><span class="n">bits</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">sampler</span></div>
+
+
+<div class="viewcode-block" id="covariance_estimation_from_signals"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.covariance_estimation_from_signals">[docs]</a><span class="k">def</span> <span class="nf">covariance_estimation_from_signals</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">num_odfm_symbols</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the covariance matrix of a signal y.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    y : [batch_size, num_rx, num_rx_ant, num_symbols, fft_size], tf.complex</span>
+<span class="sd">        ``num_symbols`` is the number of symbols over which we estimate the covariance matrix</span>
+<span class="sd">        (e.g. the number of symbols where only a jammer is transmitting).</span>
+<span class="sd">    num_ofdm_symbols: int</span>
+<span class="sd">        Number of OFDM symbols in the complete resource grid.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : [batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], y.dtype</span>
+<span class="sd">        Covariance matrix over rx antennas, for each batch, rx and subcarrier. Broadcasted over ``num_ofdm_symbols``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># we calculate the covariance matrix, broadcast it over all ofdm symbols</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">perm</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span> <span class="c1"># [batch_size, num_rx, fft_size, num_rx_ant, num_jammer_symbols]</span>
+    <span class="c1"># 1/N * y*y^H</span>
+    <span class="n">cov</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">adjoint_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">/</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="c1"># add num_ofdm_symbols dimension by repeating</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">cov</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">tf</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">num_odfm_symbols</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span></div>
+
+<span class="c1"># def ofdm_frequency_response_from_cir(a, tau, rg, normalize):</span>
+<span class="c1">#     &quot;&quot;&quot;Calulate the frequency response of a channel from its CIR. Does this by downsampling channel gains (a) and computing DFT.</span>
+<span class="c1">#     normalize: bool. If true, normalizes over one resource grid.&quot;&quot;&quot;</span>
+<span class="c1">#     frequencies = sionna.channel.subcarrier_frequencies(rg.fft_size, rg.subcarrier_spacing)</span>
+<span class="c1">#     a_freq = a[...,rg.cyclic_prefix_length:-1:(rg.fft_size+rg.cyclic_prefix_length)]</span>
+<span class="c1">#     a_freq = a_freq[...,:rg.num_ofdm_symbols]</span>
+<span class="c1">#     h_freq = sionna.channel.cir_to_ofdm_channel(frequencies, a_freq, tau, normalize=normalize)</span>
+<span class="c1">#     return h_freq</span>
+
+
+<span class="c1"># TODO possibly make this use sparse tensors for better performance</span>
+<span class="c1"># TODO should we integrate this more general function into jammer (let every input dimension have the option to be sparse)</span>
+<span class="c1"># def sparse_mask(shape, sparsity, dtype=tf.float64):</span>
+<span class="c1">#     &quot;&quot;&quot;shape: list of int. Output shape</span>
+<span class="c1">#     sparsity: list of float. Same length as shape. Probability of slice being one.</span>
+<span class="c1">#     Returns a mask with 1.0 for non-zero elements and 0.0 for zero elements.&quot;&quot;&quot;</span>
+<span class="c1">#     assert len(shape) == len(sparsity)</span>
+
+<span class="c1">#     mask = np.ones(shape, dtype=dtype.as_numpy_dtype)</span>
+<span class="c1">#     for i, s in enumerate(shape):</span>
+<span class="c1">#         assert s &gt; 0</span>
+<span class="c1">#         zero_indices = np.random.choice(s, size=round(s*(1-sparsity[i])), replace=False)</span>
+<span class="c1">#         mask_index = [slice(None)] * len(shape)</span>
+<span class="c1">#         mask_index[i] = zero_indices</span>
+<span class="c1">#         mask[tuple(mask_index)] = 0.0</span>
+
+<span class="c1">#     return tf.convert_to_tensor(mask)</span>
+
+<div class="viewcode-block" id="reduce_matrix_rank"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.reduce_matrix_rank">[docs]</a><span class="k">def</span> <span class="nf">reduce_matrix_rank</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">rank</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reduce the rank of a matrix by setting the smallest singular values to zero.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    matrix: [..., M, N]</span>
+<span class="sd">    rank: int.</span>
+<span class="sd">        Desired rank of matrix.</span>
+<span class="sd">    </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : [..., M, N]</span>
+<span class="sd">        Matrix with rank smaller or equal ``rank``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">matrix</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="c1"># set smallest singular values to zero</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">s</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">rank</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">matrix</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+    <span class="c1"># reconstruct matrix</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s</span><span class="p">)),</span> <span class="n">v</span><span class="p">,</span> <span class="n">adjoint_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="db_to_linear"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.db_to_linear">[docs]</a><span class="k">def</span> <span class="nf">db_to_linear</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts number from dB to linear scale.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    db : float</span>
+<span class="sd">        Number in dB.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : float</span>
+<span class="sd">        :math:`10^{db/10}`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="n">db</span><span class="o">/</span><span class="mf">10.0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="linear_to_db"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.linear_to_db">[docs]</a><span class="k">def</span> <span class="nf">linear_to_db</span><span class="p">(</span><span class="n">linear</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts number from linear to dB scale.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    linear : float</span>
+<span class="sd">        Number from linear scale.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : float</span>
+<span class="sd">        :math:`10\log_{10}(linear)`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">10</span><span class="o">*</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">linear</span><span class="p">))</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NonNegMaxMeanSquareNorm"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.NonNegMaxMeanSquareNorm">[docs]</a><span class="k">class</span> <span class="nc">NonNegMaxMeanSquareNorm</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Scales the input tensor so that the mean power of each element along the given axis is at most ``max_mean_squared_norm``.</span>
+<span class="sd">    Also ensures that all elements are non-negative.</span>
+
+<span class="sd">    Ensures that :math:`\frac{1}{n} \sum{|w_i|^2} \le \mathtt{max\_mean\_squared\_norm}` along ``axis``</span>
+<span class="sd">    and that :math:`w_i \ge 0` for all values in ``w``.</span>
+<span class="sd">    ``n`` is the number of elements in ``w`` along the axis ``axis``.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    max_mean_squared_norm : float</span>
+<span class="sd">        Maximum to which all elements should be scaled, so that the mean squared norm does not exceed this value.</span>
+<span class="sd">    axis : int or list of int</span>
+<span class="sd">        Axis along which the mean squared norm is calculated.</span>
+<span class="sd">        </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    w : tf.Tensor</span>
+<span class="sd">        Tensor to which the constraint is applied.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : Same shape as ``w``, ``w.dtype``</span>
+<span class="sd">        If the constraint is valid, ``w`` is returned unchanged. Otherwise, ``w`` is scaled so that the constraint is valid.</span>
+<span class="sd">        All values in ``w`` which were negative are set to zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_mean_squared_norm</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_mean_squared_norm</span> <span class="o">=</span> <span class="n">max_mean_squared_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+        <span class="n">w_nonneg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">mean_squared_norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">w_nonneg</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">mean_squared_norm</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_mean_squared_norm</span><span class="p">):</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_mean_squared_norm</span> <span class="o">/</span> <span class="p">(</span><span class="n">mean_squared_norm</span> <span class="o">+</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">epsilon</span><span class="p">()))</span>
+            <span class="k">return</span> <span class="n">w_nonneg</span> <span class="o">*</span> <span class="n">scale</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">w_nonneg</span></div>
+
+<div class="viewcode-block" id="MaxMeanSquareNorm"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.MaxMeanSquareNorm">[docs]</a><span class="k">class</span> <span class="nc">MaxMeanSquareNorm</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Scales the input tensor so that the mean power of each element along the given axis is at most ``max_mean_squared_norm``.</span>
+
+<span class="sd">    Ensures that :math:`\frac{1}{n} \sum{|w|^2} \le \mathtt{max\_mean\_squared\_norm}`.</span>
+<span class="sd">    ``n`` is the number of elements in ``w`` along the axis ``axis``.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    max_mean_squared_norm : float</span>
+<span class="sd">        Maximum to which all elements should be scaled, so that the mean squared norm does not exceed this value.</span>
+<span class="sd">    axis : int or list of int</span>
+<span class="sd">        Axis along which the mean squared norm is calculated.</span>
+<span class="sd">        </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    w : tf.Tensor</span>
+<span class="sd">        Tensor to which the constraint is applied.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : Same shape as ``w``, ``w.dtype``</span>
+<span class="sd">        If the constraint is valid, ``w`` is returned unchanged. Otherwise, ``w`` is scaled so that the constraint is valid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_mean_squared_norm</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_mean_squared_norm</span> <span class="o">=</span> <span class="n">max_mean_squared_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+        <span class="n">mean_squared_norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">w</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">mean_squared_norm</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_mean_squared_norm</span><span class="p">):</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_mean_squared_norm</span> <span class="o">/</span> <span class="p">(</span><span class="n">mean_squared_norm</span> <span class="o">+</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">epsilon</span><span class="p">()))</span>
+            <span class="k">return</span> <span class="n">w</span> <span class="o">*</span> <span class="n">scale</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">w</span></div>
+
+<div class="viewcode-block" id="reduce_mean_power"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.reduce_mean_power">[docs]</a><span class="k">def</span> <span class="nf">reduce_mean_power</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the mean power of a tensor along the given axis.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    a : tf.Tensor</span>
+<span class="sd">        Tensor of which the mean power is calculated.</span>
+<span class="sd">    axis : int or list of int</span>
+<span class="sd">        Axis along which the mean power is calculated. If None, the mean power is calculated over all axes.</span>
+<span class="sd">    keepdims : bool</span>
+<span class="sd">        If True, the reduced dimensions are kept with size 1.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : tf.Tensor</span>
+<span class="sd">        Contains the mean power of ``a``, calculated along ``axis``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">a</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="n">keepdims</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="normalize_power"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.normalize_power">[docs]</a><span class="k">def</span> <span class="nf">normalize_power</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">is_amplitude</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Scales input tensor so that the mean power per element is 1.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    a : tf.Tensor</span>
+<span class="sd">        Tensor to be normalized.</span>
+<span class="sd">    is_amplitude : bool</span>
+<span class="sd">        If True, ``a`` is assumed to be the amplitude, otherwise it is assumed to be the power.</span>
+<span class="sd">    </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : tf.Tensor</span>
+<span class="sd">        Tensor with mean power of 1. It can be interpreted as amplitude or power like the input.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_amplitude</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">reduce_mean_power</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">a</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="plot_to_image"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.plot_to_image">[docs]</a><span class="k">def</span> <span class="nf">plot_to_image</span><span class="p">(</span><span class="n">figure</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a matplotlib figure to a PNG image and returns it. The supplied figure is closed and inaccessible after this call.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    figure: Figure</span>
+<span class="sd">        An instance of :class:`~matplotlib.figure.Figure` to convert to an image tensor.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : [1, height, width, 4], tf.uint8</span>
+<span class="sd">        Image of the figure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Save the plot to a PNG in memory.</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;png&#39;</span><span class="p">)</span>
+    <span class="c1"># Closing the figure prevents it from being displayed directly inside</span>
+    <span class="c1"># the notebook.</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">figure</span><span class="p">)</span>
+    <span class="n">buf</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># Convert PNG buffer to TF image</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">decode_png</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">(),</span> <span class="n">channels</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="c1"># Add the batch dimension</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">image</span></div>
+
+<div class="viewcode-block" id="plot_matrix"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.plot_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.4</span><span class="p">,</span> <span class="mf">4.8</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots a matrix as a heatmap.</span>
+<span class="sd">    If `a` has more than 2 dimensions, ``a[0, 0 .., :, :]`` is plotted.</span>
+<span class="sd">    </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    a : [..., M, N]</span>
+<span class="sd">        Matrix to plot.</span>
+<span class="sd">    figsize : (float, float)</span>
+<span class="sd">        width, height in inches</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[(</span><span class="mi">0</span><span class="p">,)</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)]</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+<div class="viewcode-block" id="matrix_to_image"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.matrix_to_image">[docs]</a><span class="k">def</span> <span class="nf">matrix_to_image</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a matrix to an image.&quot;&quot;&quot;</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.0</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">plot_to_image</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
+
+<span class="c1"># TODO: this is just L1 loss, isn&#39;t it?</span>
+<span class="c1"># def expected_bitflips(y_true, y_pred, reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE):</span>
+<span class="c1">#     &quot;&quot;&quot;Expected BER loss. y_true in {0, 1}, y_pred in [0, 1].&quot;&quot;&quot;</span>
+<span class="c1">#     losses = tf.reduce_sum(y_true * (1-y_pred) + (1-y_true) * (y_pred), axis=-1)</span>
+<span class="c1">#     # reduce over batch dimension, according to parameter reduction &lt;-TODO</span>
+<span class="c1">#     return tf.reduce_mean(losses)</span>
+    
+<span class="c1"># TODO test with alpha decreasing through training (and exp. scaling) (i.e. more weight on last iteration as training progresses)</span>
+<div class="viewcode-block" id="IterationLoss"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.IterationLoss">[docs]</a><span class="k">class</span> <span class="nc">IterationLoss</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">Loss</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loss function for iterative decoder which returns the output of each decoder iteration.</span>
+<span class="sd">    </span>
+<span class="sd">    Calculates the loss for each iteration separately and returns the weighted sum.</span>
+<span class="sd">    If ``exponential_alpha_scaling`` is true, the loss for each iteration is :math:`\sum_i \alpha^{n-i} * |b - \hat{b}_i|`,</span>
+<span class="sd">    where :math:`i` is the iteration number and :math:`n` the total number of iterations.</span>
+<span class="sd">    Otherwise, each iteration loss is scaled by :math:`\alpha` instead.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    alpha : float</span>
+<span class="sd">        Weights applied</span>
+<span class="sd">    exponential_alpha_scaling : bool</span>
+<span class="sd">        If true, later iterations are weighted more heavily. Otherwise, all iterations are weighted equally.</span>
+<span class="sd">    reduction : Reduction</span>
+<span class="sd">        A :class:`~tf.keras.losses.Reduction` to apply to the loss.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    b : [batch_size, num_bits]</span>
+<span class="sd">        Ground truth bits.</span>
+<span class="sd">    b_hat_iterations : [batch_size, num_bits * num_iterations], float</span>
+<span class="sd">        Output of decoder iterations.</span>
+
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    : float</span>
+<span class="sd">        Loss value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO implement reduction</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">exponential_alpha_scaling</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">Reduction</span><span class="o">.</span><span class="n">SUM_OVER_BATCH_SIZE</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exponention_alpha_scaling</span> <span class="o">=</span> <span class="n">exponential_alpha_scaling</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IterationLoss</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">b_hat_iterations</span><span class="p">):</span>
+        <span class="c1"># batch, num_bits * num_iterations -&gt; batch, num_bits, num_iterations</span>
+        <span class="n">b_hat_iterations</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">b_hat_iterations</span><span class="p">,</span> <span class="p">[</span><span class="n">b_hat_iterations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">num_iterations</span> <span class="o">=</span> <span class="n">b_hat_iterations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">num_iterations</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alpha</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exponention_alpha_scaling</span><span class="p">:</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">**</span> <span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">num_iterations</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">alpha</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="n">difference</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">-</span> <span class="n">b_hat_iterations</span><span class="p">)</span>
+        <span class="n">difference</span> <span class="o">*=</span> <span class="n">alpha</span>
+        <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">difference</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="merge_plotbers"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.merge_plotbers">[docs]</a><span class="k">def</span> <span class="nf">merge_plotbers</span><span class="p">(</span><span class="n">plotbers</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Merges multiple :class:sionna.utils.plotting.PlotBER instances into one.</span>
+<span class="sd">    Properties which are unique per instance (like ``title``) are taken from the first instance.</span>
+
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    plotbers : list of :class:sionna.utils.plotting.PlotBER</span>
+<span class="sd">        Instances to merge.</span>
+<span class="sd">        </span>
+<span class="sd">    Output</span>
+<span class="sd">    ------</span>
+<span class="sd">    :class:sionna.utils.plotting.PlotBER</span>
+<span class="sd">        Merged instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="n">plotbers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">plotbers</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">p0</span><span class="o">.</span><span class="n">_bers</span> <span class="o">+=</span> <span class="n">p</span><span class="o">.</span><span class="n">_bers</span>
+        <span class="n">p0</span><span class="o">.</span><span class="n">_snrs</span> <span class="o">+=</span> <span class="n">p</span><span class="o">.</span><span class="n">_snrs</span>
+        <span class="n">p0</span><span class="o">.</span><span class="n">_legends</span> <span class="o">+=</span> <span class="n">p</span><span class="o">.</span><span class="n">_legends</span>
+        <span class="n">p0</span><span class="o">.</span><span class="n">_is_bler</span> <span class="o">+=</span> <span class="n">p</span><span class="o">.</span><span class="n">_is_bler</span>
+    <span class="k">return</span> <span class="n">p0</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>

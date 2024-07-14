@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utility functions &mdash; PyJama 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/sionna.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/clipboard.min.js"></script>
+        <script src="../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Visualization" href="visualization.html" />
+    <link rel="prev" title="Simulation" href="simulation_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> PyJama
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="pyjama.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="jammer.html">Jammer Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="channel_models.html">Channel Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pilots.html">Custom Pilot Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mitigation.html">Jammer Mitigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="simulation_model.html">Simulation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Utility functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization.html">Visualization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="visualization.html#channel-visualization">Channel Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="visualization.html#utility-functions">Utility Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PyJama</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="pyjama.html">API Documentation</a> &raquo;</li>
+      <li>Utility functions</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-jammer.utils">
+<span id="utility-functions"></span><h1>Utility functions<a class="headerlink" href="#module-jammer.utils" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="jammer.utils.IterationLoss">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">IterationLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exponential_alpha_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sum_over_batch_size'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#IterationLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.IterationLoss" title="Permalink to this definition"></a></dt>
+<dd><p>Loss function for iterative decoder which returns the output of each decoder iteration.</p>
+<p>Calculates the loss for each iteration separately and returns the weighted sum.
+If <code class="docutils literal notranslate"><span class="pre">exponential_alpha_scaling</span></code> is true, the loss for each iteration is <span class="math notranslate nohighlight">\(\sum_i \alpha^{n-i} * |b - \hat{b}_i|\)</span>,
+where <span class="math notranslate nohighlight">\(i\)</span> is the iteration number and <span class="math notranslate nohighlight">\(n\)</span> the total number of iterations.
+Otherwise, each iteration loss is scaled by <span class="math notranslate nohighlight">\(\alpha\)</span> instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> (<em>float</em>) – Weights applied</p></li>
+<li><p><strong>exponential_alpha_scaling</strong> (<em>bool</em>) – If true, later iterations are weighted more heavily. Otherwise, all iterations are weighted equally.</p></li>
+<li><p><strong>reduction</strong> (<em>Reduction</em>) – A <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/losses/Reduction" title="(in TensorFlow v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reduction</span></code></a> to apply to the loss.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Input</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>b</strong> (<em>[batch_size, num_bits]</em>) – Ground truth bits.</p></li>
+<li><p><strong>b_hat_iterations</strong> (<em>[batch_size, num_bits * num_iterations], float</em>) – Output of decoder iterations.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Output</dt>
+<dd class="field-odd"><p><em>float</em> – Loss value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="jammer.utils.MaxMeanSquareNorm">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">MaxMeanSquareNorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_mean_squared_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#MaxMeanSquareNorm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.MaxMeanSquareNorm" title="Permalink to this definition"></a></dt>
+<dd><p>Scales the input tensor so that the mean power of each element along the given axis is at most <code class="docutils literal notranslate"><span class="pre">max_mean_squared_norm</span></code>.</p>
+<p>Ensures that <span class="math notranslate nohighlight">\(\frac{1}{n} \sum{|w|^2} \le \mathtt{max\_mean\_squared\_norm}\)</span>.
+<code class="docutils literal notranslate"><span class="pre">n</span></code> is the number of elements in <code class="docutils literal notranslate"><span class="pre">w</span></code> along the axis <code class="docutils literal notranslate"><span class="pre">axis</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_mean_squared_norm</strong> (<em>float</em>) – Maximum to which all elements should be scaled, so that the mean squared norm does not exceed this value.</p></li>
+<li><p><strong>axis</strong> (<em>int</em><em> or </em><em>list of int</em>) – Axis along which the mean squared norm is calculated.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Input</dt>
+<dd class="field-even"><p><strong>w</strong> (<em>tf.Tensor</em>) – Tensor to which the constraint is applied.</p>
+</dd>
+<dt class="field-odd">Output</dt>
+<dd class="field-odd"><p>Same shape as <code class="docutils literal notranslate"><span class="pre">w</span></code>, <code class="docutils literal notranslate"><span class="pre">w.dtype</span></code> – If the constraint is valid, <code class="docutils literal notranslate"><span class="pre">w</span></code> is returned unchanged. Otherwise, <code class="docutils literal notranslate"><span class="pre">w</span></code> is scaled so that the constraint is valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="jammer.utils.NonNegMaxMeanSquareNorm">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">NonNegMaxMeanSquareNorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_mean_squared_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#NonNegMaxMeanSquareNorm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.NonNegMaxMeanSquareNorm" title="Permalink to this definition"></a></dt>
+<dd><p>Scales the input tensor so that the mean power of each element along the given axis is at most <code class="docutils literal notranslate"><span class="pre">max_mean_squared_norm</span></code>.
+Also ensures that all elements are non-negative.</p>
+<p>Ensures that <span class="math notranslate nohighlight">\(\frac{1}{n} \sum{|w_i|^2} \le \mathtt{max\_mean\_squared\_norm}\)</span> along <code class="docutils literal notranslate"><span class="pre">axis</span></code>
+and that <span class="math notranslate nohighlight">\(w_i \ge 0\)</span> for all values in <code class="docutils literal notranslate"><span class="pre">w</span></code>.
+<code class="docutils literal notranslate"><span class="pre">n</span></code> is the number of elements in <code class="docutils literal notranslate"><span class="pre">w</span></code> along the axis <code class="docutils literal notranslate"><span class="pre">axis</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_mean_squared_norm</strong> (<em>float</em>) – Maximum to which all elements should be scaled, so that the mean squared norm does not exceed this value.</p></li>
+<li><p><strong>axis</strong> (<em>int</em><em> or </em><em>list of int</em>) – Axis along which the mean squared norm is calculated.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Input</dt>
+<dd class="field-even"><p><strong>w</strong> (<em>tf.Tensor</em>) – Tensor to which the constraint is applied.</p>
+</dd>
+<dt class="field-odd">Output</dt>
+<dd class="field-odd"><p>Same shape as <code class="docutils literal notranslate"><span class="pre">w</span></code>, <code class="docutils literal notranslate"><span class="pre">w.dtype</span></code> – If the constraint is valid, <code class="docutils literal notranslate"><span class="pre">w</span></code> is returned unchanged. Otherwise, <code class="docutils literal notranslate"><span class="pre">w</span></code> is scaled so that the constraint is valid.
+All values in <code class="docutils literal notranslate"><span class="pre">w</span></code> which were negative are set to zero.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.constellation_to_sampler">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">constellation_to_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constellation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.complex64</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#constellation_to_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.constellation_to_sampler" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a constellation to a function which samples the constellation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>constellation</strong> (<em>Constellation</em>) – An instance of <a class="reference external" href="https://nvlabs.github.io/sionna/api/mapping.html#sionna.mapping.Constellation" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constellation</span></code></a> to sample from.</p></li>
+<li><p><strong>normalize</strong> (<em>bool</em>) – If True, normalize the constellation so that the average power of each symbol is 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p>callable, <code class="docutils literal notranslate"><span class="pre">(shape,</span> <span class="pre">dtype)</span> <span class="pre">-&gt;</span> <span class="pre">tf.Tensor</span></code> – Function which samples the constellation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.covariance_estimation_from_signals">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">covariance_estimation_from_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_odfm_symbols</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#covariance_estimation_from_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.covariance_estimation_from_signals" title="Permalink to this definition"></a></dt>
+<dd><p>Estimate the covariance matrix of a signal y.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<em>[batch_size, num_rx, num_rx_ant, num_symbols, fft_size], tf.complex</em>) – <code class="docutils literal notranslate"><span class="pre">num_symbols</span></code> is the number of symbols over which we estimate the covariance matrix
+(e.g. the number of symbols where only a jammer is transmitting).</p></li>
+<li><p><strong>num_ofdm_symbols</strong> (<em>int</em>) – Number of OFDM symbols in the complete resource grid.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>[batch_size, num_rx, num_ofdm_symbols, fft_size, num_rx_ant, num_rx_ant], y.dtype</em> – Covariance matrix over rx antennas, for each batch, rx and subcarrier. Broadcasted over <code class="docutils literal notranslate"><span class="pre">num_ofdm_symbols</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.db_to_linear">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">db_to_linear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#db_to_linear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.db_to_linear" title="Permalink to this definition"></a></dt>
+<dd><p>Converts number from dB to linear scale.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><p><strong>db</strong> (<em>float</em>) – Number in dB.</p>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>float</em> – <span class="math notranslate nohighlight">\(10^{db/10}\)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.linear_to_db">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">linear_to_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#linear_to_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.linear_to_db" title="Permalink to this definition"></a></dt>
+<dd><p>Converts number from linear to dB scale.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><p><strong>linear</strong> (<em>float</em>) – Number from linear scale.</p>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>float</em> – <span class="math notranslate nohighlight">\(10\log_{10}(linear)\)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.matrix_to_image">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">matrix_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#matrix_to_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.matrix_to_image" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a matrix to an image.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.merge_plotbers">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">merge_plotbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plotbers</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#merge_plotbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.merge_plotbers" title="Permalink to this definition"></a></dt>
+<dd><p>Merges multiple :class:sionna.utils.plotting.PlotBER instances into one.
+Properties which are unique per instance (like <code class="docutils literal notranslate"><span class="pre">title</span></code>) are taken from the first instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><p><strong>plotbers</strong> (<em>list of :class:sionna.utils.plotting.PlotBER</em>) – Instances to merge.</p>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>class:sionna.utils.plotting.PlotBER</em> – Merged instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.normalize_power">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">normalize_power</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_amplitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#normalize_power"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.normalize_power" title="Permalink to this definition"></a></dt>
+<dd><p>Scales input tensor so that the mean power per element is 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<em>tf.Tensor</em>) – Tensor to be normalized.</p></li>
+<li><p><strong>is_amplitude</strong> (<em>bool</em>) – If True, <code class="docutils literal notranslate"><span class="pre">a</span></code> is assumed to be the amplitude, otherwise it is assumed to be the power.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>tf.Tensor</em> – Tensor with mean power of 1. It can be interpreted as amplitude or power like the input.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.plot_matrix">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">plot_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#plot_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.plot_matrix" title="Permalink to this definition"></a></dt>
+<dd><p>Plots a matrix as a heatmap.
+If <cite>a</cite> has more than 2 dimensions, <code class="docutils literal notranslate"><span class="pre">a[0,</span> <span class="pre">0</span> <span class="pre">..,</span> <span class="pre">:,</span> <span class="pre">:]</span></code> is plotted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<em>[…, M, N]</em>) – Matrix to plot.</p></li>
+<li><p><strong>figsize</strong> (<em>(float, float)</em>) – width, height in inches</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.plot_to_image">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">plot_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#plot_to_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.plot_to_image" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a matplotlib figure to a PNG image and returns it. The supplied figure is closed and inaccessible after this call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><p><strong>figure</strong> (<em>Figure</em>) – An instance of <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="(in Matplotlib v3.9.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Figure</span></code></a> to convert to an image tensor.</p>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>[1, height, width, 4], tf.uint8</em> – Image of the figure.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.reduce_matrix_rank">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">reduce_matrix_rank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#reduce_matrix_rank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.reduce_matrix_rank" title="Permalink to this definition"></a></dt>
+<dd><p>Reduce the rank of a matrix by setting the smallest singular values to zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>matrix</strong> (<em>[…, M, N]</em>)</p></li>
+<li><p><strong>rank</strong> (<em>int.</em>) – Desired rank of matrix.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>[…, M, N]</em> – Matrix with rank smaller or equal <code class="docutils literal notranslate"><span class="pre">rank</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.reduce_mean_power">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">reduce_mean_power</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#reduce_mean_power"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.reduce_mean_power" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the mean power of a tensor along the given axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<em>tf.Tensor</em>) – Tensor of which the mean power is calculated.</p></li>
+<li><p><strong>axis</strong> (<em>int or list of int</em>) – Axis along which the mean power is calculated. If None, the mean power is calculated over all axes.</p></li>
+<li><p><strong>keepdims</strong> (<em>bool</em>) – If True, the reduced dimensions are kept with size 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><em>tf.Tensor</em> – Contains the mean power of <code class="docutils literal notranslate"><span class="pre">a</span></code>, calculated along <code class="docutils literal notranslate"><span class="pre">axis</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.sample_complex_gaussian">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">sample_complex_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#sample_complex_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.sample_complex_gaussian" title="Permalink to this definition"></a></dt>
+<dd><p>Sample complex gaussian.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>list of int</em>) – Shape of tensor to return.</p></li>
+<li><p><strong>dtype</strong> (<em>tf.complex</em>) – Datatype of tensor to return.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p>[shape], <code class="docutils literal notranslate"><span class="pre">dtype</span></code> – Each element is sampled from a complex gaussian with variance 1/2.
+This results in element-wise <span class="math notranslate nohighlight">\(E[|x|^2] = 1\)</span>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.sample_complex_uniform_disk">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">sample_complex_uniform_disk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#sample_complex_uniform_disk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.sample_complex_uniform_disk" title="Permalink to this definition"></a></dt>
+<dd><p>Sample uniform circle on complex plane.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>list of int</em>) – Shape of tensor to return.</p></li>
+<li><p><strong>dtype</strong> (<em>tf.complex</em>) – Datatype of tensor to return.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p>[shape], <code class="docutils literal notranslate"><span class="pre">dtype</span></code> – Each element is sampled from within a circle with radius <span class="math notranslate nohighlight">\(\sqrt{2}\)</span>.
+This results in element-wise <span class="math notranslate nohighlight">\(E[|x|^2] = 1\)</span>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="jammer.utils.sample_function">
+<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">sample_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#sample_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.sample_function" title="Permalink to this definition"></a></dt>
+<dd><p>Returns function which samples from a constellation or a distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Input</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sampler</strong> (<em>str | Constellation | callable</em>) – String in <cite>[“uniform”, “gaussian”]</cite>, an instance of <a class="reference external" href="https://nvlabs.github.io/sionna/api/mapping.html#sionna.mapping.Constellation" title="(in Sionna)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constellation</span></code></a>, or function with signature <code class="docutils literal notranslate"><span class="pre">(shape,</span> <span class="pre">dtype)</span> <span class="pre">-&gt;</span> <span class="pre">tf.Tensor</span></code>,
+where elementwise <span class="math notranslate nohighlight">\(E[|x|^2] = 1\)</span>.</p></li>
+<li><p><strong>dtype</strong> (<em>tf.Dtype</em>) – Defines the datatype the returned function should return.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Output</dt>
+<dd class="field-even"><p><strong>callable</strong> – Function with signature <code class="docutils literal notranslate"><span class="pre">(shape,</span> <span class="pre">dtype)</span> <span class="pre">-&gt;</span> <span class="pre">tf.Tensor</span></code> which returns a tensor of shape <code class="docutils literal notranslate"><span class="pre">shape</span></code> with dtype <code class="docutils literal notranslate"><span class="pre">dtype</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="simulation_model.html" class="btn btn-neutral float-left" title="Simulation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="visualization.html" class="btn btn-neutral float-right" title="Visualization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fabian Ulbricht, Gian Marti, Reinhard Wiesmayr.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>
