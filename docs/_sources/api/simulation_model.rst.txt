@@ -3,5 +3,5 @@ Simulation
 
 The main simulation code.
 
-.. automodule:: jammer.simulation_model
+.. automodule:: pyjama.simulation_model
     :members:

@@ -47,18 +47,12 @@
 <li class="toctree-l2"><a class="reference internal" href="api/channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api/simulation_model.html">Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/utils.html">Utility functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/visualization.html">Visualization</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/visualization.html#channel-visualization">Channel Visualization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/visualization.html#utility-functions">Utility Functions</a></li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>
@@ -94,7 +88,6 @@
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#I"><strong>I</strong></a>
- | <a href="#J"><strong>J</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
@@ -108,14 +101,14 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.bar_plot">bar_plot() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.bar_plot">bar_plot() (in module pyjama.simulation_model)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.Model.build">build() (jammer.simulation_model.Model method)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.Model.build">build() (pyjama.simulation_model.Model method)</a>
 
       <ul>
-        <li><a href="api/simulation_model.html#jammer.simulation_model.ReturnIntermediateLDPC5GDecoder.build">(jammer.simulation_model.ReturnIntermediateLDPC5GDecoder method)</a>
+        <li><a href="api/simulation_model.html#pyjama.simulation_model.ReturnIntermediateLDPC5GDecoder.build">(pyjama.simulation_model.ReturnIntermediateLDPC5GDecoder method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -124,13 +117,13 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.ReturnIntermediateLDPC5GDecoder.call">call() (jammer.simulation_model.ReturnIntermediateLDPC5GDecoder method)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.ReturnIntermediateLDPC5GDecoder.call">call() (pyjama.simulation_model.ReturnIntermediateLDPC5GDecoder method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.constellation_to_sampler">constellation_to_sampler() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.constellation_to_sampler">constellation_to_sampler() (in module pyjama.utils)</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.covariance_estimation_from_signals">covariance_estimation_from_signals() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.covariance_estimation_from_signals">covariance_estimation_from_signals() (in module pyjama.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -138,7 +131,7 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.db_to_linear">db_to_linear() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.db_to_linear">db_to_linear() (in module pyjama.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -146,80 +139,23 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/mitigation.html#jammer.mitigation.IAN.IanLMMSEEqualizer">IanLMMSEEqualizer (class in jammer.mitigation.IAN)</a>
+      <li><a href="api/mitigation.html#pyjama.mitigation.IAN.IanLMMSEEqualizer">IanLMMSEEqualizer (class in pyjama.mitigation.IAN)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.IterationLoss">IterationLoss (class in jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.IterationLoss">IterationLoss (class in pyjama.utils)</a>
 </li>
-  </ul></td>
-</tr></table>
-
-<h2 id="J">J</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
-    jammer.channel_models
-
-      <ul>
-        <li><a href="api/channel_models.html#module-jammer.channel_models">module</a>
-</li>
-      </ul></li>
-      <li>
-    jammer.jammer
-
-      <ul>
-        <li><a href="api/jammer.html#module-jammer.jammer">module</a>
-</li>
-      </ul></li>
-      <li>
-    jammer.mitigation.IAN
-
-      <ul>
-        <li><a href="api/mitigation.html#module-jammer.mitigation.IAN">module</a>
-</li>
-      </ul></li>
-      <li>
-    jammer.mitigation.POS
-
-      <ul>
-        <li><a href="api/mitigation.html#module-jammer.mitigation.POS">module</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
-    jammer.pilots
-
-      <ul>
-        <li><a href="api/pilots.html#module-jammer.pilots">module</a>
-</li>
-      </ul></li>
-      <li>
-    jammer.simulation_model
-
-      <ul>
-        <li><a href="api/simulation_model.html#module-jammer.simulation_model">module</a>
-</li>
-      </ul></li>
-      <li>
-    jammer.utils
-
-      <ul>
-        <li><a href="api/utils.html#module-jammer.utils">module</a>
-</li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.linear_to_db">linear_to_db() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.linear_to_db">linear_to_db() (in module pyjama.utils)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.load_weights">load_weights() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.load_weights">load_weights() (in module pyjama.simulation_model)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -227,36 +163,36 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.matrix_to_image">matrix_to_image() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.matrix_to_image">matrix_to_image() (in module pyjama.utils)</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.MaxMeanSquareNorm">MaxMeanSquareNorm (class in jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.MaxMeanSquareNorm">MaxMeanSquareNorm (class in pyjama.utils)</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.merge_plotbers">merge_plotbers() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.merge_plotbers">merge_plotbers() (in module pyjama.utils)</a>
 </li>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.Model">Model (class in jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.Model">Model (class in pyjama.simulation_model)</a>
 </li>
       <li>
     module
 
       <ul>
-        <li><a href="api/channel_models.html#module-jammer.channel_models">jammer.channel_models</a>
+        <li><a href="api/channel_models.html#module-pyjama.channel_models">pyjama.channel_models</a>
 </li>
-        <li><a href="api/jammer.html#module-jammer.jammer">jammer.jammer</a>
+        <li><a href="api/jammer.html#module-pyjama.jammer">pyjama.jammer</a>
 </li>
-        <li><a href="api/mitigation.html#module-jammer.mitigation.IAN">jammer.mitigation.IAN</a>
+        <li><a href="api/mitigation.html#module-pyjama.mitigation.IAN">pyjama.mitigation.IAN</a>
 </li>
-        <li><a href="api/mitigation.html#module-jammer.mitigation.POS">jammer.mitigation.POS</a>
+        <li><a href="api/mitigation.html#module-pyjama.mitigation.POS">pyjama.mitigation.POS</a>
 </li>
-        <li><a href="api/pilots.html#module-jammer.pilots">jammer.pilots</a>
+        <li><a href="api/pilots.html#module-pyjama.pilots">pyjama.pilots</a>
 </li>
-        <li><a href="api/simulation_model.html#module-jammer.simulation_model">jammer.simulation_model</a>
+        <li><a href="api/simulation_model.html#module-pyjama.simulation_model">pyjama.simulation_model</a>
 </li>
-        <li><a href="api/utils.html#module-jammer.utils">jammer.utils</a>
+        <li><a href="api/utils.html#module-pyjama.utils">pyjama.utils</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/channel_models.html#jammer.channel_models.MultiTapRayleighBlockFading">MultiTapRayleighBlockFading (class in jammer.channel_models)</a>
+      <li><a href="api/channel_models.html#pyjama.channel_models.MultiTapRayleighBlockFading">MultiTapRayleighBlockFading (class in pyjama.channel_models)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -264,13 +200,13 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.negative_function">negative_function() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.negative_function">negative_function() (in module pyjama.simulation_model)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.NonNegMaxMeanSquareNorm">NonNegMaxMeanSquareNorm (class in jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.NonNegMaxMeanSquareNorm">NonNegMaxMeanSquareNorm (class in pyjama.utils)</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.normalize_power">normalize_power() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.normalize_power">normalize_power() (in module pyjama.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -278,15 +214,15 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/jammer.html#jammer.jammer.OFDMJammer">OFDMJammer (class in jammer.jammer)</a>
+      <li><a href="api/jammer.html#pyjama.jammer.OFDMJammer">OFDMJammer (class in pyjama.jammer)</a>
 </li>
-      <li><a href="api/pilots.html#jammer.pilots.OneHotPilotPattern">OneHotPilotPattern (class in jammer.pilots)</a>
+      <li><a href="api/pilots.html#pyjama.pilots.OneHotPilotPattern">OneHotPilotPattern (class in pyjama.pilots)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/pilots.html#jammer.pilots.OneHotWithSilencePilotPattern">OneHotWithSilencePilotPattern (class in jammer.pilots)</a>
+      <li><a href="api/pilots.html#pyjama.pilots.OneHotWithSilencePilotPattern">OneHotWithSilencePilotPattern (class in pyjama.pilots)</a>
 </li>
-      <li><a href="api/mitigation.html#jammer.mitigation.POS.OrthogonalSubspaceProjector">OrthogonalSubspaceProjector (class in jammer.mitigation.POS)</a>
+      <li><a href="api/mitigation.html#pyjama.mitigation.POS.OrthogonalSubspaceProjector">OrthogonalSubspaceProjector (class in pyjama.mitigation.POS)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -294,29 +230,78 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/pilots.html#jammer.pilots.PilotPatternWithSilence">PilotPatternWithSilence (class in jammer.pilots)</a>
+      <li><a href="api/pilots.html#pyjama.pilots.PilotPatternWithSilence">PilotPatternWithSilence (class in pyjama.pilots)</a>
 </li>
+      <li><a href="api/utils.html#pyjama.utils.plot_matrix">plot_matrix() (in module pyjama.utils)</a>
+</li>
+      <li><a href="api/utils.html#pyjama.utils.plot_to_image">plot_to_image() (in module pyjama.utils)</a>
+</li>
+      <li>
+    pyjama.channel_models
+
+      <ul>
+        <li><a href="api/channel_models.html#module-pyjama.channel_models">module</a>
+</li>
+      </ul></li>
+      <li>
+    pyjama.jammer
+
+      <ul>
+        <li><a href="api/jammer.html#module-pyjama.jammer">module</a>
+</li>
+      </ul></li>
+      <li>
+    pyjama.mitigation.IAN
+
+      <ul>
+        <li><a href="api/mitigation.html#module-pyjama.mitigation.IAN">module</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.plot_matrix">plot_matrix() (in module jammer.utils)</a>
+      <li>
+    pyjama.mitigation.POS
+
+      <ul>
+        <li><a href="api/mitigation.html#module-pyjama.mitigation.POS">module</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.plot_to_image">plot_to_image() (in module jammer.utils)</a>
+      </ul></li>
+      <li>
+    pyjama.pilots
+
+      <ul>
+        <li><a href="api/pilots.html#module-pyjama.pilots">module</a>
 </li>
+      </ul></li>
+      <li>
+    pyjama.simulation_model
+
+      <ul>
+        <li><a href="api/simulation_model.html#module-pyjama.simulation_model">module</a>
+</li>
+      </ul></li>
+      <li>
+    pyjama.utils
+
+      <ul>
+        <li><a href="api/utils.html#module-pyjama.utils">module</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.reduce_matrix_rank">reduce_matrix_rank() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.reduce_matrix_rank">reduce_matrix_rank() (in module pyjama.utils)</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.reduce_mean_power">reduce_mean_power() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.reduce_mean_power">reduce_mean_power() (in module pyjama.utils)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.relative_singular_values">relative_singular_values() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.relative_singular_values">relative_singular_values() (in module pyjama.simulation_model)</a>
 </li>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.ReturnIntermediateLDPC5GDecoder">ReturnIntermediateLDPC5GDecoder (class in jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.ReturnIntermediateLDPC5GDecoder">ReturnIntermediateLDPC5GDecoder (class in pyjama.simulation_model)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -324,29 +309,29 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/utils.html#jammer.utils.sample_complex_gaussian">sample_complex_gaussian() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.sample_complex_gaussian">sample_complex_gaussian() (in module pyjama.utils)</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.sample_complex_uniform_disk">sample_complex_uniform_disk() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.sample_complex_uniform_disk">sample_complex_uniform_disk() (in module pyjama.utils)</a>
 </li>
-      <li><a href="api/utils.html#jammer.utils.sample_function">sample_function() (in module jammer.utils)</a>
+      <li><a href="api/utils.html#pyjama.utils.sample_function">sample_function() (in module pyjama.utils)</a>
 </li>
-      <li><a href="api/mitigation.html#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer">set_jammer() (jammer.mitigation.IAN.IanLMMSEEqualizer method)</a>
+      <li><a href="api/mitigation.html#pyjama.mitigation.IAN.IanLMMSEEqualizer.set_jammer">set_jammer() (pyjama.mitigation.IAN.IanLMMSEEqualizer method)</a>
 </li>
-      <li><a href="api/mitigation.html#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance">set_jammer_covariance() (jammer.mitigation.IAN.IanLMMSEEqualizer method)</a>
+      <li><a href="api/mitigation.html#pyjama.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance">set_jammer_covariance() (pyjama.mitigation.IAN.IanLMMSEEqualizer method)</a>
 
       <ul>
-        <li><a href="api/mitigation.html#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance">(jammer.mitigation.POS.OrthogonalSubspaceProjector method)</a>
+        <li><a href="api/mitigation.html#pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance">(pyjama.mitigation.POS.OrthogonalSubspaceProjector method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/mitigation.html#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response">set_jammer_frequency_response() (jammer.mitigation.POS.OrthogonalSubspaceProjector method)</a>
+      <li><a href="api/mitigation.html#pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response">set_jammer_frequency_response() (pyjama.mitigation.POS.OrthogonalSubspaceProjector method)</a>
 </li>
-      <li><a href="api/mitigation.html#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals">set_jammer_signals() (jammer.mitigation.POS.OrthogonalSubspaceProjector method)</a>
+      <li><a href="api/mitigation.html#pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals">set_jammer_signals() (pyjama.mitigation.POS.OrthogonalSubspaceProjector method)</a>
 </li>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.simulate_model">simulate_model() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.simulate_model">simulate_model() (in module pyjama.simulation_model)</a>
 </li>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.singular_values">singular_values() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.singular_values">singular_values() (in module pyjama.simulation_model)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -354,13 +339,13 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.tensorboard_validate_model">tensorboard_validate_model() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.tensorboard_validate_model">tensorboard_validate_model() (in module pyjama.simulation_model)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/jammer.html#jammer.jammer.TimeDomainOFDMJammer">TimeDomainOFDMJammer (class in jammer.jammer)</a>
+      <li><a href="api/jammer.html#pyjama.jammer.TimeDomainOFDMJammer">TimeDomainOFDMJammer (class in pyjama.jammer)</a>
 </li>
-      <li><a href="api/simulation_model.html#jammer.simulation_model.train_model">train_model() (in module jammer.simulation_model)</a>
+      <li><a href="api/simulation_model.html#pyjama.simulation_model.train_model">train_model() (in module pyjama.simulation_model)</a>
 </li>
   </ul></td>
 </tr></table>

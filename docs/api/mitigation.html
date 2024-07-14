@@ -49,9 +49,8 @@
 <li class="toctree-l2"><a class="reference internal" href="channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="simulation_model.html">Simulation</a></li>
@@ -118,12 +117,12 @@
 <p>Several jammer mitigation algorithms are implemented here.
 Usage varies by algorithm, consult the documentation for each.
 Every algorithm is integrated into the simulation code.</p>
-<div class="section" id="module-jammer.mitigation.POS">
-<span id="projection-onto-orthogonal-subspace-pos"></span><h2>Projection onto Orthogonal Subspace (POS)<a class="headerlink" href="#module-jammer.mitigation.POS" title="Permalink to this heading"></a></h2>
+<div class="section" id="module-pyjama.mitigation.POS">
+<span id="projection-onto-orthogonal-subspace-pos"></span><h2>Projection onto Orthogonal Subspace (POS)<a class="headerlink" href="#module-pyjama.mitigation.POS" title="Permalink to this heading"></a></h2>
 <p>Projection onto Orthogonal Space (orthonal to jammer subspace)</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.mitigation.POS.</span></span><span class="sig-name descname"><span class="pre">OrthogonalSubspaceProjector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.mitigation.POS.OrthogonalSubspaceProjector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.mitigation.POS.</span></span><span class="sig-name descname"><span class="pre">OrthogonalSubspaceProjector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/mitigation/POS.html#OrthogonalSubspaceProjector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.mitigation.POS.OrthogonalSubspaceProjector" title="Permalink to this definition"></a></dt>
 <dd><p>Mitigates jammer interference by projecting onto the orthogonal subspace of the jammer subspace.
 Jammer subspace has to be set before calling the layer. This can be done by either calling <cite>set_jammer_frequency_response</cite> or <cite>set_jammer_covariance</cite>.</p>
 <p>This layer should be called on the received signal and, if the unmapped channel frequency response is used, on it before equalization.</p>
@@ -144,8 +143,8 @@ Defaults to <cite>tf.complex64</cite>.</p></li>
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance">
-<span class="sig-name descname"><span class="pre">set_jammer_covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_covariance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_covariance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance">
+<span class="sig-name descname"><span class="pre">set_jammer_covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_covariance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_covariance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_covariance" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Input</dt>
 <dd class="field-odd"><ul class="simple">
@@ -157,8 +156,8 @@ Defaults to <cite>tf.complex64</cite>.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response">
-<span class="sig-name descname"><span class="pre">set_jammer_frequency_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_frequency_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response">
+<span class="sig-name descname"><span class="pre">set_jammer_frequency_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_frequency_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_frequency_response" title="Permalink to this definition"></a></dt>
 <dd><p>Given the jammer channel frequency response j,
 precompute the projection matrix which maps the signal onto the orthogonal subspace of the jammer subspace.</p>
 <dl class="field-list simple">
@@ -169,8 +168,8 @@ precompute the projection matrix which maps the signal onto the orthogonal subsp
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals">
-<span class="sig-name descname"><span class="pre">set_jammer_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_signals</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals">
+<span class="sig-name descname"><span class="pre">set_jammer_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_signals</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/mitigation/POS.html#OrthogonalSubspaceProjector.set_jammer_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.mitigation.POS.OrthogonalSubspaceProjector.set_jammer_signals" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Input</dt>
 <dd class="field-odd"><p><strong>jammer_signals</strong> (<em>[batch_size, num_rx, num_rx_ant, num_symbols, fft_size], tf.complex</em>) – Received symbols containing only jammer interference.</p>
@@ -181,12 +180,12 @@ precompute the projection matrix which maps the signal onto the orthogonal subsp
 </dd></dl>
 
 </div>
-<div class="section" id="module-jammer.mitigation.IAN">
-<span id="lmmse-treating-interference-as-noise-ian"></span><h2>LMMSE treating Interference as Noise (IAN)<a class="headerlink" href="#module-jammer.mitigation.IAN" title="Permalink to this heading"></a></h2>
+<div class="section" id="module-pyjama.mitigation.IAN">
+<span id="lmmse-treating-interference-as-noise-ian"></span><h2>LMMSE treating Interference as Noise (IAN)<a class="headerlink" href="#module-pyjama.mitigation.IAN" title="Permalink to this heading"></a></h2>
 <p>LMMSE treating Interference as Noise (IAN)</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="jammer.mitigation.IAN.IanLMMSEEqualizer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.mitigation.IAN.</span></span><span class="sig-name descname"><span class="pre">IanLMMSEEqualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/IAN.html#IanLMMSEEqualizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.IAN.IanLMMSEEqualizer" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.mitigation.IAN.IanLMMSEEqualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.mitigation.IAN.</span></span><span class="sig-name descname"><span class="pre">IanLMMSEEqualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/mitigation/IAN.html#IanLMMSEEqualizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.mitigation.IAN.IanLMMSEEqualizer" title="Permalink to this definition"></a></dt>
 <dd><p>LMMSE Equalizer mitigating jammer interference by treating it as noise.
 To be used instead of <cite>~sionna.ofdm.LMMSEEqualizer</cite> to equalize and supress jammer at the same time.</p>
 <p>One of <cite>set_jammer</cite> or <cite>set_jammer_covariance</cite> must be called before calling this layer.</p>
@@ -219,8 +218,8 @@ Defaults to <cite>tf.complex64</cite>.</p></li>
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer">
-<span class="sig-name descname"><span class="pre">set_jammer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/IAN.html#IanLMMSEEqualizer.set_jammer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.mitigation.IAN.IanLMMSEEqualizer.set_jammer">
+<span class="sig-name descname"><span class="pre">set_jammer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/mitigation/IAN.html#IanLMMSEEqualizer.set_jammer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.mitigation.IAN.IanLMMSEEqualizer.set_jammer" title="Permalink to this definition"></a></dt>
 <dd><p>Set the jammer covariance matrix from the frequency response of the jammer channel.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -233,8 +232,8 @@ Defaults to <cite>tf.complex64</cite>.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance">
-<span class="sig-name descname"><span class="pre">set_jammer_covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_covariance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/mitigation/IAN.html#IanLMMSEEqualizer.set_jammer_covariance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance">
+<span class="sig-name descname"><span class="pre">set_jammer_covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jammer_covariance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/mitigation/IAN.html#IanLMMSEEqualizer.set_jammer_covariance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.mitigation.IAN.IanLMMSEEqualizer.set_jammer_covariance" title="Permalink to this definition"></a></dt>
 <dd><p>Set the jammer covariance matrix directly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -245,18 +244,6 @@ Defaults to <cite>tf.complex64</cite>.</p></li>
 
 </dd></dl>
 
-</div>
-<div class="section" id="mitigation-via-subspace-hiding-mash">
-<h2>MitigAtion via Subspace Hiding (MASH)<a class="headerlink" href="#mitigation-via-subspace-hiding-mash" title="Permalink to this heading"></a></h2>
-<dl>
-<dt>References:</dt><dd><dl class="citation">
-<dt class="label" id="marti2023"><span class="brackets">Marti2023</span></dt>
-<dd><p><a class="reference external" href="https://arxiv.org/abs/2305.01260">G. Marti and C. Studer, “Universal MIMO Jammer Mitigation via Secret Temporal Subspace Embeddings”</a>,
-arXiv e-prints. 2023</p>
-</dd>
-</dl>
-</dd>
-</dl>
 </div>
 </div>
 

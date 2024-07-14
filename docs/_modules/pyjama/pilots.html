@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>jammer.pilots &mdash; PyJama 0.1 documentation</title>
+  <title>pyjama.pilots &mdash; PyJama 0.1 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
@@ -47,9 +47,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
@@ -78,7 +77,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>jammer.pilots</li>
+      <li>pyjama.pilots</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -87,7 +86,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for jammer.pilots</h1><div class="highlight"><pre>
+  <h1>Source code for pyjama.pilots</h1><div class="highlight"><pre>
 <span></span><span class="c1"># %%</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -96,7 +95,7 @@
 
 <span class="c1"># TODO this is not a very efficient implementation. Had to use python lists because numpy arrays can not temporarily have different shapes.</span>
 <span class="c1"># could e.g. work on flattened pilot array</span>
-<div class="viewcode-block" id="PilotPatternWithSilence"><a class="viewcode-back" href="../../api/pilots.html#jammer.pilots.PilotPatternWithSilence">[docs]</a><span class="k">class</span> <span class="nc">PilotPatternWithSilence</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
+<div class="viewcode-block" id="PilotPatternWithSilence"><a class="viewcode-back" href="../../api/pilots.html#pyjama.pilots.PilotPatternWithSilence">[docs]</a><span class="k">class</span> <span class="nc">PilotPatternWithSilence</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Takes a PilotPattern and adds silence for all transmitters, streams and subcarriers at specified OFDM symbol positions.</span>
 <span class="sd">    The passed pilot pattern may not have a pilot at any of the silence positions.</span>
@@ -150,7 +149,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_silent_ofdm_symbol_indices</span></div>
     
 
-<div class="viewcode-block" id="OneHotPilotPattern"><a class="viewcode-back" href="../../api/pilots.html#jammer.pilots.OneHotPilotPattern">[docs]</a><span class="k">class</span> <span class="nc">OneHotPilotPattern</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
+<div class="viewcode-block" id="OneHotPilotPattern"><a class="viewcode-back" href="../../api/pilots.html#pyjama.pilots.OneHotPilotPattern">[docs]</a><span class="k">class</span> <span class="nc">OneHotPilotPattern</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates one-hot pilot pattern. Each stream sends a pilot on all subcarriers during one OFDM symbol time.</span>
 
 <span class="sd">    Parameters</span>
@@ -207,7 +206,7 @@
                          <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
     
     
-<div class="viewcode-block" id="OneHotWithSilencePilotPattern"><a class="viewcode-back" href="../../api/pilots.html#jammer.pilots.OneHotWithSilencePilotPattern">[docs]</a><span class="k">class</span> <span class="nc">OneHotWithSilencePilotPattern</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
+<div class="viewcode-block" id="OneHotWithSilencePilotPattern"><a class="viewcode-back" href="../../api/pilots.html#pyjama.pilots.OneHotWithSilencePilotPattern">[docs]</a><span class="k">class</span> <span class="nc">OneHotWithSilencePilotPattern</span><span class="p">(</span><span class="n">PilotPattern</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates one-hot pilot pattern. Per stream one OFDM symbol.</span>
 
 <span class="sd">    After the pilots, silence is transmitted for ``num_silence_symbols`` OFDM symbols.</span>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>jammer.jammer &mdash; PyJama 0.1 documentation</title>
+  <title>pyjama.jammer &mdash; PyJama 0.1 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
@@ -47,9 +47,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
@@ -78,7 +77,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>jammer.jammer</li>
+      <li>pyjama.jammer</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -87,7 +86,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for jammer.jammer</h1><div class="highlight"><pre>
+  <h1>Source code for pyjama.jammer</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">This module provides classes for simulating one or multiple jammers.</span>
 <span class="sd">They are meant to be used to simulate jammers in the context of OFDM-based communication.</span>
@@ -98,6 +97,7 @@
 <span class="sd">|  2. Instantiate an additional channel model between the jammers and the BSs.</span>
 <span class="sd">|  3. Instantiate a jammer, using the channel created in step 2.</span>
 <span class="sd">|  4. Add the jammer to the communication pipeline, right after the channel between the UEs and the BSs like so:</span>
+
 <span class="sd">&gt;&gt;&gt; y = channel([x, no])</span>
 <span class="sd">&gt;&gt;&gt; y_jammed = jammer([y, rho])</span>
 
@@ -122,7 +122,7 @@
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">sample_function</span><span class="p">,</span> <span class="n">NonNegMaxMeanSquareNorm</span><span class="p">,</span> <span class="n">MaxMeanSquareNorm</span>
 
 <span class="c1"># TODO add the complete formula into docstring (with rho, jammer_weights, jammer symbols, etc.). See sionna.channel.ofdm_channel.OFDMChannel for reference.</span>
-<div class="viewcode-block" id="OFDMJammer"><a class="viewcode-back" href="../../api/jammer.html#jammer.jammer.OFDMJammer">[docs]</a><span class="k">class</span> <span class="nc">OFDMJammer</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<div class="viewcode-block" id="OFDMJammer"><a class="viewcode-back" href="../../api/jammer.html#pyjama.jammer.OFDMJammer">[docs]</a><span class="k">class</span> <span class="nc">OFDMJammer</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Used to simulate a jammer in the frequency domain only (i.e. sending a cyclic prefix). The jammer signal is generated through the given (Jammer-BS) channel model.</span>
 
@@ -397,7 +397,7 @@
 
 
 
-<div class="viewcode-block" id="TimeDomainOFDMJammer"><a class="viewcode-back" href="../../api/jammer.html#jammer.jammer.TimeDomainOFDMJammer">[docs]</a><span class="k">class</span> <span class="nc">TimeDomainOFDMJammer</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<div class="viewcode-block" id="TimeDomainOFDMJammer"><a class="viewcode-back" href="../../api/jammer.html#pyjama.jammer.TimeDomainOFDMJammer">[docs]</a><span class="k">class</span> <span class="nc">TimeDomainOFDMJammer</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This class is meant ot simulate jammers in the time domain channel. It is much slower than :class:`OFDMJammer`, but can be used to simulate jammers which violate the OFDM assumptions, i.e. not sending a cyclic prefix.</span>
 <span class="sd">    It thus functions similarily to :class:`OFDMJammer`, with the following differences:</span>

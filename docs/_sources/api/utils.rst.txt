@@ -1,6 +1,6 @@
 Utility functions
 ====================
 
-.. automodule:: jammer.utils
+.. automodule:: pyjama.utils
     :exclude-members: call
     :members:

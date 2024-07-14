@@ -51,9 +51,8 @@
 <li class="toctree-l2"><a class="reference internal" href="channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="simulation_model.html">Simulation</a></li>
@@ -115,11 +114,11 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="module-jammer.utils">
-<span id="utility-functions"></span><h1>Utility functions<a class="headerlink" href="#module-jammer.utils" title="Permalink to this heading"></a></h1>
+<div class="section" id="module-pyjama.utils">
+<span id="utility-functions"></span><h1>Utility functions<a class="headerlink" href="#module-pyjama.utils" title="Permalink to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="jammer.utils.IterationLoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">IterationLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exponential_alpha_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sum_over_batch_size'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#IterationLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.IterationLoss" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.IterationLoss">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">IterationLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exponential_alpha_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sum_over_batch_size'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#IterationLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.IterationLoss" title="Permalink to this definition"></a></dt>
 <dd><p>Loss function for iterative decoder which returns the output of each decoder iteration.</p>
 <p>Calculates the loss for each iteration separately and returns the weighted sum.
 If <code class="docutils literal notranslate"><span class="pre">exponential_alpha_scaling</span></code> is true, the loss for each iteration is <span class="math notranslate nohighlight">\(\sum_i \alpha^{n-i} * |b - \hat{b}_i|\)</span>,
@@ -146,8 +145,8 @@ Otherwise, each iteration loss is scaled by <span class="math notranslate nohigh
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="jammer.utils.MaxMeanSquareNorm">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">MaxMeanSquareNorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_mean_squared_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#MaxMeanSquareNorm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.MaxMeanSquareNorm" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.MaxMeanSquareNorm">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">MaxMeanSquareNorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_mean_squared_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#MaxMeanSquareNorm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.MaxMeanSquareNorm" title="Permalink to this definition"></a></dt>
 <dd><p>Scales the input tensor so that the mean power of each element along the given axis is at most <code class="docutils literal notranslate"><span class="pre">max_mean_squared_norm</span></code>.</p>
 <p>Ensures that <span class="math notranslate nohighlight">\(\frac{1}{n} \sum{|w|^2} \le \mathtt{max\_mean\_squared\_norm}\)</span>.
 <code class="docutils literal notranslate"><span class="pre">n</span></code> is the number of elements in <code class="docutils literal notranslate"><span class="pre">w</span></code> along the axis <code class="docutils literal notranslate"><span class="pre">axis</span></code>.</p>
@@ -168,8 +167,8 @@ Otherwise, each iteration loss is scaled by <span class="math notranslate nohigh
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="jammer.utils.NonNegMaxMeanSquareNorm">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">NonNegMaxMeanSquareNorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_mean_squared_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#NonNegMaxMeanSquareNorm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.NonNegMaxMeanSquareNorm" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.NonNegMaxMeanSquareNorm">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">NonNegMaxMeanSquareNorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_mean_squared_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#NonNegMaxMeanSquareNorm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.NonNegMaxMeanSquareNorm" title="Permalink to this definition"></a></dt>
 <dd><p>Scales the input tensor so that the mean power of each element along the given axis is at most <code class="docutils literal notranslate"><span class="pre">max_mean_squared_norm</span></code>.
 Also ensures that all elements are non-negative.</p>
 <p>Ensures that <span class="math notranslate nohighlight">\(\frac{1}{n} \sum{|w_i|^2} \le \mathtt{max\_mean\_squared\_norm}\)</span> along <code class="docutils literal notranslate"><span class="pre">axis</span></code>
@@ -193,8 +192,8 @@ All values in <code class="docutils literal notranslate"><span class="pre">w</sp
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.constellation_to_sampler">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">constellation_to_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constellation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.complex64</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#constellation_to_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.constellation_to_sampler" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.constellation_to_sampler">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">constellation_to_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constellation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.complex64</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#constellation_to_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.constellation_to_sampler" title="Permalink to this definition"></a></dt>
 <dd><p>Convert a constellation to a function which samples the constellation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -210,8 +209,8 @@ All values in <code class="docutils literal notranslate"><span class="pre">w</sp
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.covariance_estimation_from_signals">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">covariance_estimation_from_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_odfm_symbols</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#covariance_estimation_from_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.covariance_estimation_from_signals" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.covariance_estimation_from_signals">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">covariance_estimation_from_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_odfm_symbols</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#covariance_estimation_from_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.covariance_estimation_from_signals" title="Permalink to this definition"></a></dt>
 <dd><p>Estimate the covariance matrix of a signal y.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -228,8 +227,8 @@ All values in <code class="docutils literal notranslate"><span class="pre">w</sp
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.db_to_linear">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">db_to_linear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#db_to_linear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.db_to_linear" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.db_to_linear">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">db_to_linear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#db_to_linear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.db_to_linear" title="Permalink to this definition"></a></dt>
 <dd><p>Converts number from dB to linear scale.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -242,8 +241,8 @@ All values in <code class="docutils literal notranslate"><span class="pre">w</sp
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.linear_to_db">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">linear_to_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#linear_to_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.linear_to_db" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.linear_to_db">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">linear_to_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#linear_to_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.linear_to_db" title="Permalink to this definition"></a></dt>
 <dd><p>Converts number from linear to dB scale.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -256,14 +255,14 @@ All values in <code class="docutils literal notranslate"><span class="pre">w</sp
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.matrix_to_image">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">matrix_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#matrix_to_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.matrix_to_image" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.matrix_to_image">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">matrix_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#matrix_to_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.matrix_to_image" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a matrix to an image.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.merge_plotbers">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">merge_plotbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plotbers</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#merge_plotbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.merge_plotbers" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.merge_plotbers">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">merge_plotbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plotbers</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#merge_plotbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.merge_plotbers" title="Permalink to this definition"></a></dt>
 <dd><p>Merges multiple :class:sionna.utils.plotting.PlotBER instances into one.
 Properties which are unique per instance (like <code class="docutils literal notranslate"><span class="pre">title</span></code>) are taken from the first instance.</p>
 <dl class="field-list simple">
@@ -277,8 +276,8 @@ Properties which are unique per instance (like <code class="docutils literal not
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.normalize_power">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">normalize_power</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_amplitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#normalize_power"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.normalize_power" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.normalize_power">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">normalize_power</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_amplitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#normalize_power"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.normalize_power" title="Permalink to this definition"></a></dt>
 <dd><p>Scales input tensor so that the mean power per element is 1.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -294,8 +293,8 @@ Properties which are unique per instance (like <code class="docutils literal not
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.plot_matrix">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">plot_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#plot_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.plot_matrix" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.plot_matrix">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">plot_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#plot_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.plot_matrix" title="Permalink to this definition"></a></dt>
 <dd><p>Plots a matrix as a heatmap.
 If <cite>a</cite> has more than 2 dimensions, <code class="docutils literal notranslate"><span class="pre">a[0,</span> <span class="pre">0</span> <span class="pre">..,</span> <span class="pre">:,</span> <span class="pre">:]</span></code> is plotted.</p>
 <dl class="field-list simple">
@@ -309,8 +308,8 @@ If <cite>a</cite> has more than 2 dimensions, <code class="docutils literal notr
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.plot_to_image">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">plot_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#plot_to_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.plot_to_image" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.plot_to_image">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">plot_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#plot_to_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.plot_to_image" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a matplotlib figure to a PNG image and returns it. The supplied figure is closed and inaccessible after this call.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -323,8 +322,8 @@ If <cite>a</cite> has more than 2 dimensions, <code class="docutils literal notr
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.reduce_matrix_rank">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">reduce_matrix_rank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#reduce_matrix_rank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.reduce_matrix_rank" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.reduce_matrix_rank">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">reduce_matrix_rank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#reduce_matrix_rank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.reduce_matrix_rank" title="Permalink to this definition"></a></dt>
 <dd><p>Reduce the rank of a matrix by setting the smallest singular values to zero.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -340,8 +339,8 @@ If <cite>a</cite> has more than 2 dimensions, <code class="docutils literal notr
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.reduce_mean_power">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">reduce_mean_power</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#reduce_mean_power"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.reduce_mean_power" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.reduce_mean_power">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">reduce_mean_power</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#reduce_mean_power"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.reduce_mean_power" title="Permalink to this definition"></a></dt>
 <dd><p>Calculates the mean power of a tensor along the given axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -358,8 +357,8 @@ If <cite>a</cite> has more than 2 dimensions, <code class="docutils literal notr
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.sample_complex_gaussian">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">sample_complex_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#sample_complex_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.sample_complex_gaussian" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.sample_complex_gaussian">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">sample_complex_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#sample_complex_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.sample_complex_gaussian" title="Permalink to this definition"></a></dt>
 <dd><p>Sample complex gaussian.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -376,8 +375,8 @@ This results in element-wise <span class="math notranslate nohighlight">\(E[|x|^
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.sample_complex_uniform_disk">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">sample_complex_uniform_disk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#sample_complex_uniform_disk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.sample_complex_uniform_disk" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.sample_complex_uniform_disk">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">sample_complex_uniform_disk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#sample_complex_uniform_disk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.sample_complex_uniform_disk" title="Permalink to this definition"></a></dt>
 <dd><p>Sample uniform circle on complex plane.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>
@@ -394,8 +393,8 @@ This results in element-wise <span class="math notranslate nohighlight">\(E[|x|^
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="jammer.utils.sample_function">
-<span class="sig-prename descclassname"><span class="pre">jammer.utils.</span></span><span class="sig-name descname"><span class="pre">sample_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/utils.html#sample_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.utils.sample_function" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.utils.sample_function">
+<span class="sig-prename descclassname"><span class="pre">pyjama.utils.</span></span><span class="sig-name descname"><span class="pre">sample_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/utils.html#sample_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.utils.sample_function" title="Permalink to this definition"></a></dt>
 <dd><p>Returns function which samples from a constellation or a distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Input</dt>

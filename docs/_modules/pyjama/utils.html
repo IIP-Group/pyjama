@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>jammer.utils &mdash; PyJama 0.1 documentation</title>
+  <title>pyjama.utils &mdash; PyJama 0.1 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
@@ -47,9 +47,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
@@ -78,7 +77,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>jammer.utils</li>
+      <li>pyjama.utils</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -87,7 +86,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for jammer.utils</h1><div class="highlight"><pre>
+  <h1>Source code for pyjama.utils</h1><div class="highlight"><pre>
 <span></span><span class="c1">#%%</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -97,7 +96,7 @@
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-<div class="viewcode-block" id="sample_function"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.sample_function">[docs]</a><span class="k">def</span> <span class="nf">sample_function</span><span class="p">(</span><span class="n">sampler</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<div class="viewcode-block" id="sample_function"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.sample_function">[docs]</a><span class="k">def</span> <span class="nf">sample_function</span><span class="p">(</span><span class="n">sampler</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns function which samples from a constellation or a distribution.</span>
 
@@ -130,7 +129,7 @@
     <span class="k">return</span> <span class="n">sample_function</span></div>
 
 
-<div class="viewcode-block" id="sample_complex_uniform_disk"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.sample_complex_uniform_disk">[docs]</a><span class="k">def</span> <span class="nf">sample_complex_uniform_disk</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<div class="viewcode-block" id="sample_complex_uniform_disk"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.sample_complex_uniform_disk">[docs]</a><span class="k">def</span> <span class="nf">sample_complex_uniform_disk</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Sample uniform circle on complex plane.</span>
 
@@ -152,7 +151,7 @@
     <span class="n">theta</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">minval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="p">)</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">theta</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="sample_complex_gaussian"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.sample_complex_gaussian">[docs]</a><span class="k">def</span> <span class="nf">sample_complex_gaussian</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<div class="viewcode-block" id="sample_complex_gaussian"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.sample_complex_gaussian">[docs]</a><span class="k">def</span> <span class="nf">sample_complex_gaussian</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Sample complex gaussian.</span>
 <span class="sd">    </span>
@@ -172,7 +171,7 @@
     <span class="n">stddev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">stddev</span><span class="o">=</span><span class="n">stddev</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">stddev</span><span class="o">=</span><span class="n">stddev</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="o">.</span><span class="n">real_dtype</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="constellation_to_sampler"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.constellation_to_sampler">[docs]</a><span class="k">def</span> <span class="nf">constellation_to_sampler</span><span class="p">(</span><span class="n">constellation</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">):</span>
+<div class="viewcode-block" id="constellation_to_sampler"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.constellation_to_sampler">[docs]</a><span class="k">def</span> <span class="nf">constellation_to_sampler</span><span class="p">(</span><span class="n">constellation</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convert a constellation to a function which samples the constellation.</span>
 
@@ -205,7 +204,7 @@
     <span class="k">return</span> <span class="n">sampler</span></div>
 
 
-<div class="viewcode-block" id="covariance_estimation_from_signals"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.covariance_estimation_from_signals">[docs]</a><span class="k">def</span> <span class="nf">covariance_estimation_from_signals</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">num_odfm_symbols</span><span class="p">):</span>
+<div class="viewcode-block" id="covariance_estimation_from_signals"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.covariance_estimation_from_signals">[docs]</a><span class="k">def</span> <span class="nf">covariance_estimation_from_signals</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">num_odfm_symbols</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Estimate the covariance matrix of a signal y.</span>
 <span class="sd">    </span>
@@ -257,7 +256,7 @@
 
 <span class="c1">#     return tf.convert_to_tensor(mask)</span>
 
-<div class="viewcode-block" id="reduce_matrix_rank"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.reduce_matrix_rank">[docs]</a><span class="k">def</span> <span class="nf">reduce_matrix_rank</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">rank</span><span class="p">):</span>
+<div class="viewcode-block" id="reduce_matrix_rank"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.reduce_matrix_rank">[docs]</a><span class="k">def</span> <span class="nf">reduce_matrix_rank</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">rank</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Reduce the rank of a matrix by setting the smallest singular values to zero.</span>
 
@@ -279,7 +278,7 @@
     <span class="c1"># reconstruct matrix</span>
     <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s</span><span class="p">)),</span> <span class="n">v</span><span class="p">,</span> <span class="n">adjoint_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="db_to_linear"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.db_to_linear">[docs]</a><span class="k">def</span> <span class="nf">db_to_linear</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
+<div class="viewcode-block" id="db_to_linear"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.db_to_linear">[docs]</a><span class="k">def</span> <span class="nf">db_to_linear</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Converts number from dB to linear scale.</span>
 
@@ -295,7 +294,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="n">db</span><span class="o">/</span><span class="mf">10.0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="linear_to_db"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.linear_to_db">[docs]</a><span class="k">def</span> <span class="nf">linear_to_db</span><span class="p">(</span><span class="n">linear</span><span class="p">):</span>
+<div class="viewcode-block" id="linear_to_db"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.linear_to_db">[docs]</a><span class="k">def</span> <span class="nf">linear_to_db</span><span class="p">(</span><span class="n">linear</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Converts number from linear to dB scale.</span>
 <span class="sd">    </span>
@@ -311,7 +310,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="mi">10</span><span class="o">*</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">linear</span><span class="p">))</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="NonNegMaxMeanSquareNorm"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.NonNegMaxMeanSquareNorm">[docs]</a><span class="k">class</span> <span class="nc">NonNegMaxMeanSquareNorm</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
+<div class="viewcode-block" id="NonNegMaxMeanSquareNorm"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.NonNegMaxMeanSquareNorm">[docs]</a><span class="k">class</span> <span class="nc">NonNegMaxMeanSquareNorm</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scales the input tensor so that the mean power of each element along the given axis is at most ``max_mean_squared_norm``.</span>
 <span class="sd">    Also ensures that all elements are non-negative.</span>
@@ -351,7 +350,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">w_nonneg</span></div>
 
-<div class="viewcode-block" id="MaxMeanSquareNorm"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.MaxMeanSquareNorm">[docs]</a><span class="k">class</span> <span class="nc">MaxMeanSquareNorm</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
+<div class="viewcode-block" id="MaxMeanSquareNorm"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.MaxMeanSquareNorm">[docs]</a><span class="k">class</span> <span class="nc">MaxMeanSquareNorm</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scales the input tensor so that the mean power of each element along the given axis is at most ``max_mean_squared_norm``.</span>
 
@@ -387,7 +386,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">w</span></div>
 
-<div class="viewcode-block" id="reduce_mean_power"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.reduce_mean_power">[docs]</a><span class="k">def</span> <span class="nf">reduce_mean_power</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="reduce_mean_power"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.reduce_mean_power">[docs]</a><span class="k">def</span> <span class="nf">reduce_mean_power</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculates the mean power of a tensor along the given axis.</span>
 <span class="sd">    </span>
@@ -407,7 +406,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">a</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="n">keepdims</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="normalize_power"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.normalize_power">[docs]</a><span class="k">def</span> <span class="nf">normalize_power</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">is_amplitude</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="normalize_power"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.normalize_power">[docs]</a><span class="k">def</span> <span class="nf">normalize_power</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">is_amplitude</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Scales input tensor so that the mean power per element is 1.</span>
 
@@ -429,7 +428,7 @@
         <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">a</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_to_image"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.plot_to_image">[docs]</a><span class="k">def</span> <span class="nf">plot_to_image</span><span class="p">(</span><span class="n">figure</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_to_image"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.plot_to_image">[docs]</a><span class="k">def</span> <span class="nf">plot_to_image</span><span class="p">(</span><span class="n">figure</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Converts a matplotlib figure to a PNG image and returns it. The supplied figure is closed and inaccessible after this call.</span>
 <span class="sd">    </span>
@@ -456,7 +455,7 @@
     <span class="n">image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">image</span></div>
 
-<div class="viewcode-block" id="plot_matrix"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.plot_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.4</span><span class="p">,</span> <span class="mf">4.8</span><span class="p">)):</span>
+<div class="viewcode-block" id="plot_matrix"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.plot_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.4</span><span class="p">,</span> <span class="mf">4.8</span><span class="p">)):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plots a matrix as a heatmap.</span>
 <span class="sd">    If `a` has more than 2 dimensions, ``a[0, 0 .., :, :]`` is plotted.</span>
@@ -476,7 +475,7 @@
     <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">fig</span></div>
 
-<div class="viewcode-block" id="matrix_to_image"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.matrix_to_image">[docs]</a><span class="k">def</span> <span class="nf">matrix_to_image</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<div class="viewcode-block" id="matrix_to_image"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.matrix_to_image">[docs]</a><span class="k">def</span> <span class="nf">matrix_to_image</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a matrix to an image.&quot;&quot;&quot;</span>
     <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.0</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">plot_to_image</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
@@ -489,7 +488,7 @@
 <span class="c1">#     return tf.reduce_mean(losses)</span>
     
 <span class="c1"># TODO test with alpha decreasing through training (and exp. scaling) (i.e. more weight on last iteration as training progresses)</span>
-<div class="viewcode-block" id="IterationLoss"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.IterationLoss">[docs]</a><span class="k">class</span> <span class="nc">IterationLoss</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">Loss</span><span class="p">):</span>
+<div class="viewcode-block" id="IterationLoss"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.IterationLoss">[docs]</a><span class="k">class</span> <span class="nc">IterationLoss</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">Loss</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Loss function for iterative decoder which returns the output of each decoder iteration.</span>
 <span class="sd">    </span>
@@ -538,7 +537,7 @@
         <span class="n">difference</span> <span class="o">*=</span> <span class="n">alpha</span>
         <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">difference</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="merge_plotbers"><a class="viewcode-back" href="../../api/utils.html#jammer.utils.merge_plotbers">[docs]</a><span class="k">def</span> <span class="nf">merge_plotbers</span><span class="p">(</span><span class="n">plotbers</span><span class="p">):</span>
+<div class="viewcode-block" id="merge_plotbers"><a class="viewcode-back" href="../../api/utils.html#pyjama.utils.merge_plotbers">[docs]</a><span class="k">def</span> <span class="nf">merge_plotbers</span><span class="p">(</span><span class="n">plotbers</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Merges multiple :class:sionna.utils.plotting.PlotBER instances into one.</span>
 <span class="sd">    Properties which are unique per instance (like ``title``) are taken from the first instance.</span>

@@ -51,9 +51,8 @@
 <li class="toctree-l2"><a class="reference internal" href="channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="simulation_model.html">Simulation</a></li>
@@ -115,8 +114,8 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="module-jammer.jammer">
-<span id="jammer-models"></span><h1>Jammer Models<a class="headerlink" href="#module-jammer.jammer" title="Permalink to this heading"></a></h1>
+<div class="section" id="module-pyjama.jammer">
+<span id="jammer-models"></span><h1>Jammer Models<a class="headerlink" href="#module-pyjama.jammer" title="Permalink to this heading"></a></h1>
 <p>This module provides classes for simulating one or multiple jammers.
 They are meant to be used to simulate jammers in the context of OFDM-based communication.</p>
 <p>The main way of functioning is the following:</p>
@@ -130,13 +129,13 @@ They are meant to be used to simulate jammers in the context of OFDM-based commu
 <span class="gp">&gt;&gt;&gt; </span><span class="n">y_jammed</span> <span class="o">=</span> <span class="n">jammer</span><span class="p">([</span><span class="n">y</span><span class="p">,</span> <span class="n">rho</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>The module consists of two main classes: <a class="reference internal" href="#jammer.jammer.OFDMJammer" title="jammer.jammer.OFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OFDMJammer</span></code></a> and <a class="reference internal" href="#jammer.jammer.TimeDomainOFDMJammer" title="jammer.jammer.TimeDomainOFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeDomainOFDMJammer</span></code></a>.
+<p>The module consists of two main classes: <a class="reference internal" href="#pyjama.jammer.OFDMJammer" title="pyjama.jammer.OFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OFDMJammer</span></code></a> and <a class="reference internal" href="#pyjama.jammer.TimeDomainOFDMJammer" title="pyjama.jammer.TimeDomainOFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeDomainOFDMJammer</span></code></a>.
 The former is to be used for simulations solely in the frequency domain, while the latter is to be used for simulations in the time domain.</p>
 <p><cite>TimeDomainOFDMJammer</cite> can hence be used to jammers which violate the OFDM assumptions, i.e. not sending a cyclic prefix. The simulation is much slower, however.</p>
 <p><cite>OFDMJammer</cite> currently has much more functionality implemented, and can i.e. be used to simulate learning/smart jammers.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="jammer.jammer.OFDMJammer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.jammer.</span></span><span class="sig-name descname"><span class="pre">OFDMJammer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/jammer.html#OFDMJammer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.jammer.OFDMJammer" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyjama.jammer.OFDMJammer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.jammer.</span></span><span class="sig-name descname"><span class="pre">OFDMJammer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/jammer.html#OFDMJammer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.jammer.OFDMJammer" title="Permalink to this definition"></a></dt>
 <dd><p>Used to simulate a jammer in the frequency domain only (i.e. sending a cyclic prefix). The jammer signal is generated through the given (Jammer-BS) channel model.</p>
 <p>It can be trained, and support several other functionalities, which are described in the following.</p>
 <dl>
@@ -218,10 +217,10 @@ The callable should take a tensor as argument and return a tensor of the same sh
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="jammer.jammer.TimeDomainOFDMJammer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.jammer.</span></span><span class="sig-name descname"><span class="pre">TimeDomainOFDMJammer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/jammer.html#TimeDomainOFDMJammer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.jammer.TimeDomainOFDMJammer" title="Permalink to this definition"></a></dt>
-<dd><p>This class is meant ot simulate jammers in the time domain channel. It is much slower than <a class="reference internal" href="#jammer.jammer.OFDMJammer" title="jammer.jammer.OFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OFDMJammer</span></code></a>, but can be used to simulate jammers which violate the OFDM assumptions, i.e. not sending a cyclic prefix.
-It thus functions similarily to <a class="reference internal" href="#jammer.jammer.OFDMJammer" title="jammer.jammer.OFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OFDMJammer</span></code></a>, with the following differences:</p>
+<dt class="sig sig-object py" id="pyjama.jammer.TimeDomainOFDMJammer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.jammer.</span></span><span class="sig-name descname"><span class="pre">TimeDomainOFDMJammer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/jammer.html#TimeDomainOFDMJammer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.jammer.TimeDomainOFDMJammer" title="Permalink to this definition"></a></dt>
+<dd><p>This class is meant ot simulate jammers in the time domain channel. It is much slower than <a class="reference internal" href="#pyjama.jammer.OFDMJammer" title="pyjama.jammer.OFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OFDMJammer</span></code></a>, but can be used to simulate jammers which violate the OFDM assumptions, i.e. not sending a cyclic prefix.
+It thus functions similarily to <a class="reference internal" href="#pyjama.jammer.OFDMJammer" title="pyjama.jammer.OFDMJammer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OFDMJammer</span></code></a>, with the following differences:</p>
 <ul class="simple">
 <li><p>Some functionality is not supported, such as learning jammer weights. This might be implemented in the future.</p></li>
 <li><p>The input signal is assumed to be in the time domain. The output can be chosen to be in the time domain or frequency domain using the parameter <cite>return_domain</cite>.</p></li>

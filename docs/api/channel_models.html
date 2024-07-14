@@ -51,9 +51,8 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="simulation_model.html">Simulation</a></li>
@@ -118,9 +117,9 @@
 <div class="section" id="channel-models">
 <h1>Channel Models<a class="headerlink" href="#channel-models" title="Permalink to this heading"></a></h1>
 <p>Additional channel models that were implemented to further explore jammer properties.</p>
-<span class="target" id="module-jammer.channel_models"></span><dl class="py class">
-<dt class="sig sig-object py" id="jammer.channel_models.MultiTapRayleighBlockFading">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">jammer.channel_models.</span></span><span class="sig-name descname"><span class="pre">MultiTapRayleighBlockFading</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_rx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rx_ant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tx_ant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.complex64</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/jammer/channel_models.html#MultiTapRayleighBlockFading"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#jammer.channel_models.MultiTapRayleighBlockFading" title="Permalink to this definition"></a></dt>
+<span class="target" id="module-pyjama.channel_models"></span><dl class="py class">
+<dt class="sig sig-object py" id="pyjama.channel_models.MultiTapRayleighBlockFading">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyjama.channel_models.</span></span><span class="sig-name descname"><span class="pre">MultiTapRayleighBlockFading</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_rx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rx_ant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tx_ant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.complex64</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyjama/channel_models.html#MultiTapRayleighBlockFading"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyjama.channel_models.MultiTapRayleighBlockFading" title="Permalink to this definition"></a></dt>
 <dd><p>Generate channel impulse responses corresponding to a Rayleigh block
 fading channel model.</p>
 <p>The channel impulse responses generated are formed of M paths with delays of

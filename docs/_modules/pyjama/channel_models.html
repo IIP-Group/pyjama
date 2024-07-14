@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>jammer.channel_models &mdash; PyJama 0.1 documentation</title>
+  <title>pyjama.channel_models &mdash; PyJama 0.1 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
@@ -47,9 +47,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../api/channel_models.html">Channel Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/pilots.html">Custom Pilot Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/mitigation.html">Jammer Mitigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-jammer.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#mitigation-via-subspace-hiding-mash">MitigAtion via Subspace Hiding (MASH)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.POS">Projection onto Orthogonal Subspace (POS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/mitigation.html#module-pyjama.mitigation.IAN">LMMSE treating Interference as Noise (IAN)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../api/simulation_model.html">Simulation</a></li>
@@ -78,7 +77,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>jammer.channel_models</li>
+      <li>pyjama.channel_models</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -87,7 +86,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for jammer.channel_models</h1><div class="highlight"><pre>
+  <h1>Source code for pyjama.channel_models</h1><div class="highlight"><pre>
 <span></span><span class="c1">#%%</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">sionna</span>
@@ -98,7 +97,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="c1"># TODO should we introduce a parameter for time delay between paths?</span>
-<div class="viewcode-block" id="MultiTapRayleighBlockFading"><a class="viewcode-back" href="../../api/channel_models.html#jammer.channel_models.MultiTapRayleighBlockFading">[docs]</a><span class="k">class</span> <span class="nc">MultiTapRayleighBlockFading</span><span class="p">(</span><span class="n">ChannelModel</span><span class="p">):</span>
+<div class="viewcode-block" id="MultiTapRayleighBlockFading"><a class="viewcode-back" href="../../api/channel_models.html#pyjama.channel_models.MultiTapRayleighBlockFading">[docs]</a><span class="k">class</span> <span class="nc">MultiTapRayleighBlockFading</span><span class="p">(</span><span class="n">ChannelModel</span><span class="p">):</span>
     <span class="c1"># pylint: disable=line-too-long</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate channel impulse responses corresponding to a Rayleigh block</span>
