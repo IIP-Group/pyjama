@@ -1,6 +1,6 @@
 Jammer Models
 ====================
 
-.. automodule:: jammer.jammer
+.. automodule:: pyjama.jammer
     :exclude-members: build, call
     :members:

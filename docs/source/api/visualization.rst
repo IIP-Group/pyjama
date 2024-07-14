@@ -7,12 +7,12 @@ Channel Visualization
 ---------------------
 Module to visualize channel impulse responses (delays, gains, ...).
 
-.. automodule:: jammer.channel_visualization
+.. automodule:: pyjama.channel_visualization
    :members:
 
 Utility Functions
 -----------------
 Module with utility functions for channel visualization.
 
-.. automodule:: jammer.visualization_utils
+.. automodule:: pyjama.visualization_utils
     :members:
