@@ -10,6 +10,7 @@ Welcome to PyJama's documentation!
    :maxdepth: 3
    :caption: Contents:
 
+   installation
    examples
    api/pyjama
 

@@ -8,6 +8,7 @@ The main way of functioning is the following:
 |  2. Instantiate an additional channel model between the jammers and the BSs.
 |  3. Instantiate a jammer, using the channel created in step 2.
 |  4. Add the jammer to the communication pipeline, right after the channel between the UEs and the BSs like so:
+
 >>> y = channel([x, no])
 >>> y_jammed = jammer([y, rho])
 
