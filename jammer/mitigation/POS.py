@@ -71,11 +71,6 @@ class OrthogonalSubspaceProjector(tf.keras.layers.Layer):
             Use `set_jammer_signals` instead.
         """
         num_rx_ant = tf.shape(jammer_covariance)[-1]
-        # jammer_covariance = jammer_covariance / sionna.utils.expand_to_rank(tf.linalg.trace(jammer_covariance), jammer_covariance.shape.rank, axis=-1)
-        # if self._dimensionality is not None:
-        #     jammer_covariance = reduce_matrix_rank(jammer_covariance, self._dimensionality)
-        # self._proj = tf.eye(num_rx_ant, dtype=self.dtype) - jammer_covariance
-        # TODO when doing it this way, we should use the jammer signals directly (and hence limit the rank reduction to num_jammer_symbols)
         _, u, _ = tf.linalg.svd(jammer_covariance, compute_uv=True)
         if self._dimensionality is not None:
             u = u[..., :self._dimensionality]
