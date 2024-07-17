@@ -42,6 +42,11 @@ docs = [
     "markupsafe==2.1.5"
 ]
 
+[tool.setuptools.packages.find]
+# where = ["."]
+include = ["pyjama"]
+exclude = ["tests", "simulations", "docs"]
+
 [project.urls]
 Homepage = "http://pyjama.ethz.ch"
 Documentation = "https://huoxiaoyao.github.io/pyjama/"

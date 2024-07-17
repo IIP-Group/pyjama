@@ -1,5 +1,5 @@
 docs: FORCE
-	cd docs && make html
+	cd docs && ./build_docs.sh
 
 install: FORCE
 	pip install .
