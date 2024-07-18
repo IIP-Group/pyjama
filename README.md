@@ -3,7 +3,7 @@
 PyJama is an open-source Python library for simulation and training of jamming and anti-jamming algorithms.
 It is built on top of [Sionna](https://nvlabs.github.io/sionna) and [TensorFlow](https://www.tensorflow.org).
 
-The official website of this library can be found [here](http://pyjama.ethz.ch), documentation and example code is located [here](https://huoxiaoyao.github.io/pyjama).
+The official website of this library can be found [here](http://pyjama.ethz.ch), documentation and example code is located [here](https://iip-group.github.io/pyjama/).
 
 
 ## Installation
