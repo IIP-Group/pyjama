@@ -15,23 +15,18 @@ For now, PyJama can only be installed from source. In the future, this package w
 ### Installation from Source
 
 First, please clone this repository to your local machine.
-You may then install the requirements for PyJama by executing (preferably in a virtual environment):
-```
-pip install -r requirements.txt
-```
-inside the repository root folder.
 
-If you want to build the documentation, you can install the additional requirements using
-```
-pip install -r requirements_doc.txt
-```
-but this is not necessary for only using PyJama.
-
-Lastly, install PyJama by running
+You may then install PyJama, including all its requirements (preferably in a virtual environment), by running
 ```
 make install
 ```
-in the root folder.
+in the repository root folder.
+
+If you want to build the documentation, you can install the additional requirements using
+```
+pip install .[docs]
+```
+in the root folder as well, but this is not necessary for only using PyJama.
 
 Afterwards, test the installation by running
 ```
